@@ -17,12 +17,6 @@ export const metadata: Metadata = {
   description:
     "Servicio personalizado 1:1 de nutrición y entrenamiento para mujeres. App con seguimiento del ciclo menstrual. +400 mujeres transformadas. Sin permanencia.",
   metadataBase: new URL("https://fitconaurena.com"),
-  openGraph: {
-    type: "website",
-    locale: "es_ES",
-    url: "https://fitconaurena.com",
-    siteName: "Fit con Aurena",
-  },
   robots: { index: true, follow: true },
 };
 
@@ -33,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={inter.variable}>
-      <body className="antialiased">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
