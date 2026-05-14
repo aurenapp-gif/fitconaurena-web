@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mi Ciclo · FitCon Aurena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FFF0F5;
+      --bg-card: #FFFFFF;
+      --accent: #D64F8A;
+      --accent-light: #FCEAF3;
+      --accent-dark: #B0396E;
+      --text: #1A1A2E;
+      --text-muted: #7A7A8C;
+      --text-light: #B8B8C8;
+      --border: #F0E0EA;
+      --shadow: 0 4px 24px rgba(214, 79, 138, 0.08);
+      --shadow-md: 0 8px 32px rgba(0,0,0,0.10);
+      --r: 20px;
+      --r-sm: 12px;
+      /* Phase */
+      --men: #D94F6B;
+      --men-bg: #FFEEF2;
+      --men-text: #A02040;
+      --fol: #3D9E6D;
+      --fol-bg: #EDFBF3;
+      --fol-text: #1A6040;
+      --ovu: #D4921A;
+      --ovu-bg: #FFF5E0;
+      --ovu-text: #7A4E00;
+      --lut: #7C4FD4;
+      --lut-bg: #F3EEFF;
+      --lut-text: #4C1D95;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;}
+    body{
+      background:var(--bg);
+      font-family:'Inter',system-ui,sans-serif;
+      color:var(--text);
+      max-width:430px;
+      margin:0 auto;
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+    button{border:none;background:none;cursor:pointer;font-family:inherit;}
+    input{font-family:inherit;}
+    .screen{display:none;min-height:100vh;}
+    .screen.active{display:block;}
+
+    /* ── HEADER ─────────────────── */
+    .hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:52px 20px 14px;
+      background:var(--bg);
+      position:sticky;top:0;z-index:50;
+    }
+    .hdr h1{font-size:17px;font-weight:800;color:var(--text);}
+    .hdr-btn{
+      width:38px;height:38px;border-radius:50%;
+      background:var(--bg-card);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 10px rgba(0,0,0,0.08);
+      font-size:16px;color:var(--text);
+    }
+
+    /* ── SETUP SCREEN ───────────── */
+    .setup-wrap{padding:24px 20px 40px;}
+    .setup-hero{text-align:center;margin-bottom:32px;}
+    .setup-illo{font-size:72px;line-height:1;display:block;margin-bottom:20px;}
+    .setup-hero h2{font-size:26px;font-weight:900;margin-bottom:10px;line-height:1.2;}
+    .setup-hero p{font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto;}
+    .card{
+      background:var(--bg-card);border-radius:var(--r);
+      padding:22px;box-shadow:var(--shadow);margin-bottom:16px;
+    }
+    .lbl{
+      display:block;font-size:11px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em;
+      color:var(--text-muted);margin-bottom:9px;
+    }
+    .hint{font-size:12px;color:var(--text-light);margin-top:6px;}
+    .inp{
+      width:100%;height:52px;
+      border:2px solid var(--border);
+      border-radius:var(--r-sm);
+      padding:0 16px;font-size:16px;
+      color:var(--text);background:var(--bg);
+      outline:none;-webkit-appearance:none;
+      transition:border-color .2s;
+    }
+    .inp:focus{border-color:var(--accent);}
+    .div{height:1px;background:var(--border);margin:18px 0;}
+    .stepper{display:flex;align-items:center;gap:14px;}
+    .stp-btn{
+      width:46px;height:46px;border-radius:50%;
+      background:var(--bg);border:2px solid var(--border);
+      font-size:22px;font-weight:600;color:var(--text);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .stp-btn:active{background:var(--accent-light);border-color:var(--accent);}
+    .stp-val{flex:1;text-align:center;font-size:24px;font-weight:800;color:var(--text);}
+    .stp-unit{font-size:13px;font-weight:500;color:var(--text-muted);}
+    .btn-main{
+      width:100%;height:56px;
+      border-radius:var(--r-sm);
+      background:var(--accent);color:#fff;
+      font-size:16px;font-weight:800;
+      box-shadow:0 8px 28px rgba(214,79,138,.32);
+      transition:transform .15s,box-shadow .15s;
+    }
+    .btn-main:active{transform:scale(.97);box-shadow:0 4px 14px rgba(214,79,138,.2);}
+
+    /* ── PHASE HERO ─────────────── */
+    .phase-hero{
+      margin:0 20px 16px;
+      border-radius:var(--r);
+      padding:26px 24px;
+      color:#fff;
+      position:relative;overflow:hidden;
+    }
+    .ph-men{background:linear-gradient(135deg,#D94F6B,#A8244A);}
+    .ph-fol{background:linear-gradient(135deg,#3D9E6D,#1F6845);}
+    .ph-ovu{background:linear-gradient(135deg,#D4921A,#A86A00);}
+    .ph-lut{background:linear-gradient(135deg,#7C4FD4,#5025A8);}
+    .phase-hero::before{
+      content:'';position:absolute;
+      top:-50px;right:-50px;
+      width:180px;height:180px;
+      border-radius:50%;
+      background:rgba(255,255,255,.1);
+    }
+    .phase-hero::after{
+      content:'';position:absolute;
+      bottom:-70px;right:10px;
+      width:140px;height:140px;
+      border-radius:50%;
+      background:rgba(255,255,255,.07);
+    }
+    .ph-badge{
+      font-size:10px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.12em;
+      opacity:.82;margin-bottom:6px;
+    }
+    .ph-name{font-size:28px;font-weight:900;margin-bottom:4px;line-height:1.1;}
+    .ph-days{font-size:13px;opacity:.82;margin-bottom:18px;}
+    .ph-emoji{
+      position:absolute;right:22px;top:22px;
+      font-size:52px;opacity:.9;
+    }
+    .ph-stats{display:flex;gap:10px;flex-wrap:wrap;}
+    .ph-stat{
+      background:rgba(255,255,255,.18);
+      backdrop-filter:blur(8px);
+      border-radius:12px;
+      padding:10px 14px;
+    }
+    .ph-stat-lbl{
+      font-size:9px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.1em;
+      opacity:.78;margin-bottom:2px;
+    }
+    .ph-stat-val{font-size:14px;font-weight:700;}
+    .e-bar{display:flex;gap:5px;margin-top:14px;}
+    .e-dot{
+      height:6px;flex:1;border-radius:3px;
+      background:rgba(255,255,255,.25);
+    }
+    .e-dot.on{background:#fff;}
+
+    /* ── NEXT PHASE CARD ────────── */
+    .next-card{
+      margin:0 20px 16px;
+      background:var(--bg-card);
+      border-radius:var(--r);
+      padding:14px 18px;
+      box-shadow:var(--shadow);
+      display:flex;align-items:center;gap:12px;
+    }
+    .next-icon{
+      width:44px;height:44px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px;flex-shrink:0;
+    }
+    .next-txt{flex:1;}
+    .next-lbl{
+      font-size:10px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em;
+      color:var(--text-muted);margin-bottom:2px;
+    }
+    .next-name{font-size:15px;font-weight:700;color:var(--text);}
+    .next-sub{font-size:12px;color:var(--text-muted);}
+    .next-badge{
+      font-size:13px;font-weight:700;
+      padding:6px 12px;border-radius:20px;
+      background:var(--accent-light);color:var(--accent);
+      white-space:nowrap;
+    }
+
+    /* ── CYCLE WHEEL ────────────── */
+    .section-card{
+      margin:0 20px 16px;
+      background:var(--bg-card);
+      border-radius:var(--r);
+      padding:20px;
+      box-shadow:var(--shadow);
+    }
+    .sec-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:14px;}
+    .wheel-wrap{display:flex;align-items:center;gap:20px;}
+    #cycle-svg{width:150px;height:150px;flex-shrink:0;}
+    .wheel-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
+    .wl-item{display:flex;align-items:center;gap:8px;}
+    .wl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .wl-txt{font-size:12px;color:var(--text-muted);}
+
+    /* ── CALENDAR ───────────────── */
+    .cal-hdr{
+      display:flex;align-items:center;
+      justify-content:space-between;margin-bottom:14px;
+    }
+    .cal-month{font-size:16px;font-weight:800;color:var(--text);}
+    .cal-nav{
+      width:32px;height:32px;border-radius:50%;
+      background:var(--bg);
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;color:var(--text);
+    }
+    .cal-dnames{
+      display:grid;grid-template-columns:repeat(7,1fr);
+      gap:2px;margin-bottom:4px;
+    }
+    .cal-dn{text-align:center;font-size:10px;font-weight:700;color:var(--text-muted);padding:2px 0;}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+    .cal-cell{
+      aspect-ratio:1;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:500;color:var(--text);
+      position:relative;
+    }
+    .cal-cell.dim{color:var(--text-light);opacity:.6;}
+    .cal-cell.cm{background:var(--men-bg);color:var(--men-text);font-weight:600;}
+    .cal-cell.cf{background:var(--fol-bg);color:var(--fol-text);font-weight:600;}
+    .cal-cell.co{background:var(--ovu-bg);color:var(--ovu-text);font-weight:600;}
+    .cal-cell.cl{background:var(--lut-bg);color:var(--lut-text);font-weight:600;}
+    .cal-cell.today-dot{
+      background:var(--accent) !important;
+      color:#fff !important;
+      font-weight:900;
+    }
+
+    /* ── PHASE TABS ─────────────── */
+    .tabs-section{padding:0 20px 0;margin-bottom:14px;}
+    .tabs-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px;}
+    .tabs{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+    }
+    .tab{
+      padding:9px 4px;border-radius:14px;
+      font-size:10px;font-weight:700;
+      text-align:center;color:var(--text-muted);
+      background:var(--bg-card);
+      border:2px solid transparent;
+      transition:all .2s;
+    }
+    .tab-e{display:block;font-size:20px;margin-bottom:5px;}
+    .tab.a-men{background:var(--men-bg);border-color:var(--men);color:var(--men);}
+    .tab.a-fol{background:var(--fol-bg);border-color:var(--fol);color:var(--fol);}
+    .tab.a-ovu{background:var(--ovu-bg);border-color:var(--ovu);color:var(--ovu);}
+    .tab.a-lut{background:var(--lut-bg);border-color:var(--lut);color:var(--lut);}
+
+    /* ── PHASE PANELS ───────────── */
+    .panel{display:none;padding:0 20px;}
+    .panel.active{display:block;animation:fadeUp .3s ease;}
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+
+    /* Phase info card */
+    .pi-card{background:var(--bg-card);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:14px;}
+    .pi-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+    .pi-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+    .pi-name{font-size:19px;font-weight:900;margin-bottom:2px;}
+    .pi-days{font-size:12px;color:var(--text-muted);font-weight:600;}
+    .pi-desc{font-size:13px;color:var(--text-muted);line-height:1.65;margin-bottom:14px;}
+    .h-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+    .h-chip{font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;}
+    .e-sec{border-top:1px solid var(--border);padding-top:14px;}
+    .e-lbl{
+      font-size:11px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em;
+      color:var(--text-muted);margin-bottom:8px;
+      display:flex;justify-content:space-between;
+    }
+    .e-bar-main{display:flex;gap:6px;}
+    .e-seg{height:8px;flex:1;border-radius:4px;background:var(--border);}
+    .e-seg.f-men{background:var(--men);}
+    .e-seg.f-fol{background:var(--fol);}
+    .e-seg.f-ovu{background:var(--ovu);}
+    .e-seg.f-lut{background:var(--lut);}
+
+    /* Training card */
+    .tr-card{background:var(--bg-card);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:14px;}
+    .tr-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+    .tr-icon{font-size:22px;}
+    .tr-title{font-size:15px;font-weight:800;color:var(--text);flex:1;}
+    .int-badge{font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;}
+    .tr-focus{font-size:14px;font-weight:800;margin-bottom:12px;}
+    .tr-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+    .tr-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text-muted);line-height:1.5;}
+    .tr-bul{
+      width:20px;height:20px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:9px;font-weight:800;color:#fff;
+      flex-shrink:0;margin-top:2px;
+    }
+    .tr-note{
+      margin-top:14px;padding:12px 14px;
+      border-radius:var(--r-sm);
+      font-size:13px;font-weight:500;line-height:1.55;
+      background:#FFF8F0;color:#8B5E20;
+    }
+
+    /* Recipe cards */
+    .rec-hdr{margin-bottom:12px;}
+    .rec-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
+    .rec-sub{font-size:12px;color:var(--text-muted);line-height:1.5;}
+    .rec-grid{display:flex;flex-direction:column;gap:12px;}
+    .rec-card{
+      background:var(--bg-card);border-radius:var(--r);
+      padding:16px;box-shadow:var(--shadow);
+      display:flex;gap:14px;align-items:flex-start;
+    }
+    .rec-emoji-box{
+      width:54px;height:54px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:30px;flex-shrink:0;
+    }
+    .rec-body{flex:1;min-width:0;}
+    .rec-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.3;}
+    .rec-benefit{font-size:11px;font-weight:700;margin-bottom:7px;line-height:1.4;}
+    .rec-meta{display:flex;gap:8px;flex-wrap:wrap;}
+    .rec-meta-i{font-size:11px;color:var(--text-muted);}
+    .rec-macros{margin-top:7px;font-size:11px;color:var(--text-light);font-weight:600;}
+    .rec-why{
+      margin-top:8px;font-size:12px;
+      color:var(--text-muted);line-height:1.55;
+      font-style:italic;
+      padding-top:8px;
+      border-top:1px solid var(--border);
+    }
+
+    /* Modal */
+    .modal{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,.4);z-index:200;
+      align-items:flex-end;
+    }
+    .modal.open{display:flex;}
+    .modal-sheet{
+      width:100%;max-width:430px;margin:0 auto;
+      background:#fff;border-radius:24px 24px 0 0;
+      padding:20px 20px 44px;
+    }
+    .modal-handle{
+      width:40px;height:4px;border-radius:2px;
+      background:var(--border);margin:0 auto 20px;
+    }
+    .modal-title{font-size:18px;font-weight:900;color:var(--text);margin-bottom:18px;}
+
+    /* Calendar legend */
+    .cal-legend{
+      display:flex;flex-wrap:wrap;gap:8px;
+      margin-top:12px;padding-top:12px;
+      border-top:1px solid var(--border);
+    }
+    .cl-item{display:flex;align-items:center;gap:5px;}
+    .cl-dot{width:10px;height:10px;border-radius:50%;}
+    .cl-txt{font-size:10px;color:var(--text-muted);font-weight:600;}
+
+    ::-webkit-scrollbar{display:none;}
+    .spacer{height:32px;}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: SETUP
+════════════════════════════════════════ -->
+<div id="s-setup" class="screen active">
+  <div class="hdr">
+    <button class="hdr-btn" onclick="goBack()">←</button>
+    <h1>Ciclo Menstrual</h1>
+    <div style="width:38px"></div>
+  </div>
+  <div class="setup-wrap">
+    <div class="setup-hero">
+      <span class="setup-illo">🌸</span>
+      <h2>Configura tu ciclo</h2>
+      <p>Introduce los datos de tu ciclo para recibir recomendaciones de entrenamiento y nutrición adaptadas a cada fase hormonal.</p>
+    </div>
+    <div class="card">
+      <div>
+        <label class="lbl">¿Cuándo empezó tu última regla?</label>
+        <input type="date" class="inp" id="lpd" />
+        <div class="hint">Primer día de sangrado</div>
+      </div>
+      <div class="div"></div>
+      <div>
+        <label class="lbl">Duración de tu ciclo</label>
+        <div class="stepper">
+          <button class="stp-btn" onclick="adj('cy',-1)">−</button>
+          <div class="stp-val"><span id="cy-v">28</span><span class="stp-unit"> días</span></div>
+          <button class="stp-btn" onclick="adj('cy',1)">+</button>
+        </div>
+        <div class="hint">La mayoría duran 21–35 días</div>
+      </div>
+      <div class="div"></div>
+      <div>
+        <label class="lbl">Duración de la regla</label>
+        <div class="stepper">
+          <button class="stp-btn" onclick="adj('pd',-1)">−</button>
+          <div class="stp-val"><span id="pd-v">5</span><span class="stp-unit"> días</span></div>
+          <button class="stp-btn" onclick="adj('pd',1)">+</button>
+        </div>
+        <div class="hint">Normalmente entre 3 y 7 días</div>
+      </div>
+    </div>
+    <button class="btn-main" onclick="saveSetup()">Ver mi ciclo →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: MAIN
+════════════════════════════════════════ -->
+<div id="s-main" class="screen">
+  <div class="hdr">
+    <button class="hdr-btn" onclick="showSetup()">←</button>
+    <h1>Mi Ciclo</h1>
+    <button class="hdr-btn" onclick="openModal()">⚙</button>
+  </div>
+
+  <div id="phase-hero" class="phase-hero"></div>
+  <div id="next-card" class="next-card"></div>
+
+  <!-- Cycle wheel -->
+  <div class="section-card">
+    <div class="sec-title">Tu ciclo de <span id="cl-lbl">28</span> días</div>
+    <div class="wheel-wrap">
+      <svg id="c-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="wheel-legend">
+        <div class="wl-item"><div class="wl-dot" style="background:#D94F6B"></div><span class="wl-txt">Menstrual · Días 1–5</span></div>
+        <div class="wl-item"><div class="wl-dot" style="background:#3D9E6D"></div><span class="wl-txt">Folicular · Días 6–13</span></div>
+        <div class="wl-item"><div class="wl-dot" style="background:#D4921A"></div><span class="wl-txt">Ovulatoria · Días 14–17</span></div>
+        <div class="wl-item"><div class="wl-dot" style="background:#7C4FD4"></div><span class="wl-txt">Lútea · Días 18–28</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="section-card">
+    <div class="cal-hdr">
+      <button class="cal-nav" onclick="prevM()">‹</button>
+      <div class="cal-month" id="cal-m"></div>
+      <button class="cal-nav" onclick="nextM()">›</button>
+    </div>
+    <div class="cal-dnames">
+      <div class="cal-dn">L</div><div class="cal-dn">M</div><div class="cal-dn">X</div>
+      <div class="cal-dn">J</div><div class="cal-dn">V</div><div class="cal-dn">S</div><div class="cal-dn">D</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-legend">
+      <div class="cl-item"><div class="cl-dot" style="background:#D94F6B"></div><span class="cl-txt">Menstrual</span></div>
+      <div class="cl-item"><div class="cl-dot" style="background:#3D9E6D"></div><span class="cl-txt">Folicular</span></div>
+      <div class="cl-item"><div class="cl-dot" style="background:#D4921A"></div><span class="cl-txt">Ovulatoria</span></div>
+      <div class="cl-item"><div class="cl-dot" style="background:#7C4FD4"></div><span class="cl-txt">Lútea</span></div>
+    </div>
+  </div>
+
+  <!-- Phase tabs -->
+  <div class="tabs-section">
+    <div class="tabs-title">Explora cada fase</div>
+    <div class="tabs">
+      <button class="tab" data-p="men" onclick="selPhase('men')"><span class="tab-e">🌑</span>Menstrual</button>
+      <button class="tab" data-p="fol" onclick="selPhase('fol')"><span class="tab-e">🌱</span>Folicular</button>
+      <button class="tab" data-p="ovu" onclick="selPhase('ovu')"><span class="tab-e">✨</span>Ovulatoria</button>
+      <button class="tab" data-p="lut" onclick="selPhase('lut')"><span class="tab-e">🌕</span>Lútea</button>
+    </div>
+  </div>
+
+  <div id="p-men" class="panel"></div>
+  <div id="p-fol" class="panel"></div>
+  <div id="p-ovu" class="panel"></div>
+  <div id="p-lut" class="panel"></div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SETTINGS MODAL
+════════════════════════════════════════ -->
+<div id="modal" class="modal" onclick="closeModalOut(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Actualizar ciclo</div>
+    <div class="div" style="margin-top:0"></div>
+    <div style="margin-bottom:16px">
+      <label class="lbl">Inicio de última regla</label>
+      <input type="date" class="inp" id="m-lpd" />
+    </div>
+    <div class="div"></div>
+    <div style="margin-bottom:16px">
+      <label class="lbl">Duración del ciclo</label>
+      <div class="stepper">
+        <button class="stp-btn" onclick="adj('m-cy',-1)">−</button>
+        <div class="stp-val"><span id="m-cy-v">28</span><span class="stp-unit"> días</span></div>
+        <button class="stp-btn" onclick="adj('m-cy',1)">+</button>
+      </div>
+    </div>
+    <div class="div"></div>
+    <div style="margin-bottom:20px">
+      <label class="lbl">Duración de la regla</label>
+      <div class="stepper">
+        <button class="stp-btn" onclick="adj('m-pd',-1)">−</button>
+        <div class="stp-val"><span id="m-pd-v">5</span><span class="stp-unit"> días</span></div>
+        <button class="stp-btn" onclick="adj('m-pd',1)">+</button>
+      </div>
+    </div>
+    <button class="btn-main" onclick="saveModal()">Guardar cambios</button>
+  </div>
+</div>
+
+<script>
+// =========================================================
+// DATA
+// =========================================================
+const PH = {
+  men: {
+    id:'men', name:'Fase Menstrual', short:'Menstrual',
+    emoji:'🌑', col:'#D94F6B', bg:'#FFEEF2', txtCol:'#A02040',
+    heroC:'ph-men', daysLbl:'Días 1–5 del ciclo',
+    energy:2, energyTxt:'Baja · Respeta tu cuerpo',
+    desc:'El revestimiento uterino se desprende. El estrógeno y la progesterona están en mínimos. Las prostaglandinas generan las contracciones y posibles calambres. Tu cuerpo pide descanso, calor y alimentos antiinflamatorios densos en nutrientes.',
+    hormones:[
+      {lbl:'Estrógeno ↓',bg:'#FFEEF2',tc:'#C0395A'},
+      {lbl:'Progesterona ↓',bg:'#FFEEF2',tc:'#C0395A'},
+      {lbl:'Prostaglandinas ↑',bg:'#FFF0EB',tc:'#C05030'},
+    ],
+    tr:{
+      int:'Suave', intBg:'#FFEEF2', intTc:'#D94F6B',
+      focus:'Recuperación activa y movilidad',
+      bul:'#D94F6B',
+      items:[
+        'Movilidad articular y estiramientos dinámicos (20–30 min)',
+        'Caminata ligera al aire libre 30–45 min',
+        'Yoga restaurativo o yin yoga',
+        'Si entrenas fuerza, reduce el volumen al 50–60% y prioriza la técnica',
+        'Pilates suave con foco en respiración y core',
+      ],
+      note:'⚠ Los días 1 y 2 evita esfuerzos máximos. El dolor menstrual intenso es señal de que tu cuerpo necesita descanso real.',
+    },
+  },
+  fol: {
+    id:'fol', name:'Fase Folicular', short:'Folicular',
+    emoji:'🌱', col:'#3D9E6D', bg:'#EDFBF3', txtCol:'#1A6040',
+    heroC:'ph-fol', daysLbl:'Días 6–13 del ciclo',
+    energy:4, energyTxt:'Alta y creciente · Tu mejor momento',
+    desc:'El estrógeno sube progresivamente y la FSH estimula el desarrollo folicular. Tu energía crece día a día, la recuperación muscular se acelera, el humor mejora y la tolerancia al esfuerzo es casi máxima. Aprovecha para entrenar fuerte y aprender movimientos nuevos.',
+    hormones:[
+      {lbl:'Estrógeno ↑↑',bg:'#EDFBF3',tc:'#2D8055'},
+      {lbl:'FSH ↑',bg:'#EDFBF3',tc:'#2D8055'},
+      {lbl:'Testosterona ↑',bg:'#EDFBF3',tc:'#1A6040'},
+    ],
+    tr:{
+      int:'Alta', intBg:'#EDFBF3', intTc:'#2D8055',
+      focus:'Fuerza máxima · El momento de los PRs',
+      bul:'#3D9E6D',
+      items:[
+        'Levantamiento pesado: sentadilla, peso muerto, press banca (80–95% de tu 1RM)',
+        'Series de fuerza: 4–6 series de 2–5 repeticiones pesadas',
+        'Ejercicios compuestos como base: hip thrust, dominadas, remo con barra',
+        'Introduce movimientos nuevos: la coordinación y aprendizaje motor están en máximos',
+        'HIIT opcional los últimos días (días 11–13)',
+      ],
+      note:'✓ Esta fase es ideal para batir marcas personales. Tu cuerpo está fisiológicamente preparado para el máximo esfuerzo.',
+    },
+  },
+  ovu: {
+    id:'ovu', name:'Fase Ovulatoria', short:'Ovulatoria',
+    emoji:'✨', col:'#D4921A', bg:'#FFF5E0', txtCol:'#7A4E00',
+    heroC:'ph-ovu', daysLbl:'Días 14–17 del ciclo',
+    energy:5, energyTxt:'Máxima · Tu pico de rendimiento',
+    desc:'El pico de estrógeno dispara el pico de LH que desencadena la ovulación. Estás en tu punto álgido: mayor fuerza, coordinación máxima, mejor humor y más confianza. La temperatura corporal sube levemente. Cada entrenamiento puede ser tu mejor entrenamiento del mes.',
+    hormones:[
+      {lbl:'Estrógeno ↑↑↑',bg:'#FFF5E0',tc:'#9A6200'},
+      {lbl:'LH ↑↑ (pico)',bg:'#FFF5E0',tc:'#9A6200'},
+      {lbl:'Testosterona ↑↑',bg:'#FFF5E0',tc:'#7A4E00'},
+    ],
+    tr:{
+      int:'Máxima', intBg:'#FFF5E0', intTc:'#D4921A',
+      focus:'Pico de rendimiento · El mejor momento del mes',
+      bul:'#D4921A',
+      items:[
+        'Los entrenamientos más exigentes del ciclo: fuerza + potencia',
+        'PRs en sentadilla, peso muerto, press y hip thrust',
+        'Circuitos de alta intensidad o supersets pesados',
+        'Volumen y carga máximos — este es el día para superarte',
+        'Entrena en grupo: tu sociabilidad y energía social están en máximos',
+      ],
+      note:'💪 ¡Este es tu superpoder hormonal! Planifica tus entrenamientos más duros en torno a la ovulación para maximizar resultados.',
+    },
+  },
+  lut: {
+    id:'lut', name:'Fase Lútea', short:'Lútea',
+    emoji:'🌕', col:'#7C4FD4', bg:'#F3EEFF', txtCol:'#4C1D95',
+    heroC:'ph-lut', daysLbl:'Días 18–28 del ciclo',
+    energy:3, energyTxt:'Moderada y decreciente',
+    desc:'La progesterona domina. La temperatura basal sube 0.3–0.5°C y el gasto calórico en reposo aumenta (+100–300 kcal/día). Pueden aparecer retención de líquidos, irritabilidad o antojos de carbohidratos. El entrenamiento moderado sigue siendo muy beneficioso y reduce el PMS.',
+    hormones:[
+      {lbl:'Progesterona ↑↑',bg:'#F3EEFF',tc:'#5B21B6'},
+      {lbl:'Estrógeno ↓',bg:'#F3EEFF',tc:'#6D28D9'},
+      {lbl:'Temperatura ↑',bg:'#F3EEFF',tc:'#4C1D95'},
+    ],
+    tr:{
+      int:'Moderada', intBg:'#F3EEFF', intTc:'#7C4FD4',
+      focus:'Fuerza moderada · Bienestar como prioridad',
+      bul:'#7C4FD4',
+      items:[
+        'Fuerza con volumen reducido: 3–4 series con 60–75% del 1RM',
+        'Prioriza ejercicios que disfrutes y que reduzcan el cortisol',
+        'Yoga de fuerza o pilates reformer: perfectos para esta fase',
+        'Caminatas largas o natación suave si los síntomas son intensos',
+        'Reduce el HIIT y la alta intensidad los últimos días (24–28)',
+      ],
+      note:'💜 No abandones el entrenamiento: moverse reduce el PMS significativamente. Ajusta la intensidad, no desaparezcas.',
+    },
+  },
+};
+
+const REC = {
+  men: [
+    { e:'🐟', n:'Salmón al horno con espinacas y limón', b:'Omega-3 antiinflamatorio · Hierro · Vitamina B12', t:'25 min', d:'Fácil', k:'380 kcal', m:'P: 35g · C: 8g · G: 22g', w:'El omega-3 del salmón reduce las prostaglandinas que causan los calambres (mismo mecanismo que el ibuprofeno, pero natural). Las espinacas compensan el hierro perdido durante la menstruación.' },
+    { e:'🍲', n:'Estofado de lentejas rojas con cúrcuma y jengibre', b:'Hierro vegetal · Antiinflamatorio potente · Fibra', t:'30 min', d:'Fácil', k:'340 kcal', m:'P: 18g · C: 45g · G: 8g', w:'La curcumina inhibe la enzima COX-2, responsable de la inflamación y el dolor menstrual. Las lentejas rojas son la legumbre más rica en hierro de rápida cocción.' },
+    { e:'🥤', n:'Smoothie de remolacha, naranja y jengibre', b:'Hierro · Vitamina C (absorción) · Antiinflamatorio', t:'5 min', d:'Fácil', k:'180 kcal', m:'P: 4g · C: 38g · G: 1g', w:'La vitamina C de la naranja multiplica por 3 la absorción del hierro no hemo de la remolacha. El jengibre actúa como antiinflamatorio y antiespasmódico natural.' },
+    { e:'🥬', n:'Crema de espinacas con semillas de calabaza', b:'Hierro · Magnesio · Zinc · Saciante', t:'20 min', d:'Fácil', k:'220 kcal', m:'P: 9g · C: 18g · G: 13g', w:'Las semillas de calabaza son la fuente vegetal más rica en magnesio, mineral que relaja la musculatura lisa uterina y reduce la intensidad de los calambres.' },
+    { e:'🍫', n:'Chocolate negro 85% con almendras y frambuesas', b:'Magnesio · Flavonoides antiinflamatorios · Antioxidantes', t:'5 min', d:'Fácil', k:'280 kcal', m:'P: 7g · C: 20g · G: 19g', w:'El chocolate negro es de las fuentes más ricas en magnesio (500 mg/100g). Sus flavonoides tienen efecto vasodilatador que alivia la dismenorrea y mejora el ánimo.' },
+    { e:'🫖', n:'Infusión de manzanilla, jengibre y canela', b:'Antiinflamatorio · Reduce calambres · Relajante suave', t:'5 min', d:'Fácil', k:'5 kcal', m:'P: 0g · C: 1g · G: 0g', w:'La manzanilla contiene apigenina con propiedades espasmolíticas que relajan el músculo uterino. El jengibre inhibe prostaglandinas. La canela mejora el flujo menstrual.' },
+    { e:'🫐', n:'Bowl de avena con arándanos, chía y miel', b:'Hierro · Omega-3 ALA · Antioxidantes máximos', t:'10 min', d:'Fácil', k:'350 kcal', m:'P: 10g · C: 58g · G: 9g', w:'Los arándanos tienen la mayor capacidad antioxidante (ORAC) de las frutas. La chía aporta omega-3 ALA que el organismo convierte parcialmente en EPA y DHA antiinflamatorios.' },
+    { e:'🥑', n:'Ensalada de judías negras, aguacate y tomate cherry', b:'Hierro · Grasas saludables · Vitamina C', t:'15 min', d:'Fácil', k:'320 kcal', m:'P: 14g · C: 35g · G: 16g', w:'La combinación judías negras (hierro vegetal) + tomate (vitamina C) maximiza la absorción del hierro no hemo. El aguacate añade grasas monoinsaturadas antiinflamatorias.' },
+    { e:'🍳', n:'Tortilla de huevo con acelgas y queso de cabra', b:'Hierro · Proteína completa · Vitamina B12 · Calcio', t:'15 min', d:'Fácil', k:'360 kcal', m:'P: 24g · C: 8g · G: 26g', w:'Los huevos son la fuente más biodisponible de vitamina B12, necesaria para la síntesis de nuevos glóbulos rojos. Las acelgas aportan hierro y calcio para reducir los calambres.' },
+    { e:'🍜', n:'Sopa de miso con tofu y algas wakame', b:'Minerales traza · Proteína vegetal · Microbiota', t:'15 min', d:'Fácil', k:'180 kcal', m:'P: 14g · C: 12g · G: 7g', w:'Las algas wakame son extraordinariamente ricas en minerales: yodo, zinc, hierro y calcio. El miso fermentado mejora la microbiota intestinal que modula la inflamación sistémica.' },
+  ],
+  fol: [
+    { e:'🥣', n:'Bowl de quinoa con edamame, aguacate y huevo pochado', b:'Proteína completa · Zinc · Ácidos grasos esenciales', t:'20 min', d:'Fácil', k:'480 kcal', m:'P: 28g · C: 42g · G: 22g', w:'La quinoa es la única proteína vegetal verdaderamente completa (todos los aminoácidos esenciales). El zinc del edamame es cofactor imprescindible en la maduración folicular.' },
+    { e:'🍗', n:'Pechuga de pollo al limón con boniato asado y brócoli', b:'Proteína magra · Vitamina B6 · DIM (crucíferas)', t:'35 min', d:'Media', k:'420 kcal', m:'P: 38g · C: 35g · G: 10g', w:'El DIM del brócoli dirige el metabolismo del estrógeno hacia formas protectoras. El boniato aporta carbohidratos complejos para las sesiones de fuerza intensas de esta fase.' },
+    { e:'💚', n:'Smoothie verde de espinacas, plátano y crema de almendras', b:'Hierro · Potasio · Vitaminas del grupo B · Proteína', t:'5 min', d:'Fácil', k:'380 kcal', m:'P: 14g · C: 48g · G: 16g', w:'El plátano aporta potasio para la función muscular durante entrenamientos pesados. Las espinacas aportan folato (vitamina B9) necesario para la rápida división celular folicular.' },
+    { e:'🥗', n:'Ensalada de salmón con quinoa y semillas de girasol', b:'Omega-3 · Proteína completa · Zinc · Vitamina E', t:'20 min', d:'Fácil', k:'520 kcal', m:'P: 35g · C: 38g · G: 22g', w:'Las semillas de girasol son ricas en zinc (8 mg/100g), mineral clave para la producción de estradiol ovárico en esta fase. La vitamina E protege las células musculares post-ejercicio.' },
+    { e:'🍄', n:'Revuelto de huevos con champiñones y espárragos', b:'Zinc · Vitamina D · Selenio · Vitaminas del grupo B', t:'15 min', d:'Fácil', k:'320 kcal', m:'P: 22g · C: 12g · G: 20g', w:'Los champiñones son uno de los pocos alimentos vegetales con vitamina D, que potencia la función ovárica y la producción de estrógenos. Los espárragos son la mayor fuente vegetal de ácido fólico.' },
+    { e:'🥞', n:'Tortitas de avena y plátano con frutos del bosque', b:'Carbohidratos complejos · Antioxidantes · Energía sostenida', t:'20 min', d:'Fácil', k:'380 kcal', m:'P: 12g · C: 62g · G: 9g', w:'La avena tiene bajo índice glucémico y proporciona energía estable durante 3–4 horas, ideal para tus entrenamientos de fuerza pesada. Las antocianinas de los frutos rojos reducen el daño muscular.' },
+    { e:'🥦', n:'Wok de tofu con verduras de temporada y arroz integral', b:'Proteína vegetal · Zinc · Carbohidratos complejos · Fibra', t:'25 min', d:'Media', k:'400 kcal', m:'P: 20g · C: 55g · G: 12g', w:'El arroz integral mantiene los niveles de glucemia estables durante el ejercicio prolongado. El tofu aporta fitoestrógenos suaves que apoyan la fase de aumento de estrógeno natural.' },
+    { e:'🫙', n:'Gachas de avena saladas con huevo y espárragos', b:'Fibra · Proteína · Ácido fólico · Energía duradera', t:'15 min', d:'Fácil', k:'360 kcal', m:'P: 18g · C: 45g · G: 12g', w:'Los espárragos son la verdura más rica en ácido fólico, vitamina B esencial para la síntesis de ADN en las células foliculares en rápida división durante esta fase.' },
+    { e:'🍓', n:'Batido de proteínas con fresa, yogur griego y granola', b:'Proteína · Calcio · Antioxidantes · Probióticos', t:'5 min', d:'Fácil', k:'350 kcal', m:'P: 28g · C: 38g · G: 8g', w:'El yogur griego aporta probióticos que mejoran la microbiota intestinal, la cual influye directamente en el metabolismo del estrógeno y la eficiencia en su uso celular.' },
+    { e:'🌮', n:'Tacos de pollo con col lombarda y guacamole', b:'Proteína · Antocianinas · Grasas saludables · Vitamina C', t:'25 min', d:'Media', k:'440 kcal', m:'P: 32g · C: 35g · G: 18g', w:'Las antocianinas de la col lombarda (pigmento morado) son potentes antioxidantes que protegen las células ováricas en división. La vitamina C del guacamole optimiza la absorción del hierro.' },
+  ],
+  ovu: [
+    { e:'🥦', n:'Ensalada de brócoli y coliflor crudos con tahini', b:'DIM (metabolismo estrógenos) · Calcio · Fibra máxima', t:'15 min', d:'Fácil', k:'280 kcal', m:'P: 12g · C: 25g · G: 16g', w:'El DIM (diindolilmetano) de las crucíferas crudas dirige el metabolismo del estrógeno hacia la forma 2-OH-estradiol (protectora) en lugar de 16-OH-estradiol. Comerlas crudas maximiza los glucosinolatos activos.' },
+    { e:'🍤', n:'Ceviche de gambas con aguacate y mango', b:'Proteína ligera · Astaxantina · Vitamina E · Hidratante', t:'20 min', d:'Media', k:'320 kcal', m:'P: 24g · C: 28g · G: 14g', w:'Las gambas contienen astaxantina, el antioxidante más potente conocido (6.000 veces más que la vitamina C). Protege las células del estrés oxidativo asociado al pico de estrógeno.' },
+    { e:'🥒', n:'Gazpacho verde de pepino, aguacate y espinacas', b:'Hidratante · Vitamina E · Antiinflamatorio · Refrescante', t:'10 min', d:'Fácil', k:'180 kcal', m:'P: 5g · C: 15g · G: 12g', w:'Durante la ovulación la temperatura corporal sube 0.3–0.5°C. Alimentos hidratantes y refrescantes ayudan a regular la temperatura y mantener el rendimiento deportivo máximo.' },
+    { e:'🐟', n:'Tartar de salmón con pepino, sésamo y algas nori', b:'Omega-3 · Vitamina E · Selenio · Proteína de alta calidad', t:'20 min', d:'Media', k:'340 kcal', m:'P: 28g · C: 10g · G: 20g', w:'El selenio del salmón y las algas es cofactor de la glutatión peroxidasa, la enzima antioxidante más importante del ovario durante la liberación del óvulo.' },
+    { e:'🫐', n:'Bowl de frutas del bosque con lino molido y kéfir', b:'Lignanos equilibrantes · Antioxidantes máximos · Probióticos', t:'5 min', d:'Fácil', k:'220 kcal', m:'P: 10g · C: 32g · G: 6g', w:'Los lignanos del lino molido son fitoestrógenos que compiten suavemente con el estrógeno en sus receptores, ayudando a modular el pico estrogénico propio de la ovulación.' },
+    { e:'🥗', n:'Ensalada de rúcula con nueces, pera y queso feta', b:'Vitamina E · Omega-3 ALA · Calcio · Antioxidantes', t:'10 min', d:'Fácil', k:'340 kcal', m:'P: 12g · C: 22g · G: 24g', w:'Las nueces son la fuente más rica en omega-3 ALA y vitamina E. Ambos nutrientes son necesarios para la integridad de la membrana del folículo ovárico durante la ovulación.' },
+    { e:'🥬', n:'Wrap de lechuga con atún, aguacate y zanahoria', b:'Proteína · Vitamina E · Beta-caroteno · Omega-3', t:'15 min', d:'Fácil', k:'300 kcal', m:'P: 26g · C: 18g · G: 15g', w:'El beta-caroteno de la zanahoria se convierte en vitamina A, esencial para mantener la integridad del epitelio de la trompa de Falopio durante el proceso de ovulación.' },
+    { e:'🥭', n:'Smoothie de mango, cúrcuma y leche de coco', b:'Antiinflamatorio · Vitamina E · Hidratante · Beta-caroteno', t:'5 min', d:'Fácil', k:'280 kcal', m:'P: 4g · C: 42g · G: 11g', w:'La curcumina inhibe las citocinas proinflamatorias que generan el mittelschmerz (dolor de ovulación). El mango aporta un perfil antioxidante muy completo en un solo alimento.' },
+    { e:'🐔', n:'Pollo a la plancha con kale, semillas de calabaza y limón', b:'Proteína · Vitamina K · Zinc · Vitamina C · DIM', t:'20 min', d:'Fácil', k:'380 kcal', m:'P: 36g · C: 18g · G: 16g', w:'El kale es el alimento más nutricionalmente denso: vitamina K, C, calcio, hierro y DIM glucosinolatos, todo en una ración. El zinc de las semillas apoya la ovulación saludable.' },
+    { e:'🥑', n:'Aguacate relleno de salmón ahumado y eneldo', b:'Omega-3 · Vitamina E · Grasas monoinsaturadas · Proteína', t:'10 min', d:'Fácil', k:'360 kcal', m:'P: 22g · C: 8g · G: 28g', w:'La combinación aguacate + salmón aporta todas las formas de ácidos grasos saludables: oleico (aguacate), EPA y DHA (salmón), imprescindibles para la membrana celular del óvulo liberado.' },
+  ],
+  lut: [
+    { e:'🥣', n:'Porridge de avena con plátano, canela y crema de cacahuete', b:'Triptófano → Serotonina · Magnesio · Carbohidratos complejos', t:'10 min', d:'Fácil', k:'420 kcal', m:'P: 14g · C: 58g · G: 16g', w:'El triptófano del plátano y la crema de cacahuete es el precursor directo de la serotonina. El magnesio de la avena actúa como relajante natural del sistema nervioso y reduce la irritabilidad.' },
+    { e:'🍛', n:'Curry de garbanzos con espinacas y leche de coco', b:'Magnesio · Triptófano · Vitamina B6 · Proteína vegetal', t:'30 min', d:'Media', k:'460 kcal', m:'P: 18g · C: 52g · G: 18g', w:'La vitamina B6 de los garbanzos es cofactor en la síntesis de serotonina a partir del triptófano. Además reduce la retención de líquidos típica del dominio de progesterona.' },
+    { e:'🍫', n:'Brownie saludable de batata y cacao puro', b:'Magnesio · Triptófano · Satisface antojos · Carbohidratos', t:'40 min', d:'Media', k:'280 kcal', m:'P: 6g · C: 38g · G: 12g', w:'El antojo de dulce en la fase lútea es fisiológico: el cerebro necesita más glucosa y serotonina. Esta receta satisface ese antojo legítimo con magnesio y carbohidratos de calidad.' },
+    { e:'🦃', n:'Pavo al horno con boniato asado y judías verdes', b:'Triptófano ↑↑ · Vitamina B6 · Magnesio · Proteína magra', t:'45 min', d:'Media', k:'440 kcal', m:'P: 40g · C: 38g · G: 10g', w:'El pavo tiene la concentración más alta de triptófano de todos los alimentos proteicos. Es el alimento estrella para mejorar el humor en la fase lútea y reducir los síntomas depresivos del PMS.' },
+    { e:'🍜', n:'Sopa de miso con wakame y setas shiitake', b:'Triptófano · Magnesio · Probióticos · Warming', t:'20 min', d:'Fácil', k:'180 kcal', m:'P: 12g · C: 18g · G: 5g', w:'El calor de la sopa produce vasodilatación local que reduce los calambres. El miso fermentado apoya la microbiota intestinal, que produce el 90% de la serotonina del organismo.' },
+    { e:'🍫', n:'Chocolate negro 85% con avellanas y cardamomo', b:'Magnesio ↑↑ · Anandamida · Feniletilamina · Antioxidantes', t:'5 min', d:'Fácil', k:'260 kcal', m:'P: 5g · C: 18g · G: 20g', w:'El chocolate negro contiene anandamida (la «molécula de la bienaventuranza») y feniletilamina, dos compuestos neuroactivos que elevan el ánimo y reducen la ansiedad premenstrual.' },
+    { e:'🫖', n:'Infusión de manzanilla, valeriana y pasiflora', b:'Calmante · Anti-PMS · Mejora el sueño · Reduce ansiedad', t:'5 min', d:'Fácil', k:'5 kcal', m:'P: 0g · C: 1g · G: 0g', w:'La valeriana aumenta el GABA cerebral (neurotransmisor inhibidor), reduciendo la ansiedad y mejorando el sueño. La pasiflora tiene efecto ansiolítico comparable a benzodiacepinas suaves, sin efectos secundarios.' },
+    { e:'🌾', n:'Bowl de espelta con setas, edamame y salsa de miso', b:'Vitaminas del grupo B · Magnesio · Triptófano · Proteína', t:'25 min', d:'Media', k:'420 kcal', m:'P: 22g · C: 58g · G: 10g', w:'La espelta es más rica en magnesio y vitaminas B que el trigo común. La vitamina D de las setas, combinada con magnesio, reduce significativamente el dolor y el malestar premenstrual.' },
+    { e:'🍞', n:'Tostadas de centeno con crema de almendras y plátano', b:'Triptófano · Magnesio · Índice glucémico bajo · Serotonina', t:'5 min', d:'Fácil', k:'380 kcal', m:'P: 10g · C: 52g · G: 14g', w:'El pan de centeno tiene bajo índice glucémico, evitando los picos de azúcar que empeoran el PMS. La crema de almendras aporta magnesio y triptófano para la síntesis de serotonina.' },
+    { e:'🟢', n:'Crema de guisantes con menta y yogur griego', b:'Magnesio · Proteína vegetal · Probióticos · Digestiva', t:'20 min', d:'Fácil', k:'240 kcal', m:'P: 16g · C: 28g · G: 7g', w:'La menta tiene propiedades espasmolíticas que alivian la hinchazón abdominal típica de la fase lútea. El calcio del yogur griego reduce el dolor premenstrual según múltiples estudios clínicos.' },
+    { e:'🐟', n:'Salmón al horno con quinoa y espárragos al limón', b:'Omega-3 · Vitamina B6 · Proteína completa · Magnesio', t:'30 min', d:'Fácil', k:'480 kcal', m:'P: 38g · C: 36g · G: 18g', w:'El omega-3 EPA del salmón inhibe la síntesis de prostaglandinas proinflamatorias, previniendo los calambres que llegarán en la siguiente fase menstrual. Ideal como cena preventiva.' },
+    { e:'🥤', n:'Batido de cacao, plátano, leche de avena y espinacas', b:'Magnesio ↑↑ · Triptófano · Hierro · Anti-PMS total', t:'5 min', d:'Fácil', k:'320 kcal', m:'P: 10g · C: 52g · G: 8g', w:'Este batido es el anti-PMS definitivo: cacao (magnesio), plátano (triptófano + potasio), espinacas (hierro + folato). Todo lo que tu cerebro y tu cuerpo necesitan en esta fase, en 5 minutos.' },
+  ],
+};
+
+// =========================================================
+// STATE
+// =========================================================
+const sv = { cy:28, pd:5, 'mc-y':28, 'mc-d':5 };
+const sl = { cy:[21,35], pd:[2,10], 'mc-y':[21,35], 'mc-d':[2,10] };
+let ST = { lp:null, cy:28, pd:5, cm:null, cy2:null, sel:null };
+
+// =========================================================
+// PHASE CALC
+// =========================================================
+function dayInCycle(ref, tgt, len){
+  const diff = Math.floor((tgt - ref) / 86400000);
+  return ((diff % len) + len) % len + 1;
+}
+function phaseOf(day, pd, len){
+  const fe = pd + 8;
+  const oe = Math.round(len / 2) + 2;
+  if(day <= pd) return 'men';
+  if(day <= fe) return 'fol';
+  if(day <= oe) return 'ovu';
+  return 'lut';
+}
+function curPhase(){
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = dayInCycle(ST.lp, t, ST.cy);
+  return { phase: phaseOf(d, ST.pd, ST.cy), day: d };
+}
+function nextPhaseInfo(){
+  const { phase, day } = curPhase();
+  const fe = ST.pd + 8, oe = Math.round(ST.cy/2)+2;
+  const map = { men:[ST.pd+1,'fol'], fol:[fe+1,'ovu'], ovu:[oe+1,'lut'], lut:[ST.cy+1,'men'] };
+  const [nd, np] = map[phase];
+  return { days: nd - day, next: np };
+}
+
+// =========================================================
+// RENDER
+// =========================================================
+function renderHero(){
+  const { phase, day } = curPhase();
+  const p = PH[phase];
+  const dots = Array.from({length:5},(_,i)=>`<div class="e-dot${i<p.energy?' on':''}"></div>`).join('');
+  document.getElementById('phase-hero').className = `phase-hero ${p.heroC}`;
+  document.getElementById('phase-hero').innerHTML = `
+    <div class="ph-emoji">${p.emoji}</div>
+    <div class="ph-badge">DÍA ${day} DE ${ST.cy}</div>
+    <div class="ph-name">${p.name}</div>
+    <div class="ph-days">${p.daysLbl}</div>
+    <div class="ph-stats">
+      <div class="ph-stat">
+        <div class="ph-stat-lbl">Energía</div>
+        <div class="ph-stat-val">${p.energyTxt.split('·')[0].trim()}</div>
+      </div>
+      <div class="ph-stat">
+        <div class="ph-stat-lbl">Entrenamiento</div>
+        <div class="ph-stat-val">${p.tr.int}</div>
+      </div>
+    </div>
+    <div class="e-bar">${dots}</div>
+  `;
+}
+function renderNext(){
+  const { days, next } = nextPhaseInfo();
+  const p = PH[next];
+  document.getElementById('next-card').innerHTML = `
+    <div class="next-icon" style="background:${p.bg}">${p.emoji}</div>
+    <div class="next-txt">
+      <div class="next-lbl">Próxima fase</div>
+      <div class="next-name">${p.name}</div>
+      <div class="next-sub">${p.daysLbl}</div>
+    </div>
+    <div class="next-badge">en ${days} día${days!==1?'s':''}</div>
+  `;
+}
+function renderWheel(){
+  const cx=100,cy=100,r=78,sw=30;
+  const len = ST.cy;
+  const segs = [
+    { col:'#D94F6B', days:ST.pd },
+    { col:'#3D9E6D', days:8 },
+    { col:'#D4921A', days:4 },
+    { col:'#7C4FD4', days:len-ST.pd-12 },
+  ];
+  const circ = 2*Math.PI*r;
+  let cum=0, arcs='';
+  segs.forEach(s=>{
+    const pct=s.days/len;
+    const da=`${pct*circ} ${circ}`;
+    const off=-(cum/len)*circ+circ/4;
+    arcs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.col}" stroke-width="${sw}" stroke-dasharray="${da}" stroke-dashoffset="${off}" opacity=".9"/>`;
+    cum+=s.days;
+  });
+  const { day } = curPhase();
+  const ang=((day-1)/len*360-90)*Math.PI/180;
+  const mx=cx+r*Math.cos(ang), my=cy+r*Math.sin(ang);
+  document.getElementById('c-svg').innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#F0E0EA" stroke-width="${sw}"/>
+    ${arcs}
+    <circle cx="${mx}" cy="${my}" r="9" fill="white" stroke="#1A1A2E" stroke-width="3"/>
+    <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="30" font-weight="900" fill="#1A1A2E" font-family="Inter,sans-serif">${day}</text>
+    <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="10" font-weight="700" fill="#7A7A8C" letter-spacing="2" font-family="Inter,sans-serif">DÍA</text>
+  `;
+  document.getElementById('cl-lbl').textContent = len;
+}
+function renderCal(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(ST.cm===null){ ST.cm=today.getMonth(); ST.cy2=today.getFullYear(); }
+  const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-m').textContent=`${MN[ST.cm]} ${ST.cy2}`;
+  const fd=new Date(ST.cy2,ST.cm,1);
+  const ld=new Date(ST.cy2,ST.cm+1,0);
+  let dow=fd.getDay(); dow=dow===0?6:dow-1;
+  const pMap={'men':'cm','fol':'cf','ovu':'co','lut':'cl'};
+  let html='';
+  for(let i=0;i<dow;i++){
+    const d2=new Date(ST.cy2,ST.cm,-dow+i+1);
+    const ph=phaseOf(dayInCycle(ST.lp,d2,ST.cy),ST.pd,ST.cy);
+    html+=`<div class="cal-cell dim ${pMap[ph]}">${d2.getDate()}</div>`;
+  }
+  for(let d=1;d<=ld.getDate();d++){
+    const date=new Date(ST.cy2,ST.cm,d); date.setHours(0,0,0,0);
+    const ph=phaseOf(dayInCycle(ST.lp,date,ST.cy),ST.pd,ST.cy);
+    const isTd=date.getTime()===today.getTime();
+    html+=`<div class="cal-cell ${isTd?'today-dot':pMap[ph]}">${d}</div>`;
+  }
+  const total=Math.ceil((dow+ld.getDate())/7)*7;
+  let nd=1;
+  for(let i=dow+ld.getDate();i<total;i++){
+    const date=new Date(ST.cy2,ST.cm+1,nd);
+    const ph=phaseOf(dayInCycle(ST.lp,date,ST.cy),ST.pd,ST.cy);
+    html+=`<div class="cal-cell dim ${pMap[ph]}">${nd}</div>`;
+    nd++;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+function renderPanels(){
+  Object.keys(PH).forEach(k=>{
+    const p=PH[k], recs=REC[k];
+    const chips=p.hormones.map(h=>`<span class="h-chip" style="background:${h.bg};color:${h.tc}">${h.lbl}</span>`).join('');
+    const eSegs=Array.from({length:5},(_,i)=>`<div class="e-seg${i<p.energy?` f-${k}`:''}" ></div>`).join('');
+    const trItems=p.tr.items.map(it=>`<li class="tr-item"><div class="tr-bul" style="background:${p.tr.bul}">✓</div><span>${it}</span></li>`).join('');
+    const recCards=recs.map(r=>`
+      <div class="rec-card">
+        <div class="rec-emoji-box" style="background:${p.bg}">${r.e}</div>
+        <div class="rec-body">
+          <div class="rec-name">${r.n}</div>
+          <div class="rec-benefit" style="color:${p.col}">${r.b}</div>
+          <div class="rec-meta">
+            <span class="rec-meta-i">⏱ ${r.t}</span>
+            <span class="rec-meta-i">👩‍🍳 ${r.d}</span>
+            <span class="rec-meta-i">🔥 ${r.k}</span>
+          </div>
+          <div class="rec-macros">${r.m}</div>
+          <div class="rec-why">${r.w}</div>
+        </div>
+      </div>`).join('');
+    document.getElementById(`p-${k}`).innerHTML=`
+      <div class="pi-card">
+        <div class="pi-hdr">
+          <div class="pi-icon" style="background:${p.bg}">${p.emoji}</div>
+          <div>
+            <div class="pi-name" style="color:${p.col}">${p.name}</div>
+            <div class="pi-days">${p.daysLbl}</div>
+          </div>
+        </div>
+        <div class="pi-desc">${p.desc}</div>
+        <div class="h-chips">${chips}</div>
+        <div class="e-sec">
+          <div class="e-lbl"><span>Nivel de energía</span><span style="color:${p.col}">${p.energyTxt}</span></div>
+          <div class="e-bar-main">${eSegs}</div>
+        </div>
+      </div>
+      <div class="tr-card">
+        <div class="tr-hdr">
+          <span class="tr-icon">🏋️‍♀️</span>
+          <span class="tr-title">Entrenamiento de Fuerza</span>
+          <span class="int-badge" style="background:${p.tr.intBg};color:${p.tr.intTc}">${p.tr.int}</span>
+        </div>
+        <div class="tr-focus" style="color:${p.col}">${p.tr.focus}</div>
+        <ul class="tr-list">${trItems}</ul>
+        <div class="tr-note">${p.tr.note}</div>
+      </div>
+      <div class="rec-hdr">
+        <div class="rec-title">Nutrición para la ${p.name.toLowerCase()}</div>
+        <div class="rec-sub">Recetas seleccionadas con criterio endocrinológico para optimizar tus hormonas, energía y recuperación en esta fase.</div>
+      </div>
+      <div class="rec-grid">${recCards}</div>
+      <div class="spacer"></div>
+    `;
+  });
+}
+
+// =========================================================
+// INTERACTIONS
+// =========================================================
+function selPhase(k){
+  document.querySelectorAll('.tab').forEach(t=>t.className='tab');
+  document.querySelector(`[data-p="${k}"]`).className=`tab a-${k}`;
+  document.querySelectorAll('.panel').forEach(p=>p.className='panel');
+  document.getElementById(`p-${k}`).className='panel active';
+  ST.sel=k;
+}
+function prevM(){ ST.cm--; if(ST.cm<0){ST.cm=11;ST.cy2--;} renderCal(); }
+function nextM(){ ST.cm++; if(ST.cm>11){ST.cm=0;ST.cy2++;} renderCal(); }
+function adj(id,d){
+  sv[id]=Math.min(sl[id][1],Math.max(sl[id][0],sv[id]+d));
+  const elId = id==='cy'?'cy-v': id==='pd'?'pd-v': id==='mc-y'?'mc-y-v':'mc-d-v';
+  const el=document.getElementById(elId);
+  if(el) el.textContent=sv[id];
+}
+
+// =========================================================
+// SETUP / MODAL
+// =========================================================
+function saveSetup(){
+  const v=document.getElementById('lpd').value;
+  if(!v){ alert('Por favor, introduce la fecha de inicio de tu última regla'); return; }
+  ST.lp=new Date(v+'T00:00:00');
+  ST.cy=sv['cy']; ST.pd=sv['pd'];
+  localStorage.setItem('fc_cycle',JSON.stringify({lp:v,cy:ST.cy,pd:ST.pd}));
+  initMain();
+}
+function initMain(){
+  renderHero(); renderNext(); renderWheel(); renderCal(); renderPanels();
+  const { phase } = curPhase(); selPhase(phase);
+  document.getElementById('s-setup').className='screen';
+  document.getElementById('s-main').className='screen active';
+  window.scrollTo(0,0);
+}
+function showSetup(){
+  document.getElementById('s-main').className='screen';
+  document.getElementById('s-setup').className='screen active';
+}
+function goBack(){ window.history.back(); }
+function openModal(){
+  if(ST.lp) document.getElementById('m-lpd').value=ST.lp.toISOString().split('T')[0];
+  sv['mc-y']=ST.cy; sv['mc-d']=ST.pd;
+  document.getElementById('mc-y-v').textContent=ST.cy;
+  document.getElementById('mc-d-v').textContent=ST.pd;
+  document.getElementById('modal').className='modal open';
+}
+function closeModalOut(e){ if(e.target===document.getElementById('modal')) document.getElementById('modal').className='modal'; }
+function saveModal(){
+  const v=document.getElementById('m-lpd').value;
+  if(!v) return;
+  ST.lp=new Date(v+'T00:00:00'); ST.cy=sv['mc-y']; ST.pd=sv['mc-d']; ST.cm=null;
+  localStorage.setItem('fc_cycle',JSON.stringify({lp:v,cy:ST.cy,pd:ST.pd}));
+  document.getElementById('modal').className='modal';
+  initMain();
+}
+
+// =========================================================
+// INIT
+// =========================================================
+(function init(){
+  const td=new Date().toISOString().split('T')[0];
+  document.getElementById('lpd').value=td;
+  const s=localStorage.getItem('fc_cycle');
+  if(s){
+    const d=JSON.parse(s);
+    ST.lp=new Date(d.lp+'T00:00:00'); ST.cy=d.cy; ST.pd=d.pd;
+    sv['cy']=d.cy; sv['pd']=d.pd;
+    initMain();
+  }
+})();
+</script>
+</body>
+</html>
