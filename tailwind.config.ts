@@ -45,6 +45,8 @@ const config: Config = {
         "fade-up": "fadeUp 0.7s ease forwards",
         "fade-in": "fadeIn 0.5s ease forwards",
         "pulse-brand": "pulseBrand 3s ease-in-out infinite",
+        "marquee": "marquee 35s linear infinite",
+        "marquee-reverse": "marqueeReverse 28s linear infinite",
       },
       keyframes: {
         fadeUp: {
@@ -58,6 +60,14 @@ const config: Config = {
         pulseBrand: {
           "0%, 100%": { boxShadow: "0 0 20px rgba(202,255,0,0.2)" },
           "50%": { boxShadow: "0 0 50px rgba(202,255,0,0.5)" },
+        },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        marqueeReverse: {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
         },
       },
     },
