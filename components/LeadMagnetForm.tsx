@@ -1,0 +1,187 @@
+"use client";
+
+import { useState } from "react";
+
+type Status = "idle" | "loading" | "success" | "already" | "error";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export default function LeadMagnetForm() {
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const driveUrl = process.env.NEXT_PUBLIC_DRIVE_FOLDER_URL;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMessage("");
+
+    const trimmed = email.trim();
+    if (!EMAIL_REGEX.test(trimmed)) {
+      setStatus("error");
+      setErrorMessage("Introduce un email válido.");
+      return;
+    }
+
+    setStatus("loading");
+
+    try {
+      const res = await fetch("/api/lead-magnet/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed, website }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        alreadyActive?: boolean;
+        message?: string;
+      };
+
+      if (!res.ok || !data.ok) {
+        setStatus("error");
+        setErrorMessage(
+          data.message ||
+            "No hemos podido procesar tu email. Inténtalo de nuevo en unos minutos."
+        );
+        return;
+      }
+
+      setStatus(data.alreadyActive ? "already" : "success");
+    } catch {
+      setStatus("error");
+      setErrorMessage(
+        "No hemos podido procesar tu email. Inténtalo de nuevo en unos minutos."
+      );
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="card-dark text-center">
+        <div className="text-4xl mb-4">📬</div>
+        <h2 className="font-black text-white text-2xl mb-3">
+          Revisa tu correo
+        </h2>
+        <p className="text-[#A0A0A0] leading-relaxed">
+          Te hemos enviado un email a{" "}
+          <span className="text-white font-semibold">{email}</span>. Haz clic
+          en el enlace de confirmación para acceder a los recursos.
+        </p>
+        <p className="text-xs text-[#666666] mt-5">
+          ¿No lo ves? Revisa la carpeta de spam o promociones.
+        </p>
+      </div>
+    );
+  }
+
+  if (status === "already") {
+    return (
+      <div className="card-dark text-center">
+        <div className="text-4xl mb-4">✅</div>
+        <h2 className="font-black text-white text-2xl mb-3">
+          Ya estás suscrita
+        </h2>
+        <p className="text-[#A0A0A0] leading-relaxed mb-6">
+          Aquí tienes el acceso directo a la carpeta de recursos.
+        </p>
+        {driveUrl ? (
+          <a
+            href={driveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-brand"
+          >
+            Abrir carpeta de recursos
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        ) : (
+          <p className="text-sm text-[#666666]">
+            En breve recibirás el enlace por email.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="w-full">
+      <label htmlFor="lm-email" className="sr-only">
+        Tu correo electrónico
+      </label>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          id="lm-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="tu@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={status === "loading"}
+          required
+          className="flex-1 px-5 py-3.5 rounded-xl bg-[#161616] border border-[#252525] text-white placeholder:text-[#666666] focus:border-[#CAFF00] focus:outline-none transition-colors disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="btn-brand whitespace-nowrap disabled:opacity-70 disabled:cursor-wait"
+        >
+          {status === "loading" ? "Enviando…" : "Quiero los recursos"}
+          {status !== "loading" && (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Honeypot: hidden from real users, often filled by bots */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+        }}
+      />
+
+      {status === "error" && errorMessage && (
+        <p className="text-sm text-red-400 mt-3" role="alert">
+          {errorMessage}
+        </p>
+      )}
+
+      <p className="text-xs text-[#666666] mt-4 leading-relaxed">
+        Sin spam. Solo te enviaremos contenido útil sobre entrenamiento y
+        nutrición. Puedes darte de baja cuando quieras.
+      </p>
+    </form>
+  );
+}
