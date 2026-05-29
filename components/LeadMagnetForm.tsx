@@ -191,10 +191,6 @@ export default function LeadMagnetForm() {
             </p>
           )}
 
-          <p className="text-sm text-[#8B8B8B] mt-4 leading-relaxed">
-            Sin spam. Solo te enviaremos contenido útil sobre entrenamiento y
-            nutrición. Puedes darte de baja cuando quieras.
-          </p>
         </form>
       )}
     </div>

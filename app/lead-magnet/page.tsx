@@ -30,7 +30,7 @@ export default function LeadMagnetPage() {
             className="w-1.5 h-1.5 rounded-full bg-[#CAFF00] motion-safe:animate-pulse"
             aria-hidden="true"
           />
-          +400 mujeres ya en el programa · ⭐⭐⭐⭐⭐ Upstore
+          1000 mujeres han conseguido su cambio gracias al método Aurena
         </div>
 
         <h1
