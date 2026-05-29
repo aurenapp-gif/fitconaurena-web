@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
+import { sbInsert, sbUpload, sbUpsert, safePath } from "@/lib/supabase";
+import { plusOneMonthISO } from "@/lib/profile";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
     const path = safePath(`${type}-${file.name || "plan"}`);
     await sbUpload("planes", path, await file.arrayBuffer(), file.type || "application/octet-stream");
     await sbInsert("plans", { member_email: member, type, title: title || null, file_path: path });
+    // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes.
+    await sbUpsert("profiles", { email: member, renewal_date: plusOneMonthISO(), updated_at: new Date().toISOString() });
   } catch (err) {
     console.error("[clientas/plan]", err);
     return NextResponse.json({ error: "No se pudo subir el plan." }, { status: 500 });
