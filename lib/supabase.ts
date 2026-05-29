@@ -12,9 +12,20 @@ function headers(extra: Record<string, string> = {}) {
   return { apikey: SECRET, Authorization: `Bearer ${SECRET}`, ...extra };
 }
 
+/** fetch con timeout: si Supabase no responde, aborta en vez de colgarse. */
+async function fetchT(url: string, init: RequestInit, ms = 8000): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 /** SELECT vía PostgREST. `query` es la query string (filtros, select, order). */
 export async function sbSelect<T = unknown>(table: string, query = ""): Promise<T[]> {
-  const res = await fetch(`${URL_BASE}/rest/v1/${table}${query ? `?${query}` : ""}`, {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}${query ? `?${query}` : ""}`, {
     headers: headers(),
     cache: "no-store",
   });
@@ -24,7 +35,7 @@ export async function sbSelect<T = unknown>(table: string, query = ""): Promise<
 
 /** INSERT y devuelve la fila creada. */
 export async function sbInsert<T = unknown>(table: string, row: object): Promise<T> {
-  const res = await fetch(`${URL_BASE}/rest/v1/${table}`, {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
     body: JSON.stringify(row),
@@ -36,7 +47,7 @@ export async function sbInsert<T = unknown>(table: string, row: object): Promise
 
 /** UPDATE con filtro PostgREST (ej: `id=eq.${id}`). */
 export async function sbUpdate(table: string, filter: string, patch: object): Promise<void> {
-  const res = await fetch(`${URL_BASE}/rest/v1/${table}?${filter}`, {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}?${filter}`, {
     method: "PATCH",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify(patch),
@@ -51,7 +62,7 @@ export async function sbUpload(
   data: ArrayBuffer,
   contentType: string
 ): Promise<void> {
-  const res = await fetch(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, {
+  const res = await fetchT(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": contentType, "x-upsert": "true" }),
     body: new Uint8Array(data),
@@ -61,7 +72,7 @@ export async function sbUpload(
 
 /** Genera una URL firmada temporal para descargar un objeto privado. */
 export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600): Promise<string> {
-  const res = await fetch(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
+  const res = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ expiresIn }),
