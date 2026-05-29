@@ -41,6 +41,10 @@ export default function AplicarPage() {
           </div>
 
           {/* Formulario de calificación */}
+          <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
+             style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
+            Empieza aquí
+          </p>
           <div className="card-dark p-6 md:p-10 !transform-none">
             <p className="text-center text-sm text-[#A0A0A0] mb-8">
               Responde unas preguntas rápidas para ver si encajas en el programa. Tardas
