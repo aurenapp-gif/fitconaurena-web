@@ -1,0 +1,107 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import type { Metadata } from "next";
+import Navbar from "@/components/Navbar";
+import { SESSION_COOKIE, verifySession } from "@/lib/members";
+
+export const metadata: Metadata = {
+  title: "Área de miembros",
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-dynamic";
+
+const DRIVE_URL =
+  process.env.NEXT_PUBLIC_GUIDE_URL ??
+  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
+const WHATSAPP_URL = `https://wa.me/34607477339?text=${encodeURIComponent(
+  "Hola, soy miembro y necesito ayuda"
+)}`;
+
+function Card({
+  title,
+  desc,
+  children,
+  soon,
+}: {
+  title: string;
+  desc: string;
+  children?: React.ReactNode;
+  soon?: boolean;
+}) {
+  return (
+    <div className="card-dark p-6 !transform-none flex flex-col">
+      <div className="flex items-center gap-2 mb-2">
+        <h3 className="font-bold text-white">{title}</h3>
+        {soon && (
+          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-[#252525] text-[#666666]">
+            Próximamente
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-[#A0A0A0] mb-4 flex-1">{desc}</p>
+      {children}
+    </div>
+  );
+}
+
+export default function MiembrosPage() {
+  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
+  if (!email) redirect("/miembros/acceso");
+
+  return (
+    <>
+      <Navbar />
+      <main className="relative pt-16 overflow-hidden min-h-screen">
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+        />
+        <div className="container-wide relative z-10 py-16">
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
+            <div>
+              <span className="section-tag">Área de miembros</span>
+              <h1 className="section-title">Hola de nuevo 👋</h1>
+              <p className="text-sm text-[#666666] mt-1">{email}</p>
+            </div>
+            <a href="/api/miembros/salir" className="btn-outline text-sm px-5 py-2.5">
+              Cerrar sesión
+            </a>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
+            <Card
+              title="Contenido y recursos"
+              desc="Tus guías, vídeos y material del programa, todo en un sitio."
+            >
+              <a href={DRIVE_URL} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-6 py-3">
+                Abrir contenido
+              </a>
+            </Card>
+
+            <Card
+              title="Reservar / soporte"
+              desc="¿Dudas o quieres agendar tu sesión? Escríbenos por WhatsApp."
+            >
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-6 py-3">
+                Contactar por WhatsApp
+              </a>
+            </Card>
+
+            <Card
+              title="Comunidad"
+              desc="Comparte tus wins diarias y tus cambios con el resto de la comunidad."
+              soon
+            />
+
+            <Card
+              title="Seguimiento / check-ins"
+              desc="Sube tu peso, fotos y formularios semanales y sigue tu progreso."
+              soon
+            />
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
