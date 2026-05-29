@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ProfileForm from "@/components/ProfileForm";
-import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import type { Questionnaire } from "@/lib/profile";
 
@@ -17,6 +17,7 @@ type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | n
 export default async function PerfilPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
+  const admin = isAdmin(email);
 
   let profile: Profile | null = null;
   let plans: Plan[] = [];
@@ -48,7 +49,8 @@ export default async function PerfilPage() {
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
-          {/* Mi plan */}
+          {/* Mi plan (solo clientas) */}
+          {!admin && (
           <div className="card-dark p-6 !transform-none mb-8">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="font-bold text-white">Mi plan</h2>
@@ -75,11 +77,13 @@ export default async function PerfilPage() {
               </div>
             </div>
           </div>
+          )}
 
           <ProfileForm
             initialName={profile?.display_name ?? ""}
             initialQuestionnaire={profile?.questionnaire ?? {}}
             photoUrl={photoUrl}
+            admin={admin}
           />
         </div>
       </main>

@@ -8,10 +8,12 @@ export default function ProfileForm({
   initialName,
   initialQuestionnaire,
   photoUrl,
+  admin = false,
 }: {
   initialName: string;
   initialQuestionnaire: Questionnaire;
   photoUrl?: string;
+  admin?: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -79,15 +81,27 @@ export default function ProfileForm({
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs text-[#A0A0A0] mb-1">Nombre (cómo te verán en la comunidad)</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className={inputCls} maxLength={60} />
-          <label className="inline-flex items-center gap-2 mt-3 text-sm text-[#A0A0A0] cursor-pointer">
-            <span className="rounded-lg bg-[#CAFF00] text-[#0A0A0A] font-bold px-3 py-1.5 text-xs">{photoBusy ? "Subiendo…" : "Cambiar foto"}</span>
-            <input type="file" accept="image/*" className="hidden" disabled={photoBusy}
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
-          </label>
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
+            <label className="inline-flex items-center gap-2 text-sm text-[#A0A0A0] cursor-pointer">
+              <span className="rounded-lg bg-[#CAFF00] text-[#0A0A0A] font-bold px-3 py-1.5 text-xs">{photoBusy ? "Subiendo…" : "Cambiar foto"}</span>
+              <input type="file" accept="image/*" className="hidden" disabled={photoBusy}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
+            </label>
+            {admin && (
+              <>
+                <button type="submit" disabled={status === "saving"} className="btn-brand text-xs px-4 py-2 disabled:opacity-60">
+                  {status === "saving" ? "Guardando…" : "Guardar nombre"}
+                </button>
+                {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
+                {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Cuestionario */}
+      {/* Cuestionario (solo clientas) */}
+      {!admin && (
       <div className="card-dark p-6 !transform-none">
         <h3 className="font-bold text-white mb-1">Tu cuestionario</h3>
         <p className="text-sm text-[#A0A0A0] mb-5">Estos datos nos sirven para crear tu plan personalizado.</p>
@@ -116,6 +130,7 @@ export default function ProfileForm({
           {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
         </div>
       </div>
+      )}
     </form>
   );
 }

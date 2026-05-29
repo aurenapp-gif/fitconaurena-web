@@ -8,6 +8,9 @@ type Post = {
   body: string;
   created_at: string;
   canDelete: boolean;
+  isCoach?: boolean;
+  likes: number;
+  liked: boolean;
   photoUrl?: string;
   avatarUrl?: string;
 };
@@ -73,6 +76,20 @@ export default function CommunityFeed() {
     load(cat);
   }
 
+  async function toggleLike(id: string) {
+    // Optimista: actualiza al instante, confirma con el servidor.
+    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? -1 : 1) } : p)));
+    try {
+      const res = await fetch("/api/miembros/comunidad/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const d = await res.json();
+      if (d?.ok) setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, liked: d.liked, likes: d.count } : p)));
+    } catch { /* la siguiente recarga corrige */ }
+  }
+
   return (
     <div>
       {/* Pestañas */}
@@ -118,6 +135,9 @@ export default function CommunityFeed() {
                     )}
                   </div>
                   <span className="font-bold text-white truncate">{p.author_name}</span>
+                  {p.isCoach && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CAFF00] text-[#0A0A0A] shrink-0">COACH</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-[10px] text-[#666666]">
@@ -135,6 +155,16 @@ export default function CommunityFeed() {
                   <img src={p.photoUrl} alt="" className="max-h-72 rounded-lg border border-[#252525]" />
                 </a>
               )}
+              <button
+                onClick={() => toggleLike(p.id)}
+                className={`mt-3 inline-flex items-center gap-1.5 text-sm transition-colors ${p.liked ? "text-[#CAFF00]" : "text-[#666666] hover:text-white"}`}
+                aria-label="Me gusta"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill={p.liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                  <path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" />
+                </svg>
+                {p.likes > 0 ? p.likes : ""} Me gusta
+              </button>
             </div>
           ))
         )}
