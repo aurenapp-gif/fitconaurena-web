@@ -10,6 +10,9 @@ export default function MemberLogin({ error }: { error?: boolean }) {
   const [message, setMessage] = useState(
     error ? "El enlace no es válido o ha caducado. Pide uno nuevo." : ""
   );
+  const [code, setCode] = useState("");
+  const [codeStatus, setCodeStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [codeMsg, setCodeMsg] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,25 +31,68 @@ export default function MemberLogin({ error }: { error?: boolean }) {
         setMessage(data.error ?? "Algo ha fallado. Inténtalo de nuevo.");
         return;
       }
-      setStatus("sent");
-      setEmail("");
+      setStatus("sent"); // mantenemos el email para verificar el código
     } catch {
       setStatus("error");
       setMessage("No hemos podido conectar. Inténtalo de nuevo.");
     }
   }
 
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (codeStatus === "loading") return;
+    setCodeStatus("loading");
+    setCodeMsg("");
+    try {
+      const res = await fetch("/api/miembros/codigo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCodeStatus("error");
+        setCodeMsg(data.error ?? "Código incorrecto.");
+        return;
+      }
+      window.location.href = "/miembros";
+    } catch {
+      setCodeStatus("error");
+      setCodeMsg("No hemos podido conectar.");
+    }
+  }
+
   if (status === "sent") {
     return (
-      <div
-        role="status"
-        className="max-w-md mx-auto rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5 px-6 py-5 text-center"
-      >
-        <p className="font-bold text-white mb-1">Revisa tu correo</p>
-        <p className="text-sm text-[#A0A0A0]">
-          Si tu email está dado de alta como miembro, te hemos enviado un enlace de acceso.
-          Caduca en 15 minutos.
-        </p>
+      <div className="max-w-md mx-auto">
+        <div role="status" className="rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5 px-6 py-5 text-center mb-5">
+          <p className="font-bold text-white mb-1">Revisa tu correo 📩</p>
+          <p className="text-sm text-[#A0A0A0]">
+            Te hemos enviado un <strong className="text-white">enlace</strong> (para el navegador) y un
+            <strong className="text-white"> código</strong> (para la app). Caducan en 15 minutos.
+          </p>
+        </div>
+        <form onSubmit={verifyCode}>
+          <p className="text-sm text-[#A0A0A0] mb-2 text-center">¿Usas la app? Escribe aquí tu código:</p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              inputMode="numeric"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000"
+              aria-label="Código de acceso"
+              className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-center text-lg tracking-[0.4em] text-white placeholder:text-[#444] outline-none focus:border-[#CAFF00]"
+            />
+            <button type="submit" disabled={codeStatus === "loading" || code.length !== 6}
+              className="btn-brand text-sm px-6 py-3.5 disabled:opacity-60 disabled:cursor-not-allowed">
+              {codeStatus === "loading" ? "Entrando…" : "Entrar"}
+            </button>
+          </div>
+          {codeStatus === "error" && <p role="alert" className="mt-3 text-sm text-[#FF6B6B]">{codeMsg}</p>}
+          <button type="button" onClick={() => { setStatus("idle"); setCode(""); }} className="mt-4 text-xs text-[#666666] hover:text-white">
+            ← Usar otro email
+          </button>
+        </form>
       </div>
     );
   }
@@ -76,7 +122,7 @@ export default function MemberLogin({ error }: { error?: boolean }) {
         <p role="alert" className="mt-3 text-sm text-[#FF6B6B]">{message}</p>
       )}
       <p className="mt-4 text-xs text-[#666666]">
-        Acceso solo para miembros del programa. Te enviaremos un enlace a tu correo.
+        Acceso solo para miembros. Te enviamos un enlace y un código a tu correo.
       </p>
     </form>
   );
