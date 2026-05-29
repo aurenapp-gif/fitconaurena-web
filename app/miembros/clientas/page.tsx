@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
+import AddClient from "@/components/AddClient";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
 import { sbSelect } from "@/lib/supabase";
@@ -35,6 +36,8 @@ export default async function ClientasPage() {
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
+
+          <AddClient />
 
           {members.length === 0 ? (
             <p className="text-[#A0A0A0]">Aún no tienes clientas dadas de alta (grupo &quot;Miembros&quot; en MailerLite).</p>

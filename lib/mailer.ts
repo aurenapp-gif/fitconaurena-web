@@ -130,6 +130,49 @@ export async function sendNewMessageNotice(
   await send({ to, subject, html, text });
 }
 
+/** Email de bienvenida con acceso (al dar de alta a una clienta). */
+export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<void> {
+  const subject = "¡Bienvenida a Fit con Aurena! 💚 Tu área privada";
+  const text =
+    `¡Bienvenida!\n\nYa tienes acceso a tu área privada de Fit con Aurena: tu perfil, tu plan, ` +
+    `tus check-ins, la comunidad y tu chat directo conmigo.\n\nEntra aquí: ${loginUrl}\n\nNos vemos dentro 💪`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 28px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">¡Bienvenida! 💚</h1>
+      <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
+        Ya tienes acceso a tu <strong style="color:#fff;">área privada</strong>: tu perfil, tu plan de
+        nutrición y entrenamiento, tus check-ins, la comunidad y tu chat directo conmigo.
+      </p>
+      <a href="${loginUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
+        Entrar a mi área
+      </a>
+      <p style="color:#666;font-size:13px;line-height:1.6;margin:30px 0 0;">
+        ¿El botón no funciona? Entra en fitconaurena.com/miembros/acceso con este mismo email.
+      </p>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
+/** Avisa a la clienta de que su coach respondió a su check-in. */
+export async function sendCheckinReplyEmail(to: string): Promise<void> {
+  const subject = "Tu coach ha respondido a tu check-in 💬";
+  const url = "https://fitconaurena.com/miembros/checkins";
+  const text = `Tu coach ha respondido a tu último check-in. Entra a verlo: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Tu coach te ha respondido 💬</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Aurena ha comentado tu último check-in. Entra para verlo.</p>
+      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi check-in</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 /** Envía el enlace mágico de acceso al área de miembros. */
 export async function sendMagicLink(to: string, loginUrl: string): Promise<void> {
   const subject = "Tu acceso al área de miembros — Fit con Aurena";
