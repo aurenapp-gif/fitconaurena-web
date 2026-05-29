@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     email?: unknown;
     telefono?: unknown;
     answers?: unknown;
+    motivacion?: unknown;
     website?: unknown;
   };
   try {
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
   const nombre = typeof body.nombre === "string" ? body.nombre.trim() : "";
   const telefono = typeof body.telefono === "string" ? body.telefono.trim() : "";
   const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
+  const motivacion = typeof body.motivacion === "string" ? body.motivacion.trim().slice(0, 2000) : "";
   const answers = (body.answers && typeof body.answers === "object" ? body.answers : {}) as Answers;
 
   if (!nombre || nombre.length > 100) {
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest) {
       telefono,
       qualified,
       answersText: answersToText(answers),
+      motivacion,
     });
     notified = true;
   } catch (err) {

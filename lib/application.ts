@@ -1,5 +1,6 @@
 /**
- * Cuestionario de calificación del servicio (landing /aplicar).
+ * Cuestionario de calificación del servicio (landing /aplicar), tipo quiz
+ * paso a paso.
  *
  * Cada opción puede marcar `disqualifies: true`. Una persona CALIFICA si
  * responde todas las preguntas y NINGUNA de sus respuestas descalifica.
@@ -12,11 +13,13 @@ export type Question = { id: string; label: string; options: Option[] };
 
 export const QUESTIONS: Question[] = [
   {
-    id: "genero",
-    label: "¿Eres mujer?",
+    id: "objetivo",
+    label: "¿Cuál es tu objetivo?",
     options: [
-      { value: "si", label: "Sí" },
-      { value: "no", label: "No", disqualifies: true },
+      { value: "perder", label: "Perder peso" },
+      { value: "tonificar", label: "Tonificar y definir" },
+      { value: "habitos", label: "Mejorar mis hábitos y energía" },
+      { value: "transformacion", label: "Una transformación completa (cuerpo y mente)" },
     ],
   },
   {
@@ -24,60 +27,45 @@ export const QUESTIONS: Question[] = [
     label: "¿Qué edad tienes?",
     options: [
       { value: "-25", label: "Menos de 25", disqualifies: true },
-      { value: "25-40", label: "Entre 25 y 40 años" },
+      { value: "25-30", label: "25 - 30" },
+      { value: "31-35", label: "31 - 35" },
+      { value: "36-40", label: "36 - 40" },
       { value: "+40", label: "Más de 40", disqualifies: true },
     ],
   },
   {
-    id: "objetivo",
-    label: "¿Cuánto peso te gustaría perder?",
+    id: "invertir",
+    label: "¿Estás lista para invertir en ti, dedicando tiempo y dinero a tu transformación?",
     options: [
-      { value: "-5", label: "Menos de 5 kg" },
-      { value: "5-9", label: "Entre 5 y 9 kg" },
-      { value: "+9", label: "Más de 9 kg" },
-    ],
-  },
-  {
-    id: "dietas",
-    label: "¿Has hecho dietas antes sin resultados duraderos?",
-    options: [
-      { value: "varias", label: "Sí, varias veces" },
-      { value: "alguna", label: "Alguna vez" },
-      { value: "no", label: "No, nunca" },
-    ],
-  },
-  {
-    id: "tiempo",
-    label: "¿Cuánto tiempo tienes en tu día a día?",
-    options: [
-      { value: "poco", label: "Muy poco, voy a tope" },
-      { value: "algo", label: "Algo, si me organizo" },
-      { value: "bastante", label: "Bastante" },
-    ],
-  },
-  {
-    id: "compromiso",
-    label: "¿Estás dispuesta a invertir en un acompañamiento 1:1 para conseguirlo?",
-    options: [
-      { value: "si", label: "Sí, quiero resultados de una vez" },
-      { value: "quiza", label: "Depende de la propuesta" },
+      { value: "si", label: "Sí, estoy decidida" },
+      { value: "considerando", label: "Lo estoy considerando seriamente" },
       { value: "no", label: "No, ahora mismo no", disqualifies: true },
     ],
   },
   {
-    id: "inicio",
-    label: "¿Cuándo te gustaría empezar?",
+    id: "region",
+    label: "¿Desde dónde nos contactas?",
     options: [
-      { value: "ya", label: "Ya, cuanto antes" },
-      { value: "mes", label: "Este mes" },
-      { value: "curioseando", label: "Solo estoy curioseando", disqualifies: true },
+      { value: "europa", label: "Europa" },
+      { value: "latam", label: "Latinoamérica" },
+      { value: "otro", label: "Otro" },
+    ],
+  },
+  {
+    id: "situacion",
+    label: "¿Cuál es tu situación actual?",
+    options: [
+      { value: "trabajo", label: "Trabajo" },
+      { value: "no_trabajo", label: "No trabajo ahora mismo" },
+      { value: "estudio", label: "Estudio" },
+      { value: "padres", label: "Mi economía depende de mis padres", disqualifies: true },
     ],
   },
 ];
 
 export type Answers = Record<string, string>;
 
-/** Devuelve true si respondió todo y ninguna respuesta descalifica. */
+/** Devuelve true si respondió todas y ninguna respuesta descalifica. */
 export function isQualified(answers: Answers): boolean {
   return QUESTIONS.every((q) => {
     const opt = q.options.find((o) => o.value === answers[q.id]);
