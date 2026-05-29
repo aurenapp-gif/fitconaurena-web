@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { createToken } from "@/lib/token";
 import { sendVerificationEmail } from "@/lib/mailer";
+import { rateLimit } from "@/lib/ratelimit";
 
 // El token usa la API crypto de Node.
 export const runtime = "nodejs";
@@ -10,12 +11,49 @@ function siteOrigin(req: NextRequest): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
 }
 
+function clientIp(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for");
+  return (xff?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
+}
+
+// Acepta solo peticiones del propio sitio (mismo host). Si no hay cabecera
+// Origin (algunos clientes no la envían) se permite y queda el rate limit.
+function sameOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+  try {
+    return new URL(origin).host === req.headers.get("host");
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
+  if (!sameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
+
+  // Límite anti-abuso: máx. 5 envíos por IP cada 10 minutos.
+  const ip = clientIp(req);
+  if (!rateLimit(`lead:${ip}`, 5, 10 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
+
+  // Honeypot: campo oculto que un humano nunca rellena. Si viene con contenido,
+  // es un bot: respondemos "ok" sin enviar nada.
+  const honeypot = (body as { website?: unknown })?.website;
+  if (typeof honeypot === "string" && honeypot.trim() !== "") {
+    return NextResponse.json({ ok: true });
   }
 
   const rawEmail = (body as { email?: unknown })?.email;

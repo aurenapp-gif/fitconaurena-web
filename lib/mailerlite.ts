@@ -1,28 +1,27 @@
 /**
- * MailerLite integration for the lead-magnet flow.
+ * Integración con MailerLite (Plan B: doble opt-in propio).
  *
- * MailerLite is the source of truth: it stores subscribers AND sends the
- * double opt-in confirmation email. We just upsert the subscriber into a group.
+ * MailerLite se usa SOLO como almacén de los suscriptores ya confirmados y como
+ * herramienta de email marketing posterior. La verificación del email y el
+ * envío del correo de confirmación los hace nuestro propio sistema (ver
+ * lib/mailer.ts + /api/confirm). Por eso aquí damos de alta como "active":
+ * ya tenemos prueba de consentimiento.
  *
- * IMPORTANT — for the confirmation email to be sent, the MailerLite account
- * must have "Double opt-in for API and integrations" enabled
- * (Settings → Subscribe settings). With it on, a subscriber created with the
- * default status is left as `unconfirmed` and receives the confirmation email;
- * they cannot be emailed anything else until they confirm. This is what
- * guarantees the address is genuinely theirs and keeps future mail out of spam.
- *
- * Required env:
- *   MAILERLITE_API_KEY  — API token (Integrations → API).
- * Optional env:
- *   MAILERLITE_GROUP_ID — group to add the subscriber to (recommended, so an
- *                         automation can deliver the guide on confirmation).
+ * Variables:
+ *   MAILERLITE_API_KEY  — token de la API (obligatorio).
+ *   MAILERLITE_GROUP_ID — grupo destino (por defecto "aurena contenido").
  */
 
 const API_URL = "https://connect.mailerlite.com/api/subscribers";
+const DEFAULT_GROUP_ID = "188798542205158754"; // "aurena contenido"
 
 export type AddSubscriberResult =
   | { ok: true }
   | { ok: false; status: number; message: string };
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 export async function addSubscriber(email: string): Promise<AddSubscriberResult> {
   const apiKey = process.env.MAILERLITE_API_KEY;
@@ -30,35 +29,49 @@ export async function addSubscriber(email: string): Promise<AddSubscriberResult>
     return { ok: false, status: 500, message: "MAILERLITE_API_KEY no configurada." };
   }
 
-  // Grupo "aurena contenido" por defecto (no es un secreto). Se puede
-  // sobreescribir con MAILERLITE_GROUP_ID en el entorno.
-  const groupId = process.env.MAILERLITE_GROUP_ID ?? "188798542205158754";
-  // Solo llamamos a esta función DESPUÉS de que el usuario haya confirmado su
-  // email mediante nuestro propio doble opt-in (enlace firmado). Por eso lo
-  // damos de alta directamente como "active" (confirmado): tenemos prueba de
-  // consentimiento, no se envía el email de confirmación de MailerLite, y el
-  // suscriptor queda listo para recibir email marketing desde MailerLite.
+  const groupId = process.env.MAILERLITE_GROUP_ID ?? DEFAULT_GROUP_ID;
   const body: Record<string, unknown> = { email, status: "active" };
   if (groupId) body.groups = [groupId];
 
-  let res: Response;
-  try {
-    res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    return { ok: false, status: 502, message: `No se pudo contactar con MailerLite: ${String(err)}` };
+  // Reintentos para no perder leads ante caídas puntuales o límites de tasa.
+  // Reintentamos solo en errores de red, 429 y 5xx (transitorios).
+  const MAX_ATTEMPTS = 3;
+  let lastStatus = 0;
+  let lastMessage = "Error desconocido";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      lastStatus = 502;
+      lastMessage = `No se pudo contactar con MailerLite: ${String(err)}`;
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(attempt * 500);
+        continue;
+      }
+      break;
+    }
+
+    // 200 = actualizado, 201 = creado. Ambos son éxito.
+    if (res.ok) return { ok: true };
+
+    lastStatus = res.status;
+    lastMessage = (await res.text().catch(() => "")) || `MailerLite respondió ${res.status}`;
+
+    // 4xx (salvo 429) son errores no transitorios: no reintentamos.
+    const transient = res.status === 429 || res.status >= 500;
+    if (!transient || attempt === MAX_ATTEMPTS) break;
+    await sleep(attempt * 500);
   }
 
-  // 200 = updated existing, 201 = created. Both are success for our purposes.
-  if (res.ok) return { ok: true };
-
-  const detail = await res.text().catch(() => "");
-  return { ok: false, status: res.status, message: detail || `MailerLite respondió ${res.status}` };
+  return { ok: false, status: lastStatus, message: lastMessage };
 }

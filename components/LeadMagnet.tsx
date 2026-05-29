@@ -6,6 +6,7 @@ type Status = "idle" | "loading" | "sent" | "error";
 
 export default function LeadMagnet() {
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot anti-bots
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -20,7 +21,7 @@ export default function LeadMagnet() {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, website }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -79,6 +80,17 @@ export default function LeadMagnet() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-md mx-auto">
+              {/* Honeypot: oculto para humanos, los bots lo rellenan */}
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+              />
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
