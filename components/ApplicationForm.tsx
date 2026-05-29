@@ -105,16 +105,17 @@ export default function ApplicationForm() {
     }
     return (
       <div className="max-w-xl mx-auto text-center py-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#CAFF00]">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3" aria-hidden="true">
-            <path d="M20 6L9 17l-5-5" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-[#252525] bg-[#161616]">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#CAFF00" strokeWidth="2.5" aria-hidden="true">
+            <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z" />
           </svg>
         </div>
-        <h2 className="section-title mb-4">¡Solicitud recibida!</h2>
+        <h2 className="section-title mb-4">Gracias por tu interés</h2>
         <p className="section-sub max-w-md mx-auto">
-          Gracias por completar el formulario. Revisaremos tu caso y, si encajas en el
-          programa, <strong className="text-white">te escribiremos muy pronto</strong> por
-          email o WhatsApp.
+          Este servicio requiere una <strong className="text-white">inversión mínima de tiempo y
+          dinero</strong> para poder conseguirlo. Somos un servicio comprometido al máximo con
+          el cliente: no solo adaptamos una estrategia única a la situación de cada persona,
+          también te guiamos a diario para que consigas tu objetivo <strong className="text-white">sí o sí</strong>.
         </p>
       </div>
     );
