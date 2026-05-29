@@ -33,12 +33,13 @@ export async function addSubscriber(email: string): Promise<AddSubscriberResult>
   // Grupo "aurena contenido" por defecto (no es un secreto). Se puede
   // sobreescribir con MAILERLITE_GROUP_ID en el entorno.
   const groupId = process.env.MAILERLITE_GROUP_ID ?? "188798542205158754";
-  const body: Record<string, unknown> = { email };
+  // Solo llamamos a esta función DESPUÉS de que el usuario haya confirmado su
+  // email mediante nuestro propio doble opt-in (enlace firmado). Por eso lo
+  // damos de alta directamente como "active" (confirmado): tenemos prueba de
+  // consentimiento, no se envía el email de confirmación de MailerLite, y el
+  // suscriptor queda listo para recibir email marketing desde MailerLite.
+  const body: Record<string, unknown> = { email, status: "active" };
   if (groupId) body.groups = [groupId];
-  // Status is intentionally omitted: with "double opt-in for API" enabled,
-  // the default status keeps the subscriber unconfirmed and triggers the
-  // confirmation email. Forcing "active" would violate MailerLite's anti-spam
-  // policy and skip the verification the user explicitly wants.
 
   let res: Response;
   try {
