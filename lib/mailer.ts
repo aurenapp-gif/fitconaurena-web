@@ -81,6 +81,7 @@ export async function sendApplicationNotification(args: {
   telefono: string;
   qualified: boolean;
   answersText: string;
+  motivacion?: string;
 }): Promise<void> {
   const verdict = args.qualified ? "✅ CALIFICA" : "❌ NO califica";
   const subject = `${args.qualified ? "✅" : "❌"} Nueva solicitud — ${args.nombre} (${verdict})`;
@@ -91,7 +92,8 @@ export async function sendApplicationNotification(args: {
     `Nombre: ${args.nombre}\n` +
     `Email: ${args.email}\n` +
     `Teléfono/WhatsApp: ${args.telefono}\n\n` +
-    `Respuestas:\n${args.answersText}\n`;
+    `Respuestas:\n${args.answersText}\n` +
+    (args.motivacion ? `\nMotivación / objetivo:\n${args.motivacion}\n` : "");
 
   const color = args.qualified ? "#16a34a" : "#dc2626";
   const html = `
@@ -104,6 +106,7 @@ export async function sendApplicationNotification(args: {
       <tr><td style="padding:4px 12px 4px 0;color:#666;">Teléfono/WhatsApp</td><td style="padding:4px 0;font-weight:600;">${args.telefono}</td></tr>
     </table>
     <pre style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:16px;font-size:13px;line-height:1.5;font-family:inherit;">${args.answersText}</pre>
+    ${args.motivacion ? `<p style="color:#666;margin:16px 0 4px;font-size:13px;">Motivación / objetivo:</p><p style="background:#f6f6f6;border-radius:8px;padding:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;">${args.motivacion}</p>` : ""}
   </div>`;
 
   await send({ to: args.to, subject, html, text, replyTo: args.email });
