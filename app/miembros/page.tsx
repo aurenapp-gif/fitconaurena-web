@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CallCountdown from "@/components/CallCountdown";
-import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 
 export const metadata: Metadata = {
   title: "Área de miembros",
@@ -46,6 +46,7 @@ function Card({
 export default function MiembrosPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
+  const admin = isAdmin(email);
 
   return (
     <>
@@ -62,9 +63,16 @@ export default function MiembrosPage() {
               <h1 className="section-title">Hola de nuevo 👋</h1>
               <p className="text-sm text-[#666666] mt-1">{email}</p>
             </div>
-            <a href="/api/miembros/salir" className="btn-outline text-sm px-5 py-2.5">
-              Cerrar sesión
-            </a>
+            <div className="flex items-center gap-2">
+              {admin && (
+                <Link href="/miembros/admin" className="btn-brand text-sm px-5 py-2.5">
+                  Panel de la coach
+                </Link>
+              )}
+              <a href="/api/miembros/salir" className="btn-outline text-sm px-5 py-2.5">
+                Cerrar sesión
+              </a>
+            </div>
           </div>
 
           <div className="mb-5">
@@ -88,6 +96,15 @@ export default function MiembrosPage() {
               <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-6 py-3">
                 Contactar por WhatsApp
               </a>
+            </Card>
+
+            <Card
+              title="Chat con tu coach"
+              desc="Tu canal privado 1:1 con Aurena. Escríbele cuando lo necesites."
+            >
+              <Link href="/miembros/chat" className="btn-brand text-sm px-6 py-3">
+                Abrir chat
+              </Link>
             </Card>
 
             <Card

@@ -44,7 +44,7 @@ export async function sendVerificationEmail(to: string, confirmUrl: string): Pro
 }
 
 interface SendArgs {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text: string;
@@ -110,6 +110,24 @@ export async function sendApplicationNotification(args: {
   </div>`;
 
   await send({ to: args.to, subject, html, text, replyTo: args.email });
+}
+
+/** Avisa a la coach (admin) de que una clienta ha escrito en el chat. */
+export async function sendNewMessageNotice(
+  to: string[],
+  fromMember: string,
+  preview: string
+): Promise<void> {
+  const subject = `💬 Nuevo mensaje de ${fromMember}`;
+  const short = preview.length > 140 ? preview.slice(0, 140) + "…" : preview;
+  const text = `${fromMember} te ha escrito en el chat:\n\n"${short}"\n\nEntra al panel: https://fitconaurena.com/miembros/admin`;
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">Nuevo mensaje de ${fromMember}</h2>
+    <p style="background:#f6f6f6;border-radius:8px;padding:14px;font-size:14px;line-height:1.5;">"${short}"</p>
+    <a href="https://fitconaurena.com/miembros/admin" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Responder en el panel</a>
+  </div>`;
+  await send({ to, subject, html, text });
 }
 
 /** Envía el enlace mágico de acceso al área de miembros. */
