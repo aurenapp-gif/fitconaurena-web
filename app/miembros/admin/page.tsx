@@ -57,7 +57,11 @@ export default async function AdminPage() {
               <span className="section-tag">Solo administración</span>
               <h1 className="section-title">Panel de la coach</h1>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link href="/miembros/clientas" className="btn-brand text-sm px-5 py-2.5">Clientas</Link>
+              <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
+              <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
