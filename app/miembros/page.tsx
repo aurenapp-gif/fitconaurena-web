@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
+import CallCountdown from "@/components/CallCountdown";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 
 export const metadata: Metadata = {
@@ -67,6 +68,10 @@ export default function MiembrosPage() {
             <a href="/api/miembros/salir" className="btn-outline text-sm px-5 py-2.5">
               Cerrar sesión
             </a>
+          </div>
+
+          <div className="mb-5">
+            <CallCountdown />
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
