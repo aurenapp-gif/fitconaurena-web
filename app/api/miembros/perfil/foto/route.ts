@@ -1,0 +1,31 @@
+import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { sbUpsert, sbUpload, safePath } from "@/lib/supabase";
+
+export const runtime = "nodejs";
+
+export async function POST(req: NextRequest) {
+  const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
+  }
+  const photo = form.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) {
+    return NextResponse.json({ error: "Adjunta una imagen." }, { status: 400 });
+  }
+
+  try {
+    const path = safePath(photo.name || "foto");
+    await sbUpload("perfil", path, await photo.arrayBuffer(), photo.type || "image/jpeg");
+    await sbUpsert("profiles", { email, photo_path: path, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.error("[api/miembros/perfil/foto]", err);
+    return NextResponse.json({ error: "No se pudo subir la foto." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}

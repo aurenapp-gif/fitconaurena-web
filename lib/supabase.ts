@@ -45,6 +45,16 @@ export async function sbInsert<T = unknown>(table: string, row: object): Promise
   return Array.isArray(data) ? data[0] : data;
 }
 
+/** UPSERT (insert o update si choca la PK). */
+export async function sbUpsert(table: string, row: object): Promise<void> {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) throw new Error(`sbUpsert ${table}: ${res.status} ${await res.text()}`);
+}
+
 /** UPDATE con filtro PostgREST (ej: `id=eq.${id}`). */
 export async function sbUpdate(table: string, filter: string, patch: object): Promise<void> {
   const res = await fetchT(`${URL_BASE}/rest/v1/${table}?${filter}`, {
