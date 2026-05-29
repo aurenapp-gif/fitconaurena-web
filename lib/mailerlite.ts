@@ -30,7 +30,9 @@ export async function addSubscriber(email: string): Promise<AddSubscriberResult>
     return { ok: false, status: 500, message: "MAILERLITE_API_KEY no configurada." };
   }
 
-  const groupId = process.env.MAILERLITE_GROUP_ID;
+  // Grupo "aurena contenido" por defecto (no es un secreto). Se puede
+  // sobreescribir con MAILERLITE_GROUP_ID en el entorno.
+  const groupId = process.env.MAILERLITE_GROUP_ID ?? "188798542205158754";
   const body: Record<string, unknown> = { email };
   if (groupId) body.groups = [groupId];
   // Status is intentionally omitted: with "double opt-in for API" enabled,

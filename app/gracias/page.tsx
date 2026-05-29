@@ -7,9 +7,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// URL de la carpeta/archivo de Google Drive con el contenido de la guía.
-// Configúrala en Vercel como NEXT_PUBLIC_GUIDE_URL.
-const DRIVE_URL = process.env.NEXT_PUBLIC_GUIDE_URL ?? "https://drive.google.com/";
+// URL de la carpeta de Google Drive con el contenido de la guía.
+// Se puede sobreescribir con NEXT_PUBLIC_GUIDE_URL en el entorno.
+const DRIVE_URL =
+  process.env.NEXT_PUBLIC_GUIDE_URL ??
+  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
 
 export default function GraciasPage() {
   return (
