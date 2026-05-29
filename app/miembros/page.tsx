@@ -81,6 +81,15 @@ export default function MiembrosPage() {
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
             <Card
+              title="Mi perfil"
+              desc="Tu cuestionario, tu foto y tus planes de nutrición y entrenamiento."
+            >
+              <Link href="/miembros/perfil" className="btn-brand text-sm px-6 py-3">
+                Abrir mi perfil
+              </Link>
+            </Card>
+
+            <Card
               title="Contenido y recursos"
               desc="Tus guías, vídeos y material del programa, alojado aquí en la plataforma."
             >
