@@ -40,17 +40,71 @@ export async function sendVerificationEmail(to: string, confirmUrl: string): Pro
     </div>
   </div>`;
 
+  await send({ to, subject, html, text });
+}
+
+interface SendArgs {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+}
+
+async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
+
+  const payload: Record<string, unknown> = { from: FROM, to, subject, html, text };
+  if (replyTo) payload.reply_to = replyTo;
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: FROM, to, subject, html, text }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Resend send failed (${res.status}): ${body}`);
   }
+}
+
+/** Notifica al equipo de una nueva solicitud del servicio (/aplicar). */
+export async function sendApplicationNotification(args: {
+  to: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  qualified: boolean;
+  answersText: string;
+}): Promise<void> {
+  const verdict = args.qualified ? "✅ CALIFICA" : "❌ NO califica";
+  const subject = `${args.qualified ? "✅" : "❌"} Nueva solicitud — ${args.nombre} (${verdict})`;
+
+  const text =
+    `Nueva solicitud del servicio\n\n` +
+    `Resultado: ${verdict}\n\n` +
+    `Nombre: ${args.nombre}\n` +
+    `Email: ${args.email}\n` +
+    `Teléfono/WhatsApp: ${args.telefono}\n\n` +
+    `Respuestas:\n${args.answersText}\n`;
+
+  const color = args.qualified ? "#16a34a" : "#dc2626";
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:560px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">Nueva solicitud del servicio</h2>
+    <p style="font-size:18px;font-weight:800;color:${color};margin:0 0 20px;">${verdict}</p>
+    <table style="border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+      <tr><td style="padding:4px 12px 4px 0;color:#666;">Nombre</td><td style="padding:4px 0;font-weight:600;">${args.nombre}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#666;">Email</td><td style="padding:4px 0;font-weight:600;">${args.email}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#666;">Teléfono/WhatsApp</td><td style="padding:4px 0;font-weight:600;">${args.telefono}</td></tr>
+    </table>
+    <pre style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:16px;font-size:13px;line-height:1.5;font-family:inherit;">${args.answersText}</pre>
+  </div>`;
+
+  await send({ to: args.to, subject, html, text, replyTo: args.email });
 }
