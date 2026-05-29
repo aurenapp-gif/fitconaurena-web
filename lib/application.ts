@@ -43,6 +43,17 @@ export const QUESTIONS: Question[] = [
     ],
   },
   {
+    id: "inversion",
+    label:
+      "Una transformación real lleva al menos 90 días. ¿Cuánto estarías dispuesta a invertir en ti si te aseguramos que consigues tu objetivo, firmado por contrato y con garantía?",
+    options: [
+      { value: "-300", label: "Menos de 300 €", disqualifies: true },
+      { value: "300-700", label: "Entre 300 € y 700 €" },
+      { value: "700-1500", label: "Entre 700 € y 1.500 €" },
+      { value: "1500+", label: "Más de 1.500 €" },
+    ],
+  },
+  {
     id: "region",
     label: "¿Desde dónde nos contactas?",
     options: [
