@@ -70,6 +70,24 @@ export async function sbUpload(
   if (!res.ok) throw new Error(`sbUpload ${bucket}/${path}: ${res.status} ${await res.text()}`);
 }
 
+/** DELETE de filas con filtro PostgREST (ej: `id=eq.${id}`). */
+export async function sbDelete(table: string, filter: string): Promise<void> {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}?${filter}`, {
+    method: "DELETE",
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`sbDelete ${table}: ${res.status} ${await res.text()}`);
+}
+
+/** Borra un objeto de un bucket (no lanza si falla). */
+export async function sbDeleteObject(bucket: string, path: string): Promise<void> {
+  try {
+    await fetchT(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, { method: "DELETE", headers: headers() });
+  } catch (e) {
+    console.error("sbDeleteObject", e);
+  }
+}
+
 /** Genera una URL firmada temporal para descargar un objeto privado. */
 export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600): Promise<string> {
   const res = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {

@@ -110,8 +110,11 @@ export default function MiembrosPage() {
             <Card
               title="Comunidad"
               desc="Comparte tus wins diarias y tus cambios con el resto de la comunidad."
-              soon
-            />
+            >
+              <Link href="/miembros/comunidad" className="btn-brand text-sm px-6 py-3">
+                Ir a la comunidad
+              </Link>
+            </Card>
 
             <Card
               title="Seguimiento / check-ins"
