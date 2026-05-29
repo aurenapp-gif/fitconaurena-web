@@ -44,8 +44,10 @@ export default function CommunityFeed() {
 
   useEffect(() => {
     load(cat);
-    const id = setInterval(() => load(cat), 15000);
-    return () => clearInterval(id);
+    const id = setInterval(() => { if (!document.hidden) load(cat); }, 20000);
+    const onVis = () => { if (!document.hidden) load(cat); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [cat, load]);
 
   const tab = TABS.find((t) => t.key === cat)!;
