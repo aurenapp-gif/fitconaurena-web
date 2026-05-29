@@ -37,7 +37,7 @@ export default function ChatRoom({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(member ? { member } : {}),
     }).catch(() => {});
-    const id = setInterval(() => { if (!document.hidden) load(); }, 8000);
+    const id = setInterval(() => { if (!document.hidden) load(); }, 3000);
     const onVis = () => { if (!document.hidden) load(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
