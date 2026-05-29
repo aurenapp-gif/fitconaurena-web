@@ -33,10 +33,17 @@ export async function GET(req: NextRequest) {
     } catch { /* sin avatares si falla */ }
 
     // Likes: conteo por post + si el visitante ya dio me gusta.
+    // Solo de los posts visibles (no toda la tabla) para que escale.
     const likeCount = new Map<string, number>();
     const mine = new Set<string>();
     try {
-      const likes = await sbSelect<{ post_id: string; member_email: string }>("community_likes", "select=post_id,member_email");
+      const ids = rows.map((r) => r.id);
+      const likes = ids.length
+        ? await sbSelect<{ post_id: string; member_email: string }>(
+            "community_likes",
+            `select=post_id,member_email&post_id=in.(${ids.join(",")})`
+          )
+        : [];
       for (const l of likes) {
         likeCount.set(l.post_id, (likeCount.get(l.post_id) ?? 0) + 1);
         if (l.member_email === email) mine.add(l.post_id);
