@@ -39,16 +39,25 @@ export default function LeadMagnet() {
   }
 
   return (
-    <section id="guia-gratis" className="relative py-24 md:py-32 overflow-hidden">
-      <div className="container-content relative z-10">
+    <section
+      id="contenido-gratis"
+      className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden"
+    >
+      {/* Background glow */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none"
+        style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+      />
+
+      <div className="container-content relative z-10 py-16">
         <div className="card-dark p-8 md:p-12 text-center !transform-none">
-          <span className="section-tag">Guía gratuita</span>
+          <span className="section-tag">Contenido gratuito</span>
           <h2 className="section-title mb-4">
-            Descarga tu guía para <span className="text-[#CAFF00]">empezar hoy</span>
+            Accede a <span className="text-[#CAFF00]">contenido gratuito</span>
           </h2>
           <p className="section-sub mb-8 max-w-lg mx-auto">
-            Nutrición y entrenamiento adaptados a tu ciclo, en una guía práctica.
-            Déjanos tu email, confírmalo y tendrás acceso al instante.
+            Todo lo que debes saber para poder llevar tu físico y mentalidad al
+            siguiente nivel. Déjanos tu email, confírmalo y tendrás acceso al instante.
           </p>
 
           {status === "sent" ? (
@@ -65,7 +74,7 @@ export default function LeadMagnet() {
               </p>
               <p className="text-sm text-[#A0A0A0]">
                 Te hemos enviado un email para confirmar tu dirección. Pulsa el enlace
-                y tendrás acceso a tu guía. ¿No lo ves? Mira en spam o promociones.
+                y tendrás acceso a tu contenido. ¿No lo ves? Mira en spam o promociones.
               </p>
             </div>
           ) : (
@@ -86,7 +95,7 @@ export default function LeadMagnet() {
                   disabled={status === "loading"}
                   className="btn-brand text-sm px-6 py-3.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {status === "loading" ? "Enviando…" : "Quiero la guía"}
+                  {status === "loading" ? "Enviando…" : "Quiero el contenido"}
                 </button>
               </div>
 
@@ -95,10 +104,6 @@ export default function LeadMagnet() {
                   {message}
                 </p>
               )}
-
-              <p className="mt-4 text-xs text-[#666666]">
-                Sin spam. Te puedes dar de baja cuando quieras.
-              </p>
             </form>
           )}
         </div>
