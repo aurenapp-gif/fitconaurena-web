@@ -13,7 +13,7 @@ type Prof = { email: string; display_name: string | null; renewal_date: string |
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const DOW = ["L", "M", "X", "J", "V", "S", "D"];
 
-export default async function AgendaPage({ searchParams }: { searchParams: { ym?: string } }) {
+export default async function AgendaPage({ searchParams }: { searchParams: { ym?: string; day?: string } }) {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
@@ -25,8 +25,9 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
   const ym = `${year}-${String(month).padStart(2, "0")}`;
 
   let profiles: Prof[] = [];
+  const nextFirst = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
   try {
-    profiles = await sbSelect<Prof>("profiles", `select=email,display_name,renewal_date&renewal_date=gte.${ym}-01&renewal_date=lte.${ym}-31`);
+    profiles = await sbSelect<Prof>("profiles", `select=email,display_name,renewal_date&renewal_date=gte.${ym}-01&renewal_date=lt.${nextFirst}`);
   } catch (e) { console.error("[agenda]", e); }
 
   const byDay = new Map<number, Prof[]>();
@@ -44,6 +45,8 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
   const prev = month === 1 ? `${year - 1}-12` : `${year}-${String(month - 1).padStart(2, "0")}`;
   const next = month === 12 ? `${year + 1}-01` : `${year}-${String(month + 1).padStart(2, "0")}`;
   const today = now.getUTCFullYear() === year && now.getUTCMonth() + 1 === month ? now.getUTCDate() : -1;
+  const selDay = searchParams.day && /^\d{1,2}$/.test(searchParams.day) ? +searchParams.day : null;
+  const selList = selDay ? byDay.get(selDay) ?? [] : [];
 
   return (
     <>
@@ -68,26 +71,50 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
             {DOW.map((d) => <div key={d} className="text-center text-xs text-[#666666] py-1">{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
-            {cells.map((day, i) => (
-              <div key={i} className={`min-h-[84px] rounded-lg border p-1.5 ${day ? "border-[#252525] bg-[#0F0F0F]" : "border-transparent"}`}>
-                {day && (
-                  <>
-                    <div className={`text-xs mb-1 ${day === today ? "font-black text-[#CAFF00]" : "text-[#666666]"}`}>{day}</div>
-                    <div className="flex flex-col gap-1">
-                      {(byDay.get(day) ?? []).map((p) => (
-                        <Link key={p.email} href={`/miembros/clientas/${encodeURIComponent(p.email)}`}
-                          className="block text-[10px] leading-tight rounded bg-[#CAFF00]/15 text-[#CAFF00] px-1.5 py-1 truncate"
-                          title={`Renovación: ${p.display_name || p.email}`}>
-                          🔄 {p.display_name || p.email.split("@")[0]}
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+            {cells.map((day, i) => {
+              if (!day) return <div key={i} className="min-h-[64px]" />;
+              const count = (byDay.get(day) ?? []).length;
+              const isSel = day === selDay;
+              return (
+                <Link
+                  key={i}
+                  href={`/miembros/agenda?ym=${ym}&day=${day}`}
+                  className={`min-h-[64px] rounded-lg border p-1.5 flex flex-col transition-colors ${
+                    isSel ? "border-[#CAFF00] bg-[#CAFF00]/10" : "border-[#252525] bg-[#0F0F0F] hover:border-[#3a3a3a]"
+                  }`}
+                >
+                  <span className={`text-xs ${day === today ? "font-black text-[#CAFF00]" : "text-[#A0A0A0]"}`}>{day}</span>
+                  {count > 0 && (
+                    <span className="mt-auto self-start text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                      {count} 🔄
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-          <p className="text-xs text-[#666666] mt-4">Las renovaciones se fijan en la ficha de cada clienta. Pincha una para abrirla.</p>
+
+          {/* Renovaciones del día seleccionado */}
+          {selDay ? (
+            <div className="card-dark p-5 !transform-none mt-5">
+              <h3 className="font-bold text-white mb-3">Renovaciones del {selDay} de {MESES[month - 1]}</h3>
+              {selList.length === 0 ? (
+                <p className="text-sm text-[#A0A0A0]">No hay renovaciones este día.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {selList.map((p) => (
+                    <Link key={p.email} href={`/miembros/clientas/${encodeURIComponent(p.email)}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5 hover:border-[#CAFF00]/40">
+                      <span className="text-sm text-white">🔄 {p.display_name || p.email.split("@")[0]}</span>
+                      <span className="text-xs text-[#666666]">{p.email}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-[#666666] mt-4">Pulsa un día para ver sus renovaciones. Las fechas se fijan en la ficha de cada clienta.</p>
+          )}
         </div>
       </main>
     </>
