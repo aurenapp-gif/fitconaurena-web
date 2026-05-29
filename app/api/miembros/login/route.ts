@@ -3,6 +3,7 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { isMember, createMagicToken } from "@/lib/members";
 import { sendMagicLink } from "@/lib/mailer";
 import { rateLimit } from "@/lib/ratelimit";
+import { sbUpsert } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,13 @@ export async function POST(req: NextRequest) {
     if (await isMember(email)) {
       const token = createMagicToken(email);
       const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
-      await sendMagicLink(email, url);
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      await sbUpsert("login_codes", {
+        email,
+        code,
+        expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      });
+      await sendMagicLink(email, url, code);
     }
   } catch (err) {
     console.error("[api/miembros/login] error", err);

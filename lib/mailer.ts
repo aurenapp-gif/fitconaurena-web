@@ -173,25 +173,30 @@ export async function sendCheckinReplyEmail(to: string): Promise<void> {
   await send({ to, subject, html, text });
 }
 
-/** Envía el enlace mágico de acceso al área de miembros. */
-export async function sendMagicLink(to: string, loginUrl: string): Promise<void> {
+/** Envía el enlace mágico de acceso + código (para la app instalada). */
+export async function sendMagicLink(to: string, loginUrl: string, code: string): Promise<void> {
   const subject = "Tu acceso al área de miembros — Fit con Aurena";
   const text =
-    `Pulsa este enlace para entrar a tu área de miembros:\n${loginUrl}\n\n` +
-    `El enlace caduca en 15 minutos. Si no lo has solicitado, ignora este mensaje.`;
+    `Para entrar desde el navegador, pulsa este enlace:\n${loginUrl}\n\n` +
+    `Si usas la app instalada, escribe este código: ${code}\n\n` +
+    `Caduca en 15 minutos. Si no lo has solicitado, ignora este mensaje.`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
       <p style="font-weight:900;font-size:20px;margin:0 0 28px;letter-spacing:-0.5px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
       <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">Tu acceso al área de miembros</h1>
-      <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
-        Pulsa el botón para entrar a tu área privada.
+      <p style="color:#A0A0A0;line-height:1.65;margin:0 0 20px;font-size:15px;">
+        Desde el navegador, pulsa el botón:
       </p>
       <a href="${loginUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Entrar al área de miembros
       </a>
-      <p style="color:#666;font-size:13px;line-height:1.6;margin:30px 0 0;">
-        El enlace caduca en 15 minutos. Si no lo has solicitado, ignora este mensaje.
+      <p style="color:#A0A0A0;line-height:1.6;margin:28px 0 6px;font-size:15px;">
+        Si usas la <strong style="color:#fff;">app instalada</strong>, escribe este código:
+      </p>
+      <p style="font-size:34px;font-weight:900;letter-spacing:8px;color:#CAFF00;margin:0;">${code}</p>
+      <p style="color:#666;font-size:13px;line-height:1.6;margin:24px 0 0;">
+        Caduca en 15 minutos. Si no lo has solicitado, ignora este mensaje.
       </p>
     </div>
   </div>`;
