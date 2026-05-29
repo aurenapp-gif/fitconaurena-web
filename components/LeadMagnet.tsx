@@ -48,7 +48,7 @@ export default function LeadMagnet() {
           </h2>
           <p className="section-sub mb-8 max-w-lg mx-auto">
             Nutrición y entrenamiento adaptados a tu ciclo, en una guía práctica.
-            Déjanos tu email, confírmalo y te la enviamos al instante.
+            Déjanos tu email, confírmalo y tendrás acceso al instante.
           </p>
 
           {status === "sent" ? (
@@ -56,10 +56,16 @@ export default function LeadMagnet() {
               role="status"
               className="max-w-md mx-auto rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5 px-6 py-5"
             >
-              <p className="font-bold text-white mb-1">📩 Revisa tu correo</p>
+              <p className="flex items-center justify-center gap-2 font-bold text-white mb-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CAFF00" strokeWidth="2.2" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 7l9 6 9-6" />
+                </svg>
+                Revisa tu correo
+              </p>
               <p className="text-sm text-[#A0A0A0]">
                 Te hemos enviado un email para confirmar tu dirección. Pulsa el enlace
-                y recibirás tu guía. ¿No lo ves? Mira en spam o promociones.
+                y tendrás acceso a tu guía. ¿No lo ves? Mira en spam o promociones.
               </p>
             </div>
           ) : (
@@ -73,7 +79,7 @@ export default function LeadMagnet() {
                   placeholder="tu@email.com"
                   aria-label="Tu email"
                   autoComplete="email"
-                  className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] focus:border-[#CAFF00] focus:outline-none transition-colors"
+                  className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] focus-visible:ring-2 focus-visible:ring-[#CAFF00]/40 transition-colors"
                 />
                 <button
                   type="submit"
