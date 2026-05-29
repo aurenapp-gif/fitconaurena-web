@@ -61,6 +61,11 @@ body {
     box-shadow: 0 8px 30px rgba(202, 255, 0, 0.3);
   }
   .btn-brand:active { transform: translateY(0); }
+  .btn-brand:focus-visible {
+    outline: 2px solid #0A0A0A;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px #CAFF00;
+  }
 
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all duration-200 cursor-pointer;
