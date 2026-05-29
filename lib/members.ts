@@ -83,6 +83,27 @@ export function isAdmin(email: string | null): boolean {
   return admins.includes(email.toLowerCase());
 }
 
+/** Lista las clientas (suscriptoras del grupo "Miembros"). */
+export async function getMembers(): Promise<{ email: string; name: string }[]> {
+  const apiKey = process.env.MAILERLITE_API_KEY;
+  const groupId = process.env.MAILERLITE_MEMBERS_GROUP_ID;
+  if (!apiKey || !groupId) return [];
+  try {
+    const res = await fetch(
+      `https://connect.mailerlite.com/api/groups/${groupId}/subscribers?limit=200`,
+      { headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store" }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.data ?? []).map((s: { email: string; fields?: { name?: string } }) => ({
+      email: s.email,
+      name: s.fields?.name || s.email.split("@")[0],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /** ¿El email pertenece al grupo "Miembros" y está activo en MailerLite? */
 export async function isMember(email: string): Promise<boolean> {
   const apiKey = process.env.MAILERLITE_API_KEY;

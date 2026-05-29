@@ -27,6 +27,15 @@ export const PROFILE_FIELDS: Field[] = [
 
 export type Questionnaire = Record<string, string>;
 
+/** Info de renovación del plan (se renueva mensualmente). */
+export function renewalInfo(date: string | null): { text: string; urgent: boolean; days: number | null } {
+  if (!date) return { text: "Sin fecha de renovación", urgent: false, days: null };
+  const days = Math.ceil((new Date(date + "T00:00:00").getTime() - Date.now()) / 86400000);
+  if (days < 0) return { text: `Renovación vencida (${-days} d)`, urgent: true, days };
+  if (days === 0) return { text: "¡Renueva hoy!", urgent: true, days };
+  return { text: `Renueva en ${days} día${days > 1 ? "s" : ""}`, urgent: days <= 5, days };
+}
+
 /** Limpia el cuestionario quedándose solo con campos conocidos (string). */
 export function sanitizeQuestionnaire(input: unknown): Questionnaire {
   const out: Questionnaire = {};
