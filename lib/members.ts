@@ -65,8 +65,8 @@ const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
 export const SESSION_COOKIE = "fca_member";
 export const SESSION_MAX_AGE = SESSION_TTL / 1000;
 
-export const createMagicToken = (email: string) =>
-  createToken({ email, typ: "magic", exp: Date.now() + MAGIC_TTL });
+export const createMagicToken = (email: string, ttlMs: number = MAGIC_TTL) =>
+  createToken({ email, typ: "magic", exp: Date.now() + ttlMs });
 export const verifyMagicToken = (token?: string) => verify(token, "magic");
 
 export const createSessionToken = (email: string) =>

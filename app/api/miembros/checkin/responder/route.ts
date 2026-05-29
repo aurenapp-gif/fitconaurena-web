@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
-import { sbUpdate } from "@/lib/supabase";
+import { sbUpdate, sbSelect } from "@/lib/supabase";
+import { sendCheckinReplyEmail } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,14 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[api/miembros/checkin/responder] error", err);
     return NextResponse.json({ error: "No se pudo guardar la respuesta." }, { status: 500 });
+  }
+
+  // Aviso por email a la clienta (no bloqueante).
+  try {
+    const rows = await sbSelect<{ member_email: string }>("check_ins", `select=member_email&id=eq.${id}`);
+    if (rows[0]?.member_email) await sendCheckinReplyEmail(rows[0].member_email);
+  } catch (err) {
+    console.error("[responder] email", err);
   }
 
   return NextResponse.json({ ok: true });
