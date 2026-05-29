@@ -27,6 +27,13 @@ export const PROFILE_FIELDS: Field[] = [
 
 export type Questionnaire = Record<string, string>;
 
+/** Fecha (YYYY-MM-DD) un mes después de `from` (por defecto, hoy). */
+export function plusOneMonthISO(from: Date = new Date()): string {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Info de renovación del plan (se renueva mensualmente). */
 export function renewalInfo(date: string | null): { text: string; urgent: boolean; days: number | null } {
   if (!date) return { text: "Sin fecha de renovación", urgent: false, days: null };

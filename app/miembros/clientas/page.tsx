@@ -17,7 +17,7 @@ export default async function ClientasPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
 
-  const members = await getMembers();
+  const members = (await getMembers()).filter((m) => !isAdmin(m.email));
   let profiles: Prof[] = [];
   try { profiles = await sbSelect<Prof>("profiles", "select=email,display_name,renewal_date"); } catch (e) { console.error(e); }
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
