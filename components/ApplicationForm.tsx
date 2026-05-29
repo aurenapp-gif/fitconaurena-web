@@ -22,6 +22,10 @@ const WHATSAPP_URL = `https://wa.me/34607477339?text=${encodeURIComponent(
   "Quiero agendar una llamada gratuita"
 )}`;
 
+const DRIVE_URL =
+  process.env.NEXT_PUBLIC_GUIDE_URL ??
+  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
+
 export default function ApplicationForm() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
@@ -111,12 +115,27 @@ export default function ApplicationForm() {
           </svg>
         </div>
         <h2 className="section-title mb-4">Gracias por tu interés</h2>
-        <p className="section-sub max-w-md mx-auto">
+        <p className="section-sub max-w-md mx-auto mb-6">
           Este servicio requiere una <strong className="text-white">inversión mínima de tiempo y
           dinero</strong> para poder conseguirlo. Somos un servicio comprometido al máximo con
           el cliente: no solo adaptamos una estrategia única a la situación de cada persona,
           también te guiamos a diario para que consigas tu objetivo <strong className="text-white">sí o sí</strong>.
         </p>
+        <p className="section-sub max-w-md mx-auto mb-8">
+          Mientras tanto, puedes acceder a nuestro <strong className="text-white">contenido
+          gratuito</strong> para empezar a llevar tu físico al siguiente nivel.
+        </p>
+        <a
+          href={DRIVE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-brand text-base px-8 py-4 inline-flex"
+        >
+          Acceder al contenido gratuito
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+            <path d="M7 17L17 7M17 7H8M17 7v9" />
+          </svg>
+        </a>
       </div>
     );
   }
