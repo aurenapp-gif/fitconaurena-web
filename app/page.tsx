@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import LeadMagnet from "@/components/LeadMagnet";
 import Link from "next/link";
 
 const stats = [
@@ -79,6 +80,9 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
           style={{ background: "linear-gradient(to top, #0A0A0A, transparent)" }} />
       </section>
+
+      {/* Lead magnet — guía gratis con doble opt-in */}
+      <LeadMagnet />
     </>
   );
 }
