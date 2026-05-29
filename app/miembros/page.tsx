@@ -12,9 +12,6 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-const DRIVE_URL =
-  process.env.NEXT_PUBLIC_GUIDE_URL ??
-  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
 const WHATSAPP_URL = `https://wa.me/34607477339?text=${encodeURIComponent(
   "Hola, soy miembro y necesito ayuda"
 )}`;
@@ -77,11 +74,11 @@ export default function MiembrosPage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
             <Card
               title="Contenido y recursos"
-              desc="Tus guías, vídeos y material del programa, todo en un sitio."
+              desc="Tus guías, vídeos y material del programa, alojado aquí en la plataforma."
             >
-              <a href={DRIVE_URL} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-6 py-3">
+              <Link href="/miembros/contenido" className="btn-brand text-sm px-6 py-3">
                 Abrir contenido
-              </a>
+              </Link>
             </Card>
 
             <Card

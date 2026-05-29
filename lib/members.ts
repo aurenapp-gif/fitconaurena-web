@@ -73,6 +73,16 @@ export const createSessionToken = (email: string) =>
   createToken({ email, typ: "session", exp: Date.now() + SESSION_TTL });
 export const verifySession = (token?: string) => verify(token, "session");
 
+/** ¿Es el email un administrador (la coach)? Lista en ADMIN_EMAILS. */
+export function isAdmin(email: string | null): boolean {
+  if (!email) return false;
+  const admins = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return admins.includes(email.toLowerCase());
+}
+
 /** ¿El email pertenece al grupo "Miembros" y está activo en MailerLite? */
 export async function isMember(email: string): Promise<boolean> {
   const apiKey = process.env.MAILERLITE_API_KEY;
