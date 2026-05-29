@@ -118,5 +118,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 3) (Opcional) Volcar la fila completa a Google Sheets vía webhook de Apps
+  // Script. Solo se ejecuta si SHEETS_WEBHOOK_URL está configurada.
+  const sheetsUrl = process.env.SHEETS_WEBHOOK_URL;
+  if (sheetsUrl) {
+    const row: Record<string, string> = {
+      fecha: new Date().toISOString(),
+      nombre,
+      email,
+      telefono,
+      califica: qualified ? "SÍ" : "NO",
+      motivacion,
+    };
+    for (const q of QUESTIONS) {
+      const opt = q.options.find((o) => o.value === answers[q.id]);
+      row[q.id] = opt ? opt.label : "";
+    }
+    try {
+      await fetch(sheetsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+    } catch (err) {
+      console.error("[api/aplicar] fallo al volcar a Google Sheets", err);
+    }
+  }
+
   return NextResponse.json({ ok: true, qualified });
 }
