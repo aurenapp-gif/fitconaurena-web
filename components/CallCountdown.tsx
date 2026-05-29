@@ -74,22 +74,8 @@ export default function CallCountdown() {
 
   return (
     <div className="card-dark p-6 !transform-none border-[#CAFF00]/30">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
-          <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 20:00 (Madrid).</p>
-        </div>
-        {CALL_URL && (
-          <a
-            href={CALL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`btn-brand text-sm px-5 py-2.5 ${live ? "animate-pulse" : ""}`}
-          >
-            {live ? "Entrar ahora" : "Enlace de la llamada"}
-          </a>
-        )}
-      </div>
+      <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
+      <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 20:00 (hora de Madrid).</p>
 
       {live ? (
         <p className="mt-5 font-black text-[#CAFF00] text-xl">¡En directo ahora! 🔴</p>
@@ -100,6 +86,17 @@ export default function CallCountdown() {
           <Box value={mins} label="min" />
           <Box value={secs} label="seg" />
         </div>
+      )}
+
+      {CALL_URL && (
+        <a
+          href={CALL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`btn-brand text-base px-8 py-3.5 mt-6 inline-flex ${live ? "animate-pulse" : ""}`}
+        >
+          Accede a la sala
+        </a>
       )}
     </div>
   );
