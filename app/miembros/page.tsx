@@ -12,10 +12,6 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-const WHATSAPP_URL = `https://wa.me/34607477339?text=${encodeURIComponent(
-  "Hola, soy miembro y necesito ayuda"
-)}`;
-
 function Card({
   title,
   desc,
@@ -96,15 +92,6 @@ export default function MiembrosPage() {
               <Link href="/miembros/contenido" className="btn-brand text-sm px-6 py-3">
                 Abrir contenido
               </Link>
-            </Card>
-
-            <Card
-              title="Reservar / soporte"
-              desc="¿Dudas o quieres agendar tu sesión? Escríbenos por WhatsApp."
-            >
-              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-6 py-3">
-                Contactar por WhatsApp
-              </a>
             </Card>
 
             <Card
