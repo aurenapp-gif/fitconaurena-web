@@ -98,9 +98,12 @@ export default function MiembrosPage() {
 
             <Card
               title="Seguimiento / check-ins"
-              desc="Sube tu peso, fotos y formularios semanales y sigue tu progreso."
-              soon
-            />
+              desc="Sube tu peso, fotos y notas, y sigue tu progreso con tu gráfica."
+            >
+              <Link href="/miembros/checkins" className="btn-brand text-sm px-6 py-3">
+                Ir a mis check-ins
+              </Link>
+            </Card>
           </div>
         </div>
       </main>
