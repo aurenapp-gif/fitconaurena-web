@@ -34,6 +34,7 @@ export default function GraciasPage() {
               fill="none"
               stroke="#CAFF00"
               strokeWidth="3"
+              aria-hidden="true"
             >
               <path d="M20 6L9 17l-5-5" />
             </svg>
@@ -71,12 +72,13 @@ export default function GraciasPage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.5"
+                  aria-hidden="true"
                 >
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </a>
             ) : (
-              <p className="text-sm text-[#666666]">
+              <p className="text-sm text-[#8B8B8B]">
                 En breve recibirás el enlace por email.
               </p>
             )}
@@ -88,7 +90,7 @@ export default function GraciasPage() {
             </Link>
           </div>
 
-          <p className="text-xs text-[#666666]">
+          <p className="text-sm text-[#8B8B8B]">
             Si la carpeta no se abre, copia este enlace en tu navegador o
             escríbenos.
           </p>

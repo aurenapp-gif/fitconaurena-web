@@ -31,8 +31,11 @@ export default function LeadMagnetPage() {
 
         <div className="container-narrow relative z-10 py-24 md:py-32 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8 border border-[#252525] bg-[#161616] text-[#A0A0A0]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#CAFF00] animate-pulse" />
-            100% gratis · acceso inmediato
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-[#CAFF00] motion-safe:animate-pulse"
+              aria-hidden="true"
+            />
+            +400 mujeres ya en el programa · ⭐⭐⭐⭐⭐ Upstore
           </div>
 
           <h1
@@ -65,6 +68,7 @@ export default function LeadMagnetPage() {
                   stroke="#CAFF00"
                   strokeWidth="2.5"
                   className="flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
                 >
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
