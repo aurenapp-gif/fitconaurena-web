@@ -7,7 +7,7 @@ import WeightChart from "@/components/WeightChart";
 import ProgressSummary from "@/components/ProgressSummary";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Check-ins", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -51,17 +51,26 @@ function weeklyStreak(dates: string[]): number {
 }
 
 const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch(() => undefined) : Promise.resolve(undefined));
+// Miniatura con fallback a imagen completa si la transformación no está disponible.
+const signThumb = (p: string | null, w = 500): Promise<string | undefined> =>
+  p ? sbSignedThumb("checkins", p, w).catch(() => sbSignedUrl("checkins", p, 3600).catch(() => undefined)) : Promise.resolve(undefined);
 
 async function withPhoto(rows: CheckIn[]) {
   return Promise.all(
     rows.map(async (r) => {
-      const [front, side, back, legacy] = await Promise.all([sign(r.photo_front), sign(r.photo_side), sign(r.photo_back), sign(r.photo_path)]);
-      const photos = [
-        { label: "Frente", url: front },
-        { label: "Perfil", url: side },
-        { label: "Espaldas", url: back },
-        ...(legacy ? [{ label: "Foto", url: legacy }] : []),
-      ].filter((p) => p.url);
+      const make = async (path: string | null, label: string) => {
+        if (!path) return null;
+        const [full, thumb] = await Promise.all([sign(path), signThumb(path)]);
+        return full ? { label, url: full, thumb: thumb || full } : null;
+      };
+      const photos = (
+        await Promise.all([
+          make(r.photo_front, "Frente"),
+          make(r.photo_side, "Perfil"),
+          make(r.photo_back, "Espaldas"),
+          make(r.photo_path, "Foto"),
+        ])
+      ).filter(Boolean) as { label: string; url: string; thumb: string }[];
       return { ...r, photos };
     })
   );
@@ -97,8 +106,8 @@ export default async function CheckinsPage() {
   const firstWithFront = mine.find((r) => r.photo_front);
   const lastWithFront = [...mine].reverse().find((r) => r.photo_front);
   const [beforePhoto, afterPhoto] = await Promise.all([
-    sign(firstWithFront?.photo_front ?? null),
-    sign(lastWithFront?.photo_front ?? null),
+    signThumb(firstWithFront?.photo_front ?? null, 700),
+    signThumb(lastWithFront?.photo_front ?? null, 700),
   ]);
 
   return (
@@ -158,7 +167,7 @@ export default async function CheckinsPage() {
                       {it.photos.map((p, i) => (
                         <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className="text-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.url} alt={p.label} className="max-h-44 rounded-lg border border-[#252525]" />
+                          <img src={p.thumb} alt={p.label} loading="lazy" decoding="async" className="max-h-44 rounded-lg border border-[#252525]" />
                           <span className="block text-[10px] text-[#666666] mt-1">{p.label}</span>
                         </a>
                       ))}

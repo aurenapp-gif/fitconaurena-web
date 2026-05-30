@@ -60,12 +60,12 @@ export default function ProgressSummary({
           <div className="grid grid-cols-2 gap-3">
             <figure className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={beforePhoto} alt="Antes" className="w-full h-56 object-cover rounded-lg border border-[#252525]" />
+              <img src={beforePhoto} alt="Antes" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#252525]" />
               <figcaption className="text-[10px] text-[#666666] mt-1">Antes{beforeDate ? ` · ${beforeDate}` : ""}</figcaption>
             </figure>
             <figure className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={afterPhoto} alt="Ahora" className="w-full h-56 object-cover rounded-lg border border-[#CAFF00]/40" />
+              <img src={afterPhoto} alt="Ahora" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#CAFF00]/40" />
               <figcaption className="text-[10px] text-[#CAFF00] mt-1">Ahora{afterDate ? ` · ${afterDate}` : ""}</figcaption>
             </figure>
           </div>

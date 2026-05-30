@@ -124,6 +124,22 @@ export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600
   return `${URL_BASE}/storage/v1${signedURL}`;
 }
 
+/**
+ * URL firmada de una MINIATURA (transformación de imagen de Supabase). Reduce
+ * mucho el peso en las listas. Si la transformación no está disponible en el
+ * plan, lanza y el llamador debe caer a `sbSignedUrl` (imagen completa).
+ */
+export async function sbSignedThumb(bucket: string, path: string, width = 500, expiresIn = 3600): Promise<string> {
+  const res = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ expiresIn, transform: { width, height: width, resize: "cover", quality: 70 } }),
+  });
+  if (!res.ok) throw new Error(`sbSignedThumb ${bucket}/${path}: ${res.status}`);
+  const { signedURL } = await res.json();
+  return `${URL_BASE}/storage/v1${signedURL}`;
+}
+
 /** Nombre de archivo seguro para usar como ruta en Storage. */
 export function safePath(name: string): string {
   const clean = name.normalize("NFKD").replace(/[^\w.\-]+/g, "_").slice(-80);

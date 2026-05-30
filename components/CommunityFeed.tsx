@@ -122,7 +122,7 @@ export default function CommunityFeed() {
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1c1c1c] border border-[#252525] flex items-center justify-center shrink-0">
                     {p.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={p.avatarUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs text-[#666666]">{p.author_name.charAt(0).toUpperCase()}</span>
                     )}
@@ -145,7 +145,7 @@ export default function CommunityFeed() {
               {p.photoUrl && (
                 <a href={p.photoUrl} target="_blank" rel="noopener noreferrer">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.photoUrl} alt="" className="max-h-72 rounded-lg border border-[#252525]" />
+                  <img src={p.photoUrl} alt="" loading="lazy" decoding="async" className="max-h-72 rounded-lg border border-[#252525]" />
                 </a>
               )}
               <button
