@@ -20,16 +20,27 @@ type Content = {
   created_at: string;
 };
 
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
+const AUDIO_EXT = /\.(mp3|m4a|aac|wav|ogg)$/i;
+type Kind = "video" | "audio" | "file";
+function kindOf(path: string | null): Kind {
+  if (!path) return "file";
+  if (VIDEO_EXT.test(path)) return "video";
+  if (AUDIO_EXT.test(path)) return "audio";
+  return "file";
+}
+
 export default async function ContenidoPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
 
-  let items: (Content & { url?: string })[] = [];
+  let items: (Content & { url?: string; kind: Kind })[] = [];
   try {
     const rows = await sbSelect<Content>("content", "select=*&order=created_at.desc");
     items = await Promise.all(
       rows.map(async (r) => ({
         ...r,
+        kind: kindOf(r.file_path),
         url: r.file_path ? await sbSignedUrl("contenido", r.file_path, 3600).catch(() => undefined) : undefined,
       }))
     );
@@ -59,13 +70,29 @@ export default async function ContenidoPage() {
               {items.map((it) => (
                 <div key={it.id} className="card-dark p-5 !transform-none flex flex-col">
                   <h3 className="font-bold text-white mb-1">{it.title}</h3>
-                  {it.description && <p className="text-sm text-[#A0A0A0] mb-4 flex-1">{it.description}</p>}
-                  {it.url ? (
+                  {it.description && <p className="text-sm text-[#A0A0A0] mb-4">{it.description}</p>}
+                  {!it.url ? (
+                    <span className="text-xs text-[#666666] mt-auto">Archivo no disponible</span>
+                  ) : it.kind === "video" ? (
+                    <video
+                      controls
+                      preload="metadata"
+                      playsInline
+                      className="w-full rounded-lg border border-[#252525] bg-black mt-auto"
+                    >
+                      <source src={it.url} />
+                      Tu navegador no puede reproducir este vídeo.{" "}
+                      <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00]">Descárgalo aquí</a>.
+                    </video>
+                  ) : it.kind === "audio" ? (
+                    <audio controls preload="metadata" className="w-full mt-auto">
+                      <source src={it.url} />
+                      <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00]">Descargar audio</a>
+                    </audio>
+                  ) : (
                     <a href={it.url} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 self-start mt-auto">
                       Abrir
                     </a>
-                  ) : (
-                    <span className="text-xs text-[#666666]">Archivo no disponible</span>
                   )}
                 </div>
               ))}
