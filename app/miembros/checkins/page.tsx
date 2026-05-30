@@ -18,6 +18,9 @@ type CheckIn = {
   weight: number | null;
   note: string | null;
   photo_path: string | null;
+  photo_front: string | null;
+  photo_side: string | null;
+  photo_back: string | null;
   coach_reply: string | null;
   coach_reply_at: string | null;
   created_at: string;
@@ -27,12 +30,20 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
 }
 
+const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch(() => undefined) : Promise.resolve(undefined));
+
 async function withPhoto(rows: CheckIn[]) {
   return Promise.all(
-    rows.map(async (r) => ({
-      ...r,
-      photoUrl: r.photo_path ? await sbSignedUrl("checkins", r.photo_path, 3600).catch(() => undefined) : undefined,
-    }))
+    rows.map(async (r) => {
+      const [front, side, back, legacy] = await Promise.all([sign(r.photo_front), sign(r.photo_side), sign(r.photo_back), sign(r.photo_path)]);
+      const photos = [
+        { label: "Frente", url: front },
+        { label: "Perfil", url: side },
+        { label: "Espaldas", url: back },
+        ...(legacy ? [{ label: "Foto", url: legacy }] : []),
+      ].filter((p) => p.url);
+      return { ...r, photos };
+    })
   );
 }
 
@@ -95,11 +106,16 @@ export default async function CheckinsPage() {
                     <span className="text-xs text-[#666666]">{fmt(it.created_at)}</span>
                   </div>
                   {it.note && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap mb-3">{it.note}</p>}
-                  {it.photoUrl && (
-                    <a href={it.photoUrl} target="_blank" rel="noopener noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.photoUrl} alt="Foto del check-in" className="max-h-48 rounded-lg border border-[#252525]" />
-                    </a>
+                  {it.photos.length > 0 && (
+                    <div className="flex gap-3 flex-wrap mb-1">
+                      {it.photos.map((p, i) => (
+                        <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className="text-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={p.url} alt={p.label} className="max-h-44 rounded-lg border border-[#252525]" />
+                          <span className="block text-[10px] text-[#666666] mt-1">{p.label}</span>
+                        </a>
+                      ))}
+                    </div>
                   )}
                   {it.coach_reply ? (
                     <div className="mt-3 rounded-lg border border-[#CAFF00]/30 bg-[#CAFF00]/5 px-4 py-3">
