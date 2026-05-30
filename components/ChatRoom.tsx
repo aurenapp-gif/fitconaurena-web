@@ -24,7 +24,15 @@ export default function ChatRoom({
     try {
       const res = await fetch(`/api/miembros/chat${qs}`, { cache: "no-store" });
       const data = await res.json();
-      if (data?.messages) setMessages(data.messages);
+      if (data?.messages) {
+        // Conservamos los mensajes optimistas (temp-) que el servidor aún no
+        // ha devuelto, para que no parpadeen entre el envío y su confirmación.
+        setMessages((prev) => {
+          const serverBodies = new Set((data.messages as Msg[]).map((m) => m.body));
+          const pendingTemps = prev.filter((m) => m.id.startsWith("temp-") && !serverBodies.has(m.body));
+          return [...data.messages, ...pendingTemps];
+        });
+      }
     } catch {
       /* silencioso: reintentará en el siguiente ciclo */
     }
@@ -53,15 +61,27 @@ export default function ChatRoom({
     if (!body || sending) return;
     setSending(true);
     setText("");
+
+    // UI optimista: mostramos el mensaje al instante con un id temporal.
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Msg = { id: tempId, sender: role, body, created_at: new Date().toISOString() };
+    setMessages((prev) => [...prev, optimistic]);
+
     try {
       const res = await fetch("/api/miembros/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(member ? { body, member } : { body }),
       });
-      if (res.ok) await load();
-      else setText(body);
+      if (res.ok) {
+        await load(); // sincroniza con el servidor (reemplaza el temporal)
+      } else {
+        // Falló: quitamos el optimista y devolvemos el texto al input.
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setText(body);
+      }
     } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setText(body);
     } finally {
       setSending(false);
