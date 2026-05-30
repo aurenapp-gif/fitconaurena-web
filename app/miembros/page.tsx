@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CallCountdown from "@/components/CallCountdown";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
-import { PROFILE_FIELDS, type Questionnaire } from "@/lib/profile";
+import type { Questionnaire } from "@/lib/profile";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = {
@@ -39,13 +39,23 @@ export default async function MiembrosPage() {
   const name = profile?.display_name || email.split("@")[0];
   const photoUrl = profile?.photo_path ? await sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : undefined;
 
-  // Progreso del perfil (solo clientas)
+  // Señales para la checklist de primeros pasos (solo clientas)
+  let checkinDone = false;
+  let chatDone = false;
+  if (!admin) {
+    try { checkinDone = (await sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`)).length > 0; } catch {}
+    try { chatDone = (await sbSelect("messages", `select=id&member_email=eq.${encodeURIComponent(email)}&sender=eq.member&limit=1`)).length > 0; } catch {}
+  }
   const q = profile?.questionnaire ?? {};
-  const answered = PROFILE_FIELDS.filter((f) => (q[f.id] ?? "").toString().trim() !== "").length;
-  const totalSteps = PROFILE_FIELDS.length + 2; // + foto + nombre
-  const done = answered + (profile?.photo_path ? 1 : 0) + (profile?.display_name ? 1 : 0);
-  const pct = Math.round((done / totalSteps) * 100);
-  const showNudge = !admin && pct < 100;
+  const reqQ = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
+  const quesDone = reqQ.every((k) => (q[k] ?? "").toString().trim() !== "");
+  const steps = [
+    { label: "Sube tu foto de perfil", done: !!profile?.photo_path, href: "/miembros/perfil" },
+    { label: "Completa tu cuestionario", done: quesDone, href: "/miembros/perfil" },
+    { label: "Salúdame por el chat", done: chatDone, href: "/miembros/chat" },
+    { label: "Haz tu primer check-in", done: checkinDone, href: "/miembros/checkins" },
+  ];
+  const showChecklist = !admin && !steps.every((s) => s.done);
 
   return (
     <>
@@ -76,18 +86,29 @@ export default async function MiembrosPage() {
             </div>
           </div>
 
-          {/* Nudge: completar perfil */}
-          {showNudge && (
+          {/* Checklist de primeros pasos (desaparece al completarse) */}
+          {showChecklist && (
             <div className="card-dark p-6 !transform-none border-[#CAFF00]/30 mb-5">
-              <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
-                <div>
-                  <h3 className="font-bold text-white">Completa tu perfil ({pct}%)</h3>
-                  <p className="text-sm text-[#A0A0A0]">Necesitamos tus datos y tu foto para crear tu plan y verte en la comunidad.</p>
-                </div>
-                <Link href="/miembros/perfil" className="btn-brand text-sm px-5 py-2.5">Completar ahora</Link>
-              </div>
-              <div className="h-2 w-full rounded-full bg-[#1c1c1c] overflow-hidden">
-                <div className="h-full rounded-full bg-[#CAFF00] transition-all" style={{ width: `${pct}%` }} />
+              <h3 className="font-bold text-white mb-1">Tus primeros pasos</h3>
+              <p className="text-sm text-[#A0A0A0] mb-4">
+                Completa estos pasos para empezar con buen pie. {steps.filter((s) => s.done).length}/{steps.length} hechos.
+              </p>
+              <div className="flex flex-col gap-2">
+                {steps.map((s) => (
+                  <div key={s.label} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${s.done ? "border-[#252525] bg-[#0F0F0F]" : "border-[#252525] bg-[#0A0A0A]"}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${s.done ? "bg-[#CAFF00]" : "border-2 border-[#444]"}`}>
+                        {s.done && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
+                        )}
+                      </span>
+                      <span className={`text-sm ${s.done ? "text-[#666666] line-through" : "text-white"}`}>{s.label}</span>
+                    </div>
+                    {!s.done && (
+                      <Link href={s.href} className="text-[#CAFF00] text-sm font-semibold shrink-0">Hacerlo →</Link>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
