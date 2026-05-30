@@ -36,7 +36,7 @@ export default async function ContenidoPage() {
 
   let items: (Content & { url?: string; kind: Kind })[] = [];
   try {
-    const rows = await sbSelect<Content>("content", "select=*&order=created_at.desc");
+    const rows = await sbSelect<Content>("content", "select=*&order=created_at.desc&limit=100");
     items = await Promise.all(
       rows.map(async (r) => ({
         ...r,
