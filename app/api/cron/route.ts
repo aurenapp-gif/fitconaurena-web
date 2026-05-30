@@ -14,6 +14,23 @@ function madridDay(): string {
 function isoDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 }
+// Hora local de Madrid (0–23) de una fecha dada.
+function madridHour(d: Date): number {
+  return Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "numeric", hourCycle: "h23" }).format(d));
+}
+// Horas "activas" (08:00–24:00 en Madrid) transcurridas entre start y now.
+// La franja de madrugada (00:00–08:00) no cuenta. Tope en 24 (basta para todos
+// los umbrales) para no iterar de más.
+function activeHoursBetween(start: Date, now: Date): number {
+  const rawH = (now.getTime() - start.getTime()) / 3600000;
+  if (rawH <= 0) return 0;
+  if (rawH >= 72) return 24;
+  let active = 0;
+  for (let t = start.getTime(); t < now.getTime() && active < 24; t += 3600000) {
+    if (madridHour(new Date(t)) >= 8) active++;
+  }
+  return active;
+}
 
 export async function GET(req: NextRequest) {
   // Solo Vercel Cron (envía Authorization: Bearer CRON_SECRET).
@@ -92,11 +109,13 @@ export async function GET(req: NextRequest) {
     console.error("[cron] checkin reminders", e);
   }
 
-  // 3) Secuencia de avisos del plan tras completar el cuestionario (push + email).
+  // 3) Secuencia de avisos del plan tras completar el cuestionario (email).
   //    Idempotente vía profiles.plan_notice_stage (0 → 6 → 8 → 24). Se detiene si
-  //    la clienta ya tiene plan subido.
+  //    la clienta ya tiene plan subido. Solo cuenta horas activas (08:00–24:00) y
+  //    nunca se envía de madrugada (en horario de Madrid).
   let planSeqSent = 0;
-  try {
+  const activeNow = madridHour(new Date()) >= 8; // no enviar entre 00:00 y 08:00 (Madrid)
+  if (activeNow) try {
     type P = { email: string; questionnaire_completed_at: string | null; plan_notice_stage: number | null };
     const profs = await sbSelect<P>("profiles", "select=email,questionnaire_completed_at,plan_notice_stage");
     const planMembers = new Set(
@@ -114,8 +133,8 @@ export async function GET(req: NextRequest) {
       if (!memberSet.has(p.email)) continue; // solo clientas activas
       if (planMembers.has(p.email)) continue; // ya tiene plan → sin avisos de espera
       const stage = p.plan_notice_stage ?? 0;
-      const hours = (Date.now() - new Date(p.questionnaire_completed_at).getTime()) / 3600000;
-      const next = STAGES.find((s) => hours >= s.h && stage < s.stage); // el umbral más alto alcanzado
+      const hours = activeHoursBetween(new Date(p.questionnaire_completed_at), new Date());
+      const next = STAGES.find((s) => hours >= s.h && stage < s.stage); // umbral de horas activas alcanzado
       if (!next) continue;
       try {
         await sendPlanUpdateEmail(p.email, { subject: next.subject, heading: next.heading, message: next.message });
