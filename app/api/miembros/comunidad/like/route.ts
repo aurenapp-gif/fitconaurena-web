@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sbSelect, sbInsert, sbDelete } from "@/lib/supabase";
+import { sbSelect, sbInsertIgnore, sbDelete } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 const UUID = /^[0-9a-fA-F-]{36}$/;
@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
       await sbDelete("community_likes", `post_id=eq.${id}&member_email=eq.${encodeURIComponent(email)}`);
       liked = false;
     } else {
-      await sbInsert("community_likes", { post_id: id, member_email: email });
+      // ignore-duplicates: si un doble clic envía dos inserts a la vez, la
+      // restricción UNIQUE (post_id, member_email) evita el duplicado sin error.
+      await sbInsertIgnore("community_likes", { post_id: id, member_email: email });
       liked = true;
     }
     const all = await sbSelect("community_likes", `select=post_id&post_id=eq.${id}`);
