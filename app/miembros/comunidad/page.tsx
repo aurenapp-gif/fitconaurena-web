@@ -7,7 +7,7 @@ import { requireMember } from "@/lib/guard";
 export const metadata: Metadata = { title: "Comunidad", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default function ComunidadPage() {
+export default async function ComunidadPage() {
   await requireMember();
 
   return (
