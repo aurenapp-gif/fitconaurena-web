@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: "0 * * * *" # cada hora en punto (UTC)
   workflow_dispatch: {} # permite lanzarlo a mano desde la pestaña Actions
+  push:
+    paths:
+      - ".github/workflows/cron.yml" # se autoejecuta al editar este archivo (útil para verificar)
 
 jobs:
   ping:
