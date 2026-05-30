@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ProfileForm from "@/components/ProfileForm";
+import PushToggle from "@/components/PushToggle";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
@@ -83,6 +84,10 @@ export default async function PerfilPage() {
             photoUrl={photoUrl}
             admin={admin}
           />
+
+          <div className="mt-8">
+            <PushToggle />
+          </div>
         </div>
       </main>
     </>
