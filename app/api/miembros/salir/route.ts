@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/members";
+import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
-
-function siteOrigin(req: NextRequest): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-}
 
 export async function GET(req: NextRequest) {
   const res = NextResponse.redirect(`${siteOrigin(req)}/miembros/acceso`);

@@ -4,27 +4,13 @@ import { isQualified, answersToText, QUESTIONS, type Answers } from "@/lib/appli
 import { sendApplicationNotification } from "@/lib/mailer";
 import { addApplicant } from "@/lib/mailerlite";
 import { rateLimit } from "@/lib/ratelimit";
+import { clientIp, sameOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
 
 const GROUP_QUALIFIED = process.env.MAILERLITE_GROUP_QUALIFIED ?? "188815102565156064";
 const GROUP_UNQUALIFIED = process.env.MAILERLITE_GROUP_UNQUALIFIED ?? "188815103197447348";
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? "aurenapp@gmail.com";
-
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get("x-forwarded-for");
-  return (xff?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
-}
-
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === req.headers.get("host");
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) {

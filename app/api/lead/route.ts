@@ -3,30 +3,10 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { createToken } from "@/lib/token";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { rateLimit } from "@/lib/ratelimit";
+import { siteOrigin, clientIp, sameOrigin } from "@/lib/routeUtils";
 
 // El token usa la API crypto de Node.
 export const runtime = "nodejs";
-
-function siteOrigin(req: NextRequest): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-}
-
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get("x-forwarded-for");
-  return (xff?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
-}
-
-// Acepta solo peticiones del propio sitio (mismo host). Si no hay cabecera
-// Origin (algunos clientes no la envían) se permite y queda el rate limit.
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === req.headers.get("host");
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) {

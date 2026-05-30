@@ -4,18 +4,9 @@ import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, isAdmin } from "@/
 import { plusOneMonthISO } from "@/lib/profile";
 import { sbSelect, sbDelete, sbUpsert } from "@/lib/supabase";
 import { rateLimit } from "@/lib/ratelimit";
+import { clientIp, sameOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
-
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get("x-forwarded-for");
-  return (xff?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
-}
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return true;
-  try { return new URL(origin).host === req.headers.get("host"); } catch { return false; }
-}
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });

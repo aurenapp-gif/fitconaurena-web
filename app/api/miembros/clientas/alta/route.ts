@@ -3,13 +3,10 @@ import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/mailer";
 import { sbUpsert } from "@/lib/supabase";
+import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
 const WELCOME_TTL = 7 * 24 * 60 * 60 * 1000; // 7 días
-
-function siteOrigin(req: NextRequest): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-}
 
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
