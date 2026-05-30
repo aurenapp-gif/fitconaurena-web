@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import CheckinForm from "@/components/CheckinForm";
 import AdminCheckinReply from "@/components/AdminCheckinReply";
 import WeightChart from "@/components/WeightChart";
+import ProgressSummary from "@/components/ProgressSummary";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
@@ -27,6 +28,26 @@ type CheckIn = {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
+// Índice de semana alineado a lunes (epoch 1970-01-01 fue jueves).
+function weekIndex(d: string): number {
+  return Math.floor((Math.floor(new Date(d).getTime() / 86400000) + 3) / 7);
+}
+
+// Racha de semanas consecutivas con al menos un check-in (0 si se rompió).
+function weeklyStreak(dates: string[]): number {
+  if (!dates.length) return 0;
+  const weeks = Array.from(new Set(dates.map(weekIndex))).sort((a, b) => a - b);
+  const nowW = weekIndex(new Date().toISOString());
+  const lastW = weeks[weeks.length - 1];
+  if (nowW - lastW > 1) return 0; // último check-in hace más de 1 semana
+  let streak = 1;
+  for (let i = weeks.length - 1; i > 0; i--) {
+    if (weeks[i] - weeks[i - 1] === 1) streak++;
+    else break;
+  }
+  return streak;
 }
 
 const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch(() => undefined) : Promise.resolve(undefined));
@@ -65,6 +86,21 @@ export default async function CheckinsPage() {
     .filter((r) => r.weight != null)
     .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }));
 
+  // Resumen de progreso (solo clienta). rows viene en orden ascendente.
+  const mine = admin ? [] : rows;
+  const withWeight = mine.filter((r) => r.weight != null);
+  const firstWeight = withWeight.length ? Number(withWeight[0].weight) : null;
+  const lastWeight = withWeight.length ? Number(withWeight[withWeight.length - 1].weight) : null;
+  const weightDelta =
+    firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
+  const streak = admin ? 0 : weeklyStreak(mine.map((r) => r.created_at));
+  const firstWithFront = mine.find((r) => r.photo_front);
+  const lastWithFront = [...mine].reverse().find((r) => r.photo_front);
+  const [beforePhoto, afterPhoto] = await Promise.all([
+    sign(firstWithFront?.photo_front ?? null),
+    sign(lastWithFront?.photo_front ?? null),
+  ]);
+
   return (
     <>
       <Navbar />
@@ -79,13 +115,26 @@ export default async function CheckinsPage() {
           </div>
 
           {!admin && (
-            <div className="grid gap-6 lg:grid-cols-2 mb-8">
-              <CheckinForm />
-              <div className="card-dark p-6 !transform-none">
-                <h3 className="font-bold text-white mb-4">Tu progreso (peso)</h3>
-                <WeightChart points={points} />
+            <>
+              <ProgressSummary
+                total={mine.length}
+                streak={streak}
+                firstWeight={firstWeight}
+                lastWeight={lastWeight}
+                weightDelta={weightDelta}
+                beforePhoto={beforePhoto}
+                afterPhoto={afterPhoto}
+                beforeDate={firstWithFront ? fmt(firstWithFront.created_at) : undefined}
+                afterDate={lastWithFront ? fmt(lastWithFront.created_at) : undefined}
+              />
+              <div className="grid gap-6 lg:grid-cols-2 mb-8">
+                <CheckinForm />
+                <div className="card-dark p-6 !transform-none">
+                  <h3 className="font-bold text-white mb-4">Tu progreso (peso)</h3>
+                  <WeightChart points={points} />
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           <div className="flex flex-col gap-4">

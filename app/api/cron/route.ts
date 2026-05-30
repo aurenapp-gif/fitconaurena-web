@@ -3,6 +3,7 @@ import { getMembers, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert } from "@/lib/supabase";
 import { sendCallReminder, sendCheckinReminder } from "@/lib/mailer";
+import { sendPushToEmail } from "@/lib/push";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -51,6 +52,11 @@ export async function GET(req: NextRequest) {
       if (callMap.get(m.email) === today) continue; // ya avisada hoy
       try {
         await sendCallReminder(m.email);
+        sendPushToEmail(m.email, {
+          title: "Hoy toca videollamada 📞",
+          body: "No olvides tu sesión de seguimiento con Aurena.",
+          url: "/miembros/agenda",
+        }).catch((e) => console.error("[cron] push call", e));
         await sbUpsert("profiles", { email: m.email, last_call_reminder: today, updated_at: new Date().toISOString() });
         callSent++;
       } catch (e) { console.error("[cron] call", m.email, e); }
@@ -73,6 +79,11 @@ export async function GET(req: NextRequest) {
       if (lastRem && lastRem >= since) continue; // ya se le recordó hace <15d
       try {
         await sendCheckinReminder(m.email);
+        sendPushToEmail(m.email, {
+          title: "Toca check-in 📲",
+          body: "Cuéntale a Aurena cómo te ha ido esta semana.",
+          url: "/miembros/checkins",
+        }).catch((e) => console.error("[cron] push checkin", e));
         await sbUpsert("profiles", { email: m.email, last_checkin_reminder: today, updated_at: new Date().toISOString() });
         checkinSent++;
       } catch (e) { console.error("[cron] checkin", m.email, e); }
