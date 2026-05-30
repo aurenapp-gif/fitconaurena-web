@@ -1,10 +1,10 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ChatRoom from "@/components/ChatRoom";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAdmin } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 import { sbSelect } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Chat", robots: { index: false, follow: false } };
@@ -13,8 +13,7 @@ export const dynamic = "force-dynamic";
 type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string };
 
 export default async function ChatPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  const email = await requireMember();
   if (isAdmin(email)) redirect("/miembros/admin"); // la coach usa el panel
 
   let messages: Msg[] = [];

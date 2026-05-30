@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function AccesoPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; revoked?: string };
 }) {
   return (
     <>
@@ -26,6 +26,11 @@ export default function AccesoPage({
           <p className="section-sub mb-10 max-w-md mx-auto">
             Entra con tu email y te enviamos un enlace de acceso. Sin contraseñas.
           </p>
+          {searchParams.revoked && (
+            <p className="max-w-md mx-auto mb-5 text-sm text-[#A0A0A0]">
+              Tu acceso ya no está activo. Si crees que es un error, contacta con tu coach.
+            </p>
+          )}
           <MemberLogin error={!!searchParams.error} />
         </div>
       </section>

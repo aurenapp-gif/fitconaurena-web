@@ -1,10 +1,9 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ContentUpload from "@/components/ContentUpload";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAdmin } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = {
@@ -22,8 +21,7 @@ type Content = {
 };
 
 export default async function ContenidoPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  const email = await requireMember();
   const admin = isAdmin(email);
 
   let items: (Content & { url?: string })[] = [];

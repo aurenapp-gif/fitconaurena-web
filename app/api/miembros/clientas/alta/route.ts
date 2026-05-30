@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/mailer";
+import { sbUpsert } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 const WELCOME_TTL = 7 * 24 * 60 * 60 * 1000; // 7 días
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest) {
     console.error("[alta] mailerlite", err);
     return NextResponse.json({ error: "No se pudo dar de alta." }, { status: 502 });
   }
+
+  // Reactiva el acceso por si estaba revocada de antes.
+  await sbUpsert("profiles", { email, access_revoked: false, updated_at: new Date().toISOString() }).catch(() => {});
 
   // 2) Email de bienvenida con acceso directo (enlace válido 7 días).
   try {

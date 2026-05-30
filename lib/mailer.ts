@@ -173,6 +173,41 @@ export async function sendCheckinReplyEmail(to: string): Promise<void> {
   await send({ to, subject, html, text });
 }
 
+const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? "https://fitconaurena.com/miembros";
+
+/** Recordatorio de la videollamada grupal (jueves 20:00). */
+export async function sendCallReminder(to: string): Promise<void> {
+  const subject = "📹 Hoy videollamada grupal a las 20:00";
+  const text = `¡Hoy es jueves! Nos vemos en la videollamada grupal a las 20:00 (hora de Madrid).\n\nEntra a la sala: ${CALL_URL}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Hoy videollamada grupal 📹</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Te esperamos hoy a las <strong style="color:#fff;">20:00 (Madrid)</strong>.</p>
+      <a href="${CALL_URL}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Acceder a la sala</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
+/** Recordatorio para que la clienta suba su revisión (check-in). */
+export async function sendCheckinReminder(to: string): Promise<void> {
+  const subject = "📸 Toca tu revisión quincenal";
+  const url = "https://fitconaurena.com/miembros/checkins";
+  const text = `Han pasado ~15 días: toca subir tu revisión (peso + 3 fotos). Hazla aquí: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Toca tu revisión 📸</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Han pasado unos 15 días. Sube tu <strong style="color:#fff;">peso y tus 3 fotos</strong> (frente, perfil, espaldas) para seguir tu progreso.</p>
+      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Hacer mi revisión</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 /** Envía el enlace mágico de acceso + código (para la app instalada). */
 export async function sendMagicLink(to: string, loginUrl: string, code: string): Promise<void> {
   const subject = "Tu acceso al área de miembros — Fit con Aurena";
