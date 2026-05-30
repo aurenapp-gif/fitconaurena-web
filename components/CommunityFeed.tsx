@@ -145,7 +145,7 @@ export default function CommunityFeed() {
               {p.photoUrl && (
                 <a href={p.photoUrl} target="_blank" rel="noopener noreferrer">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.photoUrl} alt="" loading="lazy" decoding="async" className="max-h-72 rounded-lg border border-[#252525]" />
+                  <img src={p.photoUrl} alt={`Publicación de ${p.author_name}`} loading="lazy" decoding="async" className="max-h-72 rounded-lg border border-[#252525]" />
                 </a>
               )}
               <button

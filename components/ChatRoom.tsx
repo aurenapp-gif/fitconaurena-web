@@ -91,7 +91,7 @@ export default function ChatRoom({
   const isMine = (m: Msg) => m.sender === role;
 
   return (
-    <div className="card-dark p-0 !transform-none overflow-hidden flex flex-col" style={{ height: "65vh", minHeight: 420 }}>
+    <div className="card-dark p-0 !transform-none overflow-hidden flex flex-col" style={{ height: "min(68vh, 560px)", minHeight: 380 }}>
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 ? (
           <p className="text-sm text-[#666666] m-auto">Aún no hay mensajes. ¡Escribe el primero!</p>
