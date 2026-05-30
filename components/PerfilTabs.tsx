@@ -11,27 +11,37 @@ export default function PerfilTabs({ tabs }: { tabs: Tab[] }) {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      <div role="tablist" aria-label="Secciones del perfil" className="grid grid-cols-3 gap-2 mb-6">
         {tabs.map((t) => {
           const on = t.id === active;
           return (
             <button
               key={t.id}
               type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-selected={on}
+              aria-controls={`panel-${t.id}`}
               onClick={() => setActive(t.id)}
-              className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 transition-all ${
+              className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 transition-all ${
                 on ? "border-[#CAFF00] bg-[#CAFF00]/10" : "border-[#252525] bg-[#141414] hover:border-[#CAFF00]/40"
               }`}
             >
               <span className="text-xl">{t.icon}</span>
-              <span className={`text-xs font-bold ${on ? "text-[#CAFF00]" : "text-[#A0A0A0]"}`}>{t.label}</span>
+              <span className={`text-[11px] sm:text-xs font-bold ${on ? "text-[#CAFF00]" : "text-[#A0A0A0]"}`}>{t.label}</span>
             </button>
           );
         })}
       </div>
 
       {tabs.map((t) => (
-        <div key={t.id} className={t.id === active ? "" : "hidden"}>
+        <div
+          key={t.id}
+          role="tabpanel"
+          id={`panel-${t.id}`}
+          aria-labelledby={`tab-${t.id}`}
+          hidden={t.id !== active}
+        >
           {t.node}
         </div>
       ))}
