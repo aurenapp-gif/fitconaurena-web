@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbUpload, sbUpsert, safePath } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
+import { sendPlanUpdateEmail } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,11 +34,27 @@ export async function POST(req: NextRequest) {
     const path = safePath(`${type}-${file.name || "plan"}`);
     await sbUpload("planes", path, await file.arrayBuffer(), file.type || "application/octet-stream");
     await sbInsert("plans", { member_email: member, type, title: title || null, file_path: path });
-    // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes.
-    await sbUpsert("profiles", { email: member, renewal_date: plusOneMonthISO(), updated_at: new Date().toISOString() });
+    // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes. Además
+    // detiene la secuencia de avisos de espera (plan_notice_stage=24).
+    await sbUpsert("profiles", {
+      email: member,
+      renewal_date: plusOneMonthISO(),
+      plan_notice_stage: 24,
+      plan_ready_notified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
   } catch (err) {
     console.error("[clientas/plan]", err);
     return NextResponse.json({ error: "No se pudo subir el plan." }, { status: 500 });
   }
+
+  // Aviso a la clienta de que su plan ya está disponible (email, no bloqueante).
+  sendPlanUpdateEmail(member, {
+    subject: "¡Tu plan ya está disponible! 🎉",
+    heading: "¡Tu plan ya está listo! 🎉",
+    message: "Tu coach ha subido tu plan personalizado. Entra a tu área para verlo y empezar.",
+    cta: "Ver mi plan",
+  }).catch((e) => console.error("[clientas/plan] email", e));
+
   return NextResponse.json({ ok: true });
 }

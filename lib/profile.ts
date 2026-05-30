@@ -14,6 +14,7 @@ export const PROFILE_FIELDS: Field[] = [
   { id: "peso_objetivo", label: "Peso objetivo (kg)", type: "number" },
   { id: "objetivo", label: "Objetivo principal", type: "select", options: ["Perder grasa", "Tonificar", "Ganar músculo", "Salud y hábitos"] },
   { id: "nivel_actividad", label: "Nivel de actividad diaria", type: "select", options: ["Sedentaria", "Ligera", "Activa", "Muy activa"] },
+  { id: "pasos_dia", label: "Pasos diarios de media", type: "number" },
   { id: "dias_entreno", label: "Días que puedes entrenar por semana", type: "select", options: ["1-2", "3-4", "5-6"] },
   { id: "lugar_entreno", label: "¿Dónde entrenas?", type: "select", options: ["Casa", "Gimnasio", "Ambos"] },
   { id: "experiencia", label: "Experiencia entrenando", type: "select", options: ["Principiante", "Intermedia", "Avanzada"] },

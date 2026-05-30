@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMembers, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert } from "@/lib/supabase";
-import { sendCallReminder, sendCheckinReminder } from "@/lib/mailer";
+import { sendCallReminder, sendCheckinReminder, sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 
 export const runtime = "nodejs";
@@ -92,5 +92,40 @@ export async function GET(req: NextRequest) {
     console.error("[cron] checkin reminders", e);
   }
 
-  return NextResponse.json({ ok: true, callSent, checkinSent });
+  // 3) Secuencia de avisos del plan tras completar el cuestionario (push + email).
+  //    Idempotente vía profiles.plan_notice_stage (0 → 6 → 8 → 24). Se detiene si
+  //    la clienta ya tiene plan subido.
+  let planSeqSent = 0;
+  try {
+    type P = { email: string; questionnaire_completed_at: string | null; plan_notice_stage: number | null };
+    const profs = await sbSelect<P>("profiles", "select=email,questionnaire_completed_at,plan_notice_stage");
+    const planMembers = new Set(
+      (await sbSelect<{ member_email: string }>("plans", "select=member_email")).map((r) => r.member_email)
+    );
+    const memberSet = new Set(members.map((m) => m.email));
+    const STAGES: { h: number; stage: number; subject: string; heading: string; message: string }[] = [
+      { h: 24, stage: 24, subject: "Tu plan estará listo en breve ⏳", heading: "Tu plan estará listo en breve ⏳", message: "Estamos rematando los últimos detalles para que sea perfecto para ti." },
+      { h: 8, stage: 8, subject: "Tu plan se está elaborando ✍️", heading: "Tu plan se está elaborando ✍️", message: "Tu coach ya le está dando forma a tu plan personalizado." },
+      { h: 6, stage: 6, subject: "Preparando tu plan 💪", heading: "Preparando tu plan 💪", message: "Tu coach está preparando toda tu información para crear tu plan." },
+    ];
+
+    for (const p of profs) {
+      if (!p.questionnaire_completed_at) continue;
+      if (!memberSet.has(p.email)) continue; // solo clientas activas
+      if (planMembers.has(p.email)) continue; // ya tiene plan → sin avisos de espera
+      const stage = p.plan_notice_stage ?? 0;
+      const hours = (Date.now() - new Date(p.questionnaire_completed_at).getTime()) / 3600000;
+      const next = STAGES.find((s) => hours >= s.h && stage < s.stage); // el umbral más alto alcanzado
+      if (!next) continue;
+      try {
+        await sendPlanUpdateEmail(p.email, { subject: next.subject, heading: next.heading, message: next.message });
+        await sbUpsert("profiles", { email: p.email, plan_notice_stage: next.stage, updated_at: new Date().toISOString() });
+        planSeqSent++;
+      } catch (e) { console.error("[cron] plan seq", p.email, e); }
+    }
+  } catch (e) {
+    console.error("[cron] plan sequence", e);
+  }
+
+  return NextResponse.json({ ok: true, callSent, checkinSent, planSeqSent });
 }
