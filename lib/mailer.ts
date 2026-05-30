@@ -173,6 +173,26 @@ export async function sendCheckinReplyEmail(to: string): Promise<void> {
   await send({ to, subject, html, text });
 }
 
+/** Aviso a la clienta sobre el estado de su plan (secuencia de espera + disponible). */
+export async function sendPlanUpdateEmail(
+  to: string,
+  opts: { subject: string; heading: string; message: string; cta?: string }
+): Promise<void> {
+  const url = "https://fitconaurena.com/miembros/perfil";
+  const cta = opts.cta ?? "Ir a mi área";
+  const text = `${opts.heading}\n\n${opts.message}\n\nEntra: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">${opts.heading}</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">${opts.message}</p>
+      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">${cta}</a>
+    </div>
+  </div>`;
+  await send({ to, subject: opts.subject, html, text });
+}
+
 const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? "https://fitconaurena.com/miembros";
 
 /** Recordatorio de la videollamada grupal (jueves 20:00). */
