@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CallCountdown from "@/components/CallCountdown";
-import PushToggle from "@/components/PushToggle";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import type { Questionnaire } from "@/lib/profile";
@@ -111,8 +110,6 @@ export default async function MiembrosPage() {
               </div>
             </div>
           )}
-
-          <PushToggle />
 
           <div className="mb-5"><CallCountdown /></div>
 
