@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function adminEmail(req: NextRequest): string | null {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);

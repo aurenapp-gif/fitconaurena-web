@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAccessRevoked } from "@/lib/guard";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbInsert } from "@/lib/supabase";
 import { sendNewMessageNotice } from "@/lib/mailer";
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
   let body: { body?: unknown; member?: unknown };
   try {

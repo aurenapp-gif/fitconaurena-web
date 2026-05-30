@@ -21,13 +21,26 @@ export async function GET(req: NextRequest) {
   }
 
   const members = (await getMembers()).filter((m) => !isAdmin(m.email));
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
   let callSent = 0;
   let checkinSent = 0;
 
-  // 1) Recordatorio de videollamada los jueves.
+  // 1) Recordatorio de videollamada los jueves (idempotente: si el cron se
+  //    dispara dos veces el mismo día, no reenvía gracias a last_call_reminder).
   if (madridDay() === "Thu") {
+    let callMap = new Map<string, string | null>();
+    try {
+      const profs = await sbSelect<{ email: string; last_call_reminder: string | null }>("profiles", "select=email,last_call_reminder");
+      callMap = new Map(profs.map((p) => [p.email, p.last_call_reminder]));
+    } catch (e) { console.error("[cron] call map", e); }
+
     for (const m of members) {
-      try { await sendCallReminder(m.email); callSent++; } catch (e) { console.error("[cron] call", m.email, e); }
+      if (callMap.get(m.email) === today) continue; // ya avisada hoy
+      try {
+        await sendCallReminder(m.email);
+        await sbUpsert("profiles", { email: m.email, last_call_reminder: today, updated_at: new Date().toISOString() });
+        callSent++;
+      } catch (e) { console.error("[cron] call", m.email, e); }
     }
   }
 
@@ -40,7 +53,6 @@ export async function GET(req: NextRequest) {
     );
     const profs = await sbSelect<{ email: string; last_checkin_reminder: string | null }>("profiles", "select=email,last_checkin_reminder");
     const remMap = new Map(profs.map((p) => [p.email, p.last_checkin_reminder]));
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
 
     for (const m of members) {
       if (recent.has(m.email)) continue; // hizo check-in hace poco

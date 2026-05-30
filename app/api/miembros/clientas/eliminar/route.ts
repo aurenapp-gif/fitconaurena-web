@@ -21,21 +21,27 @@ export async function POST(req: NextRequest) {
   if (!apiKey || !groupId) return NextResponse.json({ error: "Config incompleta." }, { status: 500 });
   const H = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
 
+  // 1) Corte inmediato de acceso PRIMERO: es lo que de verdad bloquea la entrada
+  //    (lo comprueba el guard). Así, aunque MailerLite falle, la clienta queda
+  //    fuera de inmediato. Borra también los códigos de acceso pendientes.
+  await sbUpsert("profiles", { email, access_revoked: true, updated_at: new Date().toISOString() }).catch(() => {});
+  await sbDelete("login_codes", `email=eq.${encodeURIComponent(email)}`).catch(() => {});
+
+  // 2) Quitarla del grupo "Miembros" en MailerLite (para que deje de recibir
+  //    los emails del programa). Es idempotente; si falla, el acceso ya está cortado.
   try {
     const sub = await fetch(`https://connect.mailerlite.com/api/subscribers/${encodeURIComponent(email)}`, { headers: H });
-    if (!sub.ok) return NextResponse.json({ ok: true }); // no existe → nada que hacer
-    const id = (await sub.json())?.data?.id;
-    if (id) {
-      await fetch(`https://connect.mailerlite.com/api/subscribers/${id}/groups/${groupId}`, { method: "DELETE", headers: H });
+    if (sub.ok) {
+      const id = (await sub.json())?.data?.id;
+      if (id) {
+        await fetch(`https://connect.mailerlite.com/api/subscribers/${id}/groups/${groupId}`, { method: "DELETE", headers: H });
+      }
     }
   } catch (err) {
     console.error("[clientas/eliminar]", err);
-    return NextResponse.json({ error: "No se pudo eliminar." }, { status: 502 });
+    // El acceso ya está revocado en Supabase; informamos pero no es bloqueante.
+    return NextResponse.json({ ok: true, warning: "Acceso cortado, pero no se pudo quitar de MailerLite." });
   }
-
-  // Corte inmediato de acceso: marca revocada y borra códigos pendientes.
-  await sbUpsert("profiles", { email, access_revoked: true, updated_at: new Date().toISOString() }).catch(() => {});
-  await sbDelete("login_codes", `email=eq.${encodeURIComponent(email)}`).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }
