@@ -112,8 +112,29 @@ export async function sbDeleteObject(bucket: string, path: string): Promise<void
   }
 }
 
-/** Genera una URL firmada temporal para descargar un objeto privado. */
+/**
+ * Caché en memoria de URLs firmadas (por instancia). La firma de un mismo
+ * objeto es reutilizable durante su validez, así que evitamos volver a firmar
+ * el mismo path en cada render (force-dynamic) o entre fotos repetidas.
+ */
+const urlCache = new Map<string, { url: string; exp: number }>();
+function cacheGet(key: string): string | undefined {
+  const e = urlCache.get(key);
+  if (e && e.exp > Date.now()) return e.url;
+  if (e) urlCache.delete(key);
+  return undefined;
+}
+function cacheSet(key: string, url: string, expiresIn: number) {
+  if (urlCache.size > 3000) urlCache.clear(); // tope defensivo
+  // Reutilizamos hasta 5 min antes de caducar la firma.
+  urlCache.set(key, { url, exp: Date.now() + Math.max(0, expiresIn * 1000 - 300000) });
+}
+
+/** Genera una URL firmada temporal para descargar un objeto privado (con caché). */
 export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600): Promise<string> {
+  const key = `u:${bucket}:${path}:${expiresIn}`;
+  const hit = cacheGet(key);
+  if (hit) return hit;
   const res = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
@@ -121,7 +142,9 @@ export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600
   });
   if (!res.ok) throw new Error(`sbSignedUrl ${bucket}/${path}: ${res.status}`);
   const { signedURL } = await res.json();
-  return `${URL_BASE}/storage/v1${signedURL}`;
+  const url = `${URL_BASE}/storage/v1${signedURL}`;
+  cacheSet(key, url, expiresIn);
+  return url;
 }
 
 /**
@@ -130,6 +153,9 @@ export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600
  * plan, lanza y el llamador debe caer a `sbSignedUrl` (imagen completa).
  */
 export async function sbSignedThumb(bucket: string, path: string, width = 500, expiresIn = 3600): Promise<string> {
+  const key = `t:${bucket}:${path}:${width}:${expiresIn}`;
+  const hit = cacheGet(key);
+  if (hit) return hit;
   const res = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
@@ -137,7 +163,9 @@ export async function sbSignedThumb(bucket: string, path: string, width = 500, e
   });
   if (!res.ok) throw new Error(`sbSignedThumb ${bucket}/${path}: ${res.status}`);
   const { signedURL } = await res.json();
-  return `${URL_BASE}/storage/v1${signedURL}`;
+  const url = `${URL_BASE}/storage/v1${signedURL}`;
+  cacheSet(key, url, expiresIn);
+  return url;
 }
 
 /** Nombre de archivo seguro para usar como ruta en Storage. */
