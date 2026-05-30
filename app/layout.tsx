@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import NavProgress from "@/components/NavProgress";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -40,7 +41,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={inter.variable}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <NavProgress />
+        {children}
+      </body>
     </html>
   );
 }

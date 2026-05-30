@@ -99,3 +99,29 @@ body {
     transform: translateY(-2px);
   }
 }
+
+/* Micro-interacciones: feedback táctil, estados y movimiento accesible.
+   Fuera de @layer para tener prioridad sobre los :active de los botones. */
+.btn-brand:active,
+.btn-outline:active {
+  transform: scale(0.97);
+}
+button:disabled,
+a[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respeta a quien prefiere menos movimiento (accesibilidad). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
