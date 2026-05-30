@@ -45,6 +45,20 @@ export async function sbInsert<T = unknown>(table: string, row: object): Promise
   return Array.isArray(data) ? data[0] : data;
 }
 
+/**
+ * INSERT que ignora duplicados (ON CONFLICT DO NOTHING). Útil cuando hay una
+ * restricción UNIQUE y dos peticiones simultáneas podrían chocar: en vez de un
+ * error 409, no hace nada. No devuelve fila.
+ */
+export async function sbInsertIgnore(table: string, row: object): Promise<void> {
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) throw new Error(`sbInsertIgnore ${table}: ${res.status} ${await res.text()}`);
+}
+
 /** UPSERT (insert o update si choca la PK). */
 export async function sbUpsert(table: string, row: object): Promise<void> {
   const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
