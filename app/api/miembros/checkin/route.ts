@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
+import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +13,18 @@ async function uploadPhoto(form: FormData, field: string): Promise<string | null
     const path = safePath(`${field}-${f.name || "foto"}`);
     await sbUpload("checkins", path, await f.arrayBuffer(), f.type || "image/jpeg");
     return path;
+  }
+  return null;
+}
+
+// Valida todas las fotos presentes en el formulario; devuelve error o null.
+function validatePhotos(form: FormData): string | null {
+  for (const field of ["photo_front", "photo_side", "photo_back"]) {
+    const f = form.get(field);
+    if (f instanceof File && f.size > 0) {
+      const err = validateUpload(f, "image");
+      if (err) return err;
+    }
   }
   return null;
 }
@@ -44,6 +57,8 @@ export async function POST(req: NextRequest) {
   if (weight === null && !note && !hasPhoto) {
     return NextResponse.json({ error: "Añade al menos peso, nota o foto." }, { status: 400 });
   }
+  const badPhoto = validatePhotos(form);
+  if (badPhoto) return NextResponse.json({ error: badPhoto }, { status: 400 });
 
   try {
     const [photo_front, photo_side, photo_back] = await Promise.all([

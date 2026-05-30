@@ -33,9 +33,10 @@ function activeHoursBetween(start: Date, now: Date): number {
 }
 
 export async function GET(req: NextRequest) {
-  // Solo Vercel Cron (envía Authorization: Bearer CRON_SECRET).
+  // Solo quien tenga el secreto (Vercel Cron / GitHub Actions). Si no está
+  // configurado, bloqueamos por seguridad en vez de dejar el endpoint abierto.
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 

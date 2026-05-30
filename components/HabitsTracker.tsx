@@ -19,10 +19,12 @@ export default function HabitsTracker({
   const [steps, setSteps] = useState<string>(initial.steps != null ? String(initial.steps) : "");
   const [sleep, setSleep] = useState<string>(initial.sleep != null ? String(initial.sleep) : "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errMsg, setErrMsg] = useState("");
 
   async function save() {
     if (status === "saving") return;
     setStatus("saving");
+    setErrMsg("");
     try {
       const res = await fetch("/api/miembros/habitos", {
         method: "POST",
@@ -33,11 +35,17 @@ export default function HabitsTracker({
           sleep: sleep === "" ? null : Number(sleep),
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setErrMsg(d.error ?? "No se pudo guardar.");
+        setStatus("error");
+        return;
+      }
       setStatus("saved");
       router.refresh();
       setTimeout(() => setStatus("idle"), 2000);
     } catch {
+      setErrMsg("Error de conexión.");
       setStatus("error");
     }
   }
@@ -84,7 +92,7 @@ export default function HabitsTracker({
             {status === "saving" ? "Guardando…" : "Guardar hábitos"}
           </button>
           {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
-          {status === "error" && <span className="text-sm text-[#FF6B6B]">No se pudo guardar.</span>}
+          {status === "error" && <span className="text-sm text-[#FF6B6B]">{errMsg || "No se pudo guardar."}</span>}
         </div>
       </div>
 

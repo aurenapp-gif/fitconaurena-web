@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
+import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,6 +31,8 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Adjunta un archivo." }, { status: 400 });
   }
+  const invalid = validateUpload(file, "content");
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   try {
     const path = safePath(file.name || "archivo");

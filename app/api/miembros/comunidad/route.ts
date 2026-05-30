@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbSelect, sbInsert, sbDelete, sbUpload, sbDeleteObject, sbSignedUrl, safePath } from "@/lib/supabase";
+import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -100,6 +101,10 @@ export async function POST(req: NextRequest) {
 
   if (!body && !(photo instanceof File && photo.size > 0)) {
     return NextResponse.json({ error: "Escribe algo o adjunta una foto." }, { status: 400 });
+  }
+  if (photo instanceof File && photo.size > 0) {
+    const err = validateUpload(photo, "image");
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
   }
 
   try {

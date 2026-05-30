@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbUpsert, sbUpload, safePath } from "@/lib/supabase";
+import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,6 +22,8 @@ export async function POST(req: NextRequest) {
   if (!(photo instanceof File) || photo.size === 0) {
     return NextResponse.json({ error: "Adjunta una imagen." }, { status: 400 });
   }
+  const invalid = validateUpload(photo, "image");
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   try {
     const path = safePath(photo.name || "foto");

@@ -7,6 +7,8 @@
  * la propia cuenta (modo prueba).
  */
 
+import { fetchWithTimeout } from "@/lib/http";
+
 const FROM = process.env.RESEND_FROM ?? "Fit con Aurena <onboarding@resend.dev>";
 
 export async function sendVerificationEmail(to: string, confirmUrl: string): Promise<void> {
@@ -58,7 +60,7 @@ async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<voi
   const payload: Record<string, unknown> = { from: FROM, to, subject, html, text };
   if (replyTo) payload.reply_to = replyTo;
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
