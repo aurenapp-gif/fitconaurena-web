@@ -4,6 +4,7 @@ import { isAccessRevoked } from "@/lib/guard";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbInsert } from "@/lib/supabase";
 import { sendNewMessageNotice } from "@/lib/mailer";
+import { sendPushToEmail, sendPushToEmails } from "@/lib/push";
 
 export const runtime = "nodejs";
 
@@ -77,14 +78,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo enviar el mensaje." }, { status: 500 });
   }
 
-  // Aviso por email a la coach cuando escribe una clienta (no bloqueante).
+  // Avisos no bloqueantes (no afectan a la respuesta del POST).
   if (sender === "member") {
+    // Escribe una clienta → email + push a la coach.
     const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
     if (admins.length) {
-      sendNewMessageNotice(admins, channel, text).catch((e) =>
-        console.error("[chat] aviso email falló", e)
-      );
+      sendNewMessageNotice(admins, channel, text).catch((e) => console.error("[chat] aviso email falló", e));
+      sendPushToEmails(admins, { title: `💬 Mensaje de ${channel}`, body: text.slice(0, 120), url: "/miembros/admin" })
+        .catch((e) => console.error("[chat] push coach falló", e));
     }
+  } else {
+    // Responde la coach → push a la clienta de ese canal.
+    sendPushToEmail(channel, { title: "Tu coach te ha respondido 💬", body: text.slice(0, 120), url: "/miembros/chat" })
+      .catch((e) => console.error("[chat] push clienta falló", e));
   }
 
   return NextResponse.json({ ok: true });

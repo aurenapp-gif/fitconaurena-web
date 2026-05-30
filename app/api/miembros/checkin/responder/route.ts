@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbUpdate, sbSelect } from "@/lib/supabase";
 import { sendCheckinReplyEmail } from "@/lib/mailer";
+import { sendPushToEmail } from "@/lib/push";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,14 @@ export async function POST(req: NextRequest) {
   // Aviso por email a la clienta (no bloqueante).
   try {
     const rows = await sbSelect<{ member_email: string }>("check_ins", `select=member_email&id=eq.${id}`);
-    if (rows[0]?.member_email) await sendCheckinReplyEmail(rows[0].member_email);
+    if (rows[0]?.member_email) {
+      await sendCheckinReplyEmail(rows[0].member_email);
+      sendPushToEmail(rows[0].member_email, {
+        title: "Tu coach ha respondido tu check-in 💬",
+        body: "Entra para ver sus comentarios.",
+        url: "/miembros/checkins",
+      }).catch((e) => console.error("[responder] push falló", e));
+    }
   } catch (err) {
     console.error("[responder] email", err);
   }
