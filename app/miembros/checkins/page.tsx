@@ -1,12 +1,11 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CheckinForm from "@/components/CheckinForm";
 import AdminCheckinReply from "@/components/AdminCheckinReply";
 import WeightChart from "@/components/WeightChart";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAdmin } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Check-ins", robots: { index: false, follow: false } };
@@ -48,8 +47,7 @@ async function withPhoto(rows: CheckIn[]) {
 }
 
 export default async function CheckinsPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  const email = await requireMember();
   const admin = isAdmin(email);
 
   let rows: CheckIn[] = [];

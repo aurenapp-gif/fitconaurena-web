@@ -1,17 +1,14 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CommunityFeed from "@/components/CommunityFeed";
-import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 
 export const metadata: Metadata = { title: "Comunidad", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default function ComunidadPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  await requireMember();
 
   return (
     <>

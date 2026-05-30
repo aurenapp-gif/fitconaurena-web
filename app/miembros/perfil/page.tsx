@@ -1,10 +1,9 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ProfileForm from "@/components/ProfileForm";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAdmin } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import type { Questionnaire } from "@/lib/profile";
 
@@ -15,8 +14,7 @@ type Profile = { email: string; display_name: string | null; photo_path: string 
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; file_path: string; created_at: string };
 
 export default async function PerfilPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  const email = await requireMember();
   const admin = isAdmin(email);
 
   let profile: Profile | null = null;

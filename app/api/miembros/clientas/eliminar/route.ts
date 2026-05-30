@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { sbUpsert, sbDelete } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -31,5 +32,10 @@ export async function POST(req: NextRequest) {
     console.error("[clientas/eliminar]", err);
     return NextResponse.json({ error: "No se pudo eliminar." }, { status: 502 });
   }
+
+  // Corte inmediato de acceso: marca revocada y borra códigos pendientes.
+  await sbUpsert("profiles", { email, access_revoked: true, updated_at: new Date().toISOString() }).catch(() => {});
+  await sbDelete("login_codes", `email=eq.${encodeURIComponent(email)}`).catch(() => {});
+
   return NextResponse.json({ ok: true });
 }

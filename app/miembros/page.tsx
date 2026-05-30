@@ -1,10 +1,9 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CallCountdown from "@/components/CallCountdown";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { isAdmin } from "@/lib/members";
+import { requireMember } from "@/lib/guard";
 import type { Questionnaire } from "@/lib/profile";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
@@ -27,8 +26,7 @@ function Card({ title, desc, children }: { title: string; desc: string; children
 }
 
 export default async function MiembrosPage() {
-  const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
-  if (!email) redirect("/miembros/acceso");
+  const email = await requireMember();
   const admin = isAdmin(email);
 
   let profile: Profile | null = null;
