@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import PlanUpload from "@/components/PlanUpload";
 import RenewalSetter from "@/components/RenewalSetter";
+import RemoveClient from "@/components/RemoveClient";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
@@ -93,6 +94,13 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Zona de eliminación */}
+          <div className="card-dark p-6 !transform-none mt-6 border-[#FF6B6B]/20">
+            <h2 className="font-bold text-white mb-1">Eliminar clienta</h2>
+            <p className="text-sm text-[#A0A0A0] mb-4">Le quita el acceso al área de miembros. Sus datos no se borran.</p>
+            <RemoveClient email={member} />
           </div>
         </div>
       </main>

@@ -23,7 +23,6 @@ const TABS = [
 export default function CommunityFeed() {
   const [cat, setCat] = useState<"win" | "receta">("win");
   const [posts, setPosts] = useState<Post[]>([]);
-  const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -35,11 +34,6 @@ export default function CommunityFeed() {
       const data = await res.json();
       if (data?.posts) setPosts(data.posts);
     } catch { /* reintenta */ }
-  }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("fca_name");
-    if (saved) setName(saved);
   }, []);
 
   useEffect(() => {
@@ -58,10 +52,8 @@ export default function CommunityFeed() {
     if (!body.trim() && !photo) { setStatus("error"); setMsg("Escribe algo o adjunta una foto."); return; }
     setStatus("loading"); setMsg("");
     try {
-      if (name.trim()) localStorage.setItem("fca_name", name.trim());
       const fd = new FormData();
       fd.append("body", body);
-      fd.append("name", name);
       fd.append("category", cat);
       if (photo) fd.append("photo", photo);
       const res = await fetch("/api/miembros/comunidad", { method: "POST", body: fd });
@@ -107,8 +99,6 @@ export default function CommunityFeed() {
       <form onSubmit={publish} className="card-dark p-5 !transform-none border-[#CAFF00]/30 mb-6">
         <h3 className="font-bold text-white mb-3">{tab.title}</h3>
         <div className="flex flex-col gap-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre (cómo te verán)" aria-label="Tu nombre" maxLength={40}
-            className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]" />
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder={tab.ph} aria-label="Publicación"
             className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] resize-none" />
           <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} aria-label="Foto"

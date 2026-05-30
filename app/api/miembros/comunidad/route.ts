@@ -85,9 +85,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = String(form.get("body") ?? "").trim().slice(0, 2000);
-  const nameRaw = String(form.get("name") ?? "").trim().slice(0, 40);
-  const name = nameRaw || email.split("@")[0];
   const category = CATS.includes(String(form.get("category") ?? "")) ? String(form.get("category")) : "win";
+
+  // El nombre que se muestra es el del perfil (no el inicio del correo).
+  let name = email.split("@")[0];
+  try {
+    const prof = await sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(email)}`);
+    if (prof[0]?.display_name) name = prof[0].display_name;
+  } catch { /* fallback al prefijo */ }
   const photo = form.get("photo");
 
   if (!body && !(photo instanceof File && photo.size > 0)) {
