@@ -8,6 +8,8 @@
  *   MAILERLITE_GROUP_ID — grupo del lead magnet (por defecto "aurena contenido").
  */
 
+import { fetchWithTimeout } from "@/lib/http";
+
 const API_URL = "https://connect.mailerlite.com/api/subscribers";
 const DEFAULT_GROUP_ID = "188798542205158754"; // "aurena contenido"
 
@@ -33,7 +35,7 @@ async function postSubscriber(body: Record<string, unknown>): Promise<AddResult>
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     let res: Response;
     try {
-      res = await fetch(API_URL, {
+      res = await fetchWithTimeout(API_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,

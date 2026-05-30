@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { fetchWithTimeout } from "@/lib/http";
 
 /**
  * Área de miembros: magic-link login + sesión por cookie firmada (HMAC).
@@ -89,7 +90,7 @@ export async function getMembers(): Promise<{ email: string; name: string }[]> {
   const groupId = process.env.MAILERLITE_MEMBERS_GROUP_ID;
   if (!apiKey || !groupId) return [];
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://connect.mailerlite.com/api/groups/${groupId}/subscribers?limit=200`,
       { headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store" }
     );
@@ -110,7 +111,7 @@ export async function isMember(email: string): Promise<boolean> {
   const groupId = process.env.MAILERLITE_MEMBERS_GROUP_ID;
   if (!apiKey || !groupId) return false;
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://connect.mailerlite.com/api/subscribers/${encodeURIComponent(email)}`,
       { headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" } }
     );
