@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { isAccessRevoked } from "@/lib/guard";
 import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 async function uploadPhoto(form: FormData, field: string): Promise<string | null> {
   const f = form.get(field);
@@ -18,6 +20,7 @@ async function uploadPhoto(form: FormData, field: string): Promise<string | null
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
   let form: FormData;
   try {

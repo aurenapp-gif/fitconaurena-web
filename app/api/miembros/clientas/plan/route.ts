@@ -5,6 +5,7 @@ import { sbInsert, sbUpload, sbUpsert, safePath } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);

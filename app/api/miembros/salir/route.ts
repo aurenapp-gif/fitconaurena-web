@@ -9,6 +9,6 @@ function siteOrigin(req: NextRequest): string {
 
 export async function GET(req: NextRequest) {
   const res = NextResponse.redirect(`${siteOrigin(req)}/miembros/acceso`);
-  res.cookies.set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  res.cookies.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
   return res;
 }
