@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { resizeImage } from "@/lib/image";
 
 const PHOTOS = [
   { field: "photo_front", label: "Frente" },
@@ -33,7 +34,10 @@ export default function CheckinForm() {
       const fd = new FormData();
       fd.append("weight", weight);
       fd.append("note", note);
-      for (const p of PHOTOS) if (files[p.field]) fd.append(p.field, files[p.field] as File);
+      for (const p of PHOTOS) {
+        const f = files[p.field];
+        if (f) fd.append(p.field, await resizeImage(f));
+      }
       const res = await fetch("/api/miembros/checkin", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

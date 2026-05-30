@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PROFILE_FIELDS, type Questionnaire } from "@/lib/profile";
+import { resizeImage } from "@/lib/image";
 
 export default function ProfileForm({
   initialName,
@@ -30,7 +31,7 @@ export default function ProfileForm({
     setPhotoBusy(true);
     try {
       const fd = new FormData();
-      fd.append("photo", file);
+      fd.append("photo", await resizeImage(file));
       const res = await fetch("/api/miembros/perfil/foto", { method: "POST", body: fd });
       if (res.ok) router.refresh();
     } finally {

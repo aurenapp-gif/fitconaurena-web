@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { resizeImage } from "@/lib/image";
 
 type Post = {
   id: string;
@@ -55,7 +56,7 @@ export default function CommunityFeed() {
       const fd = new FormData();
       fd.append("body", body);
       fd.append("category", cat);
-      if (photo) fd.append("photo", photo);
+      if (photo) fd.append("photo", await resizeImage(photo));
       const res = await fetch("/api/miembros/comunidad", { method: "POST", body: fd });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setStatus("error"); setMsg(d.error ?? "No se pudo publicar."); return; }
       setBody(""); setPhoto(null); setStatus("idle");
