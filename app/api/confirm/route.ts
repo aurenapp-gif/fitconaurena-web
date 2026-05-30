@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/token";
 import { addSubscriber } from "@/lib/mailerlite";
+import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
-
-function siteOrigin(req: NextRequest): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-}
 
 export async function GET(req: NextRequest) {
   const origin = siteOrigin(req);

@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyMagicToken, createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, isAdmin } from "@/lib/members";
 import { plusOneMonthISO } from "@/lib/profile";
 import { sbSelect, sbUpsert } from "@/lib/supabase";
+import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
-
-function siteOrigin(req: NextRequest): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-}
 
 /** En la primera entrada de una clienta, fija su renovación a +1 mes. */
 async function ensureRenewal(email: string) {

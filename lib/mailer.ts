@@ -8,6 +8,7 @@
  */
 
 import { fetchWithTimeout } from "@/lib/http";
+import { SITE_URL, ADMIN_PANEL_URL, MEMBER_AREA_URL } from "@/lib/config";
 
 const FROM = process.env.RESEND_FROM ?? "Fit con Aurena <onboarding@resend.dev>";
 
@@ -122,12 +123,12 @@ export async function sendNewMessageNotice(
 ): Promise<void> {
   const subject = `💬 Nuevo mensaje de ${fromMember}`;
   const short = preview.length > 140 ? preview.slice(0, 140) + "…" : preview;
-  const text = `${fromMember} te ha escrito en el chat:\n\n"${short}"\n\nEntra al panel: https://fitconaurena.com/miembros/admin`;
+  const text = `${fromMember} te ha escrito en el chat:\n\n"${short}"\n\nEntra al panel: ${ADMIN_PANEL_URL}`;
   const html = `
   <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
     <h2 style="margin:0 0 8px;">Nuevo mensaje de ${fromMember}</h2>
     <p style="background:#f6f6f6;border-radius:8px;padding:14px;font-size:14px;line-height:1.5;">"${short}"</p>
-    <a href="https://fitconaurena.com/miembros/admin" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Responder en el panel</a>
+    <a href="${ADMIN_PANEL_URL}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Responder en el panel</a>
   </div>`;
   await send({ to, subject, html, text });
 }
@@ -161,7 +162,7 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
 /** Avisa a la clienta de que su coach respondió a su check-in. */
 export async function sendCheckinReplyEmail(to: string): Promise<void> {
   const subject = "Tu coach ha respondido a tu check-in 💬";
-  const url = "https://fitconaurena.com/miembros/checkins";
+  const url = `${SITE_URL}/miembros/checkins`;
   const text = `Tu coach ha respondido a tu último check-in. Entra a verlo: ${url}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
@@ -180,7 +181,7 @@ export async function sendPlanUpdateEmail(
   to: string,
   opts: { subject: string; heading: string; message: string; cta?: string }
 ): Promise<void> {
-  const url = "https://fitconaurena.com/miembros/perfil";
+  const url = `${SITE_URL}/miembros/perfil`;
   const cta = opts.cta ?? "Ir a mi área";
   const text = `${opts.heading}\n\n${opts.message}\n\nEntra: ${url}`;
   const html = `
@@ -195,7 +196,7 @@ export async function sendPlanUpdateEmail(
   await send({ to, subject: opts.subject, html, text });
 }
 
-const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? "https://fitconaurena.com/miembros";
+const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
 
 /** Recordatorio de la videollamada grupal (jueves 20:00). */
 export async function sendCallReminder(to: string): Promise<void> {
@@ -216,7 +217,7 @@ export async function sendCallReminder(to: string): Promise<void> {
 /** Recordatorio para que la clienta suba su revisión (check-in). */
 export async function sendCheckinReminder(to: string): Promise<void> {
   const subject = "📸 Toca tu revisión quincenal";
-  const url = "https://fitconaurena.com/miembros/checkins";
+  const url = `${SITE_URL}/miembros/checkins`;
   const text = `Han pasado ~15 días: toca subir tu revisión (peso + 3 fotos). Hazla aquí: ${url}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
