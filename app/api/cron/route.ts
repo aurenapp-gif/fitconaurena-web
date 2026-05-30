@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMembers, isAdmin } from "@/lib/members";
+import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert } from "@/lib/supabase";
 import { sendCallReminder, sendCheckinReminder } from "@/lib/mailer";
 
@@ -18,6 +19,18 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+
+  // Modo prueba: ?test=correo@ejemplo.com envía los DOS emails de muestra solo a
+  // esa dirección, sin tocar la base de datos ni al resto de clientas.
+  const testTo = req.nextUrl.searchParams.get("test");
+  if (testTo) {
+    const to = normalizeEmail(testTo);
+    if (!isValidEmail(to)) return NextResponse.json({ error: "Email de prueba no válido." }, { status: 400 });
+    const result: Record<string, string> = {};
+    try { await sendCallReminder(to); result.call = "enviado"; } catch (e) { result.call = `error: ${String(e)}`; }
+    try { await sendCheckinReminder(to); result.checkin = "enviado"; } catch (e) { result.checkin = `error: ${String(e)}`; }
+    return NextResponse.json({ ok: true, test: to, result });
   }
 
   const members = (await getMembers()).filter((m) => !isAdmin(m.email));
