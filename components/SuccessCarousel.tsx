@@ -56,6 +56,10 @@ export default function SuccessCarousel({ images }: { images: Caso[] }) {
 
   return (
     <section className="mt-16 md:mt-20">
+      <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00] max-w-2xl mx-auto"
+         style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
+        Paso 3: Comprueba cómo mujeres como tú han conseguido el cambio que tanto deseas con el método Fit con Aurena
+      </p>
       <h2
         className="text-center font-black text-white tracking-tight mb-2"
         style={{ fontSize: "clamp(1.4rem, 3.5vw, 2.2rem)" }}
