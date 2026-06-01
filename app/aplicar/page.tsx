@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ApplicationForm from "@/components/ApplicationForm";
 import SuccessCarousel, { type Caso } from "@/components/SuccessCarousel";
+import YouTubeFacade from "@/components/YouTubeFacade";
+import VideoTestimonials from "@/components/VideoTestimonials";
+import { VSL_URL, TESTIMONIAL_URLS, TESTIMONIALS_VERTICAL, youtubeId } from "@/lib/videos";
 
 export const metadata: Metadata = {
   title: "Solicitud — Programa Fit con Aurena",
@@ -40,6 +43,8 @@ function getCasosExito(): Caso[] {
 
 export default function AplicarPage() {
   const casos = getCasosExito();
+  const vslId = youtubeId(VSL_URL);
+  const testimonialIds = TESTIMONIAL_URLS.map(youtubeId).filter((x): x is string => !!x);
   return (
     <>
       <Navbar />
@@ -84,6 +89,13 @@ export default function AplicarPage() {
             </p>
           </div>
 
+          {/* VSL (vídeo de ventas), tras el titular/franja */}
+          {vslId && (
+            <div className="max-w-2xl mx-auto mb-12">
+              <YouTubeFacade id={vslId} title="Vídeo de presentación" />
+            </div>
+          )}
+
           {/* Formulario de calificación */}
           <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
              style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
@@ -99,6 +111,9 @@ export default function AplicarPage() {
 
           {/* Casos de éxito (debajo del cuestionario) */}
           <SuccessCarousel images={casos} />
+
+          {/* Testimonios en vídeo (debajo de las fotos) */}
+          <VideoTestimonials ids={testimonialIds} vertical={TESTIMONIALS_VERTICAL} />
         </div>
       </main>
     </>
