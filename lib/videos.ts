@@ -11,7 +11,7 @@ export const TESTIMONIAL_URLS: string[] = [
 ];
 
 // true si los testimonios son verticales (Shorts / vídeo de móvil); false si horizontales.
-export const TESTIMONIALS_VERTICAL = true;
+export const TESTIMONIALS_VERTICAL = false;
 
 /** Extrae el ID de YouTube de una URL o ID. Devuelve null si no es válido. */
 export function youtubeId(urlOrId: string): string | null {
