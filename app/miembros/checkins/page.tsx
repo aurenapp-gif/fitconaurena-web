@@ -91,15 +91,16 @@ export default async function CheckinsPage() {
   }
 
   const items = await withPhoto(admin ? rows : [...rows].reverse());
+  // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
   const points = (admin ? [] : rows)
-    .filter((r) => r.weight != null)
-    .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }));
+    .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
+    .filter((p) => Number.isFinite(p.weight));
 
   // Resumen de progreso (solo clienta). rows viene en orden ascendente.
   const mine = admin ? [] : rows;
-  const withWeight = mine.filter((r) => r.weight != null);
-  const firstWeight = withWeight.length ? Number(withWeight[0].weight) : null;
-  const lastWeight = withWeight.length ? Number(withWeight[withWeight.length - 1].weight) : null;
+  const validWeights = mine.map((r) => Number(r.weight)).filter((w) => Number.isFinite(w));
+  const firstWeight = validWeights.length ? validWeights[0] : null;
+  const lastWeight = validWeights.length ? validWeights[validWeights.length - 1] : null;
   const weightDelta =
     firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
   const streak = admin ? 0 : weeklyStreak(mine.map((r) => r.created_at));

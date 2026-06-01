@@ -34,6 +34,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
   for (const p of profiles) {
     if (!p.renewal_date) continue;
     const d = +p.renewal_date.slice(8, 10);
+    if (!Number.isInteger(d) || d < 1 || d > 31) continue; // fecha inválida → ignorar
     byDay.set(d, [...(byDay.get(d) ?? []), p]);
   }
 
