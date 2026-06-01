@@ -41,7 +41,15 @@ function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; 
   );
 }
 
-export default function SuccessCarousel({ images, header }: { images: Caso[]; header?: React.ReactNode }) {
+export default function SuccessCarousel({
+  images,
+  header,
+  className = "mt-16 md:mt-20",
+}: {
+  images: Caso[];
+  header?: React.ReactNode;
+  className?: string;
+}) {
   if (!images.length) return null;
 
   // Repartimos en dos filas (par/impar). Si solo hay una imagen, ambas usan todas.
@@ -55,7 +63,7 @@ export default function SuccessCarousel({ images, header }: { images: Caso[]; he
   const secB = Math.max(16, b.length * 3.4);
 
   return (
-    <section className="mt-16 md:mt-20">
+    <section className={className}>
       {header ?? (
         <>
           <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00] max-w-2xl mx-auto"
