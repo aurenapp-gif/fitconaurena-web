@@ -24,7 +24,7 @@ const WHATSAPP_URL = `https://wa.me/34607477339?text=${encodeURIComponent(
 
 // Calendly: si está configurado, se muestra el calendario incrustado al calificar
 // (con los colores de la marca). Mientras no esté, se mantiene WhatsApp de respaldo.
-const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL ?? "";
+const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL ?? "https://calendly.com/infoelevatenutrition/15min";
 const CALENDLY_SRC = CALENDLY_URL
   ? `${CALENDLY_URL}${CALENDLY_URL.includes("?") ? "&" : "?"}hide_gdpr_banner=1&background_color=0a0a0a&text_color=ffffff&primary_color=caff00`
   : "";
