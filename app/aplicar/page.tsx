@@ -103,8 +103,8 @@ export default function AplicarPage() {
           </p>
           <div className="card-dark p-6 md:p-10 !transform-none">
             <p className="text-center text-sm text-[#A0A0A0] mb-8">
-              Responde unas preguntas rápidas para ver si encajas en el programa. Tardas
-              menos de 1 minuto.
+              Responde unas preguntas rápidas para ver si encajas en el programa y agenda
+              una llamada gratuita.
             </p>
             <ApplicationForm />
           </div>
