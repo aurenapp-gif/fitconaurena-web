@@ -40,15 +40,38 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  // Modo prueba: ?test=correo@ejemplo.com envía los DOS emails de muestra solo a
-  // esa dirección, sin tocar la base de datos ni al resto de clientas.
+  // Modo prueba: ?test=correo@ejemplo.com envía TODOS los emails de muestra solo
+  // a esa dirección, sin tocar la base de datos ni al resto de clientas. Incluye
+  // los recordatorios y la secuencia completa de avisos del plan (6h/8h/24h +
+  // "plan disponible"), tal cual los recibiría una clienta tras el cuestionario.
   const testTo = req.nextUrl.searchParams.get("test");
   if (testTo) {
     const to = normalizeEmail(testTo);
     if (!isValidEmail(to)) return NextResponse.json({ error: "Email de prueba no válido." }, { status: 400 });
     const result: Record<string, string> = {};
-    try { await sendCallReminder(to); result.call = "enviado"; } catch (e) { result.call = `error: ${String(e)}`; }
-    try { await sendCheckinReminder(to); result.checkin = "enviado"; } catch (e) { result.checkin = `error: ${String(e)}`; }
+    const tryStep = async (key: string, fn: () => Promise<void>) => {
+      try { await fn(); result[key] = "enviado"; } catch (e) { result[key] = `error: ${String(e)}`; }
+    };
+    await tryStep("call", () => sendCallReminder(to));
+    await tryStep("checkin", () => sendCheckinReminder(to));
+    // Secuencia del plan (las mismas que envía el cron real):
+    await tryStep("plan_6h", () => sendPlanUpdateEmail(to, {
+      subject: "Preparando tu plan 💪", heading: "Preparando tu plan 💪",
+      message: "Tu coach está preparando toda tu información para crear tu plan.",
+    }));
+    await tryStep("plan_8h", () => sendPlanUpdateEmail(to, {
+      subject: "Tu plan se está elaborando ✍️", heading: "Tu plan se está elaborando ✍️",
+      message: "Tu coach ya le está dando forma a tu plan personalizado.",
+    }));
+    await tryStep("plan_24h", () => sendPlanUpdateEmail(to, {
+      subject: "Tu plan estará listo en breve ⏳", heading: "Tu plan estará listo en breve ⏳",
+      message: "Estamos rematando los últimos detalles para que sea perfecto para ti.",
+    }));
+    await tryStep("plan_disponible", () => sendPlanUpdateEmail(to, {
+      subject: "¡Tu plan ya está disponible! 🎉", heading: "¡Tu plan ya está listo! 🎉",
+      message: "Tu coach ha subido tu plan personalizado. Entra a tu área para verlo y empezar.",
+      cta: "Ver mi plan",
+    }));
     return NextResponse.json({ ok: true, test: to, result });
   }
 
