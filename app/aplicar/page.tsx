@@ -19,7 +19,8 @@ function getCasosExito(): string[] {
       .readdirSync(dir)
       .filter((f) => /\.(jpe?g|png|webp|avif|gif)$/i.test(f))
       .sort()
-      .map((f) => `/casos-exito/${f}`);
+      // Codificamos el nombre (espacios, acentos…) para que la URL sea válida.
+      .map((f) => `/casos-exito/${encodeURIComponent(f)}`);
   } catch {
     return [];
   }
