@@ -98,6 +98,7 @@ export default async function AdminPage() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Link href="/miembros/clientas" className="btn-brand text-sm px-5 py-2.5">Clientas</Link>
+              <Link href="/miembros/leads" className="btn-brand text-sm px-5 py-2.5">Leads / CRM</Link>
               <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
               <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
             </div>

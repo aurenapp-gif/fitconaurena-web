@@ -5,6 +5,7 @@ import { sendApplicationNotification } from "@/lib/mailer";
 import { addApplicant } from "@/lib/mailerlite";
 import { rateLimit } from "@/lib/ratelimit";
 import { clientIp, sameOrigin } from "@/lib/routeUtils";
+import { sbInsertIgnore } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -66,6 +67,23 @@ export async function POST(req: NextRequest) {
   }
 
   const qualified = isQualified(answers);
+
+  // Registrar el lead en el CRM (Supabase). Fire-and-forget: si falla (o la tabla
+  // aún no existe), no debe romper el envío de la solicitud.
+  try {
+    await sbInsertIgnore("leads", {
+      name: nombre,
+      email,
+      phone: telefono,
+      qualified,
+      answers,
+      motivacion,
+      status: "nuevo",
+      created_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[api/aplicar] no se pudo registrar el lead en el CRM", err);
+  }
 
   // 1) Notificar al equipo (clave: así sabemos si califica). 2) Guardar en MailerLite.
   let notified = false;
