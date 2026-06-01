@@ -6,7 +6,7 @@
  * así la cinta mide bien antes de cargar las imágenes → velocidad constante y
  * sin huecos negros. Si no hay imágenes, no renderiza nada. */
 
-export type Caso = { src: string; w: number; h: number };
+import type { Caso } from "@/lib/casos";
 
 function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; seconds: number }) {
   const loop = [...images, ...images]; // duplicado para un bucle sin saltos
@@ -41,7 +41,7 @@ function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; 
   );
 }
 
-export default function SuccessCarousel({ images }: { images: Caso[] }) {
+export default function SuccessCarousel({ images, header }: { images: Caso[]; header?: React.ReactNode }) {
   if (!images.length) return null;
 
   // Repartimos en dos filas (par/impar). Si solo hay una imagen, ambas usan todas.
@@ -56,19 +56,23 @@ export default function SuccessCarousel({ images }: { images: Caso[] }) {
 
   return (
     <section className="mt-16 md:mt-20">
-      <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00] max-w-2xl mx-auto"
-         style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
-        Paso 3: Comprueba cómo mujeres como tú han conseguido el cambio que tanto deseas con el método Fit con Aurena
-      </p>
-      <h2
-        className="text-center font-black text-white tracking-tight mb-2"
-        style={{ fontSize: "clamp(1.4rem, 3.5vw, 2.2rem)" }}
-      >
-        Resultados <span className="text-[#CAFF00]">reales</span>
-      </h2>
-      <p className="text-center text-[#A0A0A0] text-sm md:text-base mb-8">
-        Transformaciones de mujeres como tú.
-      </p>
+      {header ?? (
+        <>
+          <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00] max-w-2xl mx-auto"
+             style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
+            Paso 3: Comprueba cómo mujeres como tú han conseguido el cambio que tanto deseas con el método Fit con Aurena
+          </p>
+          <h2
+            className="text-center font-black text-white tracking-tight mb-2"
+            style={{ fontSize: "clamp(1.4rem, 3.5vw, 2.2rem)" }}
+          >
+            Resultados <span className="text-[#CAFF00]">reales</span>
+          </h2>
+          <p className="text-center text-[#A0A0A0] text-sm md:text-base mb-8">
+            Transformaciones de mujeres como tú.
+          </p>
+        </>
+      )}
 
       <div className="flex flex-col gap-4">
         <Row images={a} dir="left" seconds={secA} />

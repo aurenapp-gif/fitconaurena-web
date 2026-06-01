@@ -1,45 +1,17 @@
-import fs from "fs";
-import path from "path";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ApplicationForm from "@/components/ApplicationForm";
-import SuccessCarousel, { type Caso } from "@/components/SuccessCarousel";
+import SuccessCarousel from "@/components/SuccessCarousel";
 import YouTubeFacade from "@/components/YouTubeFacade";
 import VideoTestimonials from "@/components/VideoTestimonials";
 import { VSL_URL, TESTIMONIAL_URLS, TESTIMONIALS_VERTICAL, youtubeId } from "@/lib/videos";
+import { getCasosExito } from "@/lib/casos";
 
 export const metadata: Metadata = {
   title: "Solicitud — Programa Fit con Aurena",
   // Página privada: no indexar ni seguir. Solo se entra con el enlace.
   robots: { index: false, follow: false, nocache: true },
 };
-
-// Descubre automáticamente las fotos de public/casos-exito (sin tocar código).
-// Las dimensiones salen de manifest.json (generado al optimizar) para reservar
-// el espacio exacto de cada foto. Si una foto no está en el manifiesto, usa un
-// tamaño por defecto (sigue funcionando).
-function getCasosExito(): Caso[] {
-  try {
-    const dir = path.join(process.cwd(), "public", "casos-exito");
-    let manifest: Record<string, [number, number]> = {};
-    try {
-      manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"));
-    } catch {
-      /* sin manifiesto: usamos tamaño por defecto */
-    }
-    return fs
-      .readdirSync(dir)
-      .filter((f) => /\.(jpe?g|png|webp|avif|gif)$/i.test(f))
-      .sort()
-      .map((f) => {
-        const dim = manifest[f];
-        // Codificamos el nombre (espacios, acentos…) para que la URL sea válida.
-        return { src: `/casos-exito/${encodeURIComponent(f)}`, w: dim?.[0] ?? 800, h: dim?.[1] ?? 800 };
-      });
-  } catch {
-    return [];
-  }
-}
 
 export default function AplicarPage() {
   const casos = getCasosExito();
