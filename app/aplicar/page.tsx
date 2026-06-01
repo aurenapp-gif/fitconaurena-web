@@ -71,6 +71,19 @@ export default function AplicarPage() {
             </p>
           </div>
 
+          {/* Franja de marca: método + garantía */}
+          <div className="rounded-2xl bg-[#CAFF00] text-[#0A0A0A] text-center px-6 py-6 md:py-7 mb-12 max-w-xl mx-auto shadow-[0_8px_40px_rgba(202,255,0,0.25)]">
+            <p className="font-black leading-tight mb-3" style={{ fontSize: "clamp(1.15rem, 3vw, 1.7rem)" }}>
+              Con el método Fit con Aurena
+            </p>
+            <p className="font-extrabold text-sm md:text-base">
+              ✅ Garantía de resultados bajo contrato legal:
+            </p>
+            <p className="font-semibold text-sm md:text-base opacity-90">
+              Te acompaño hasta que lo consigas
+            </p>
+          </div>
+
           {/* Formulario de calificación */}
           <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
              style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
