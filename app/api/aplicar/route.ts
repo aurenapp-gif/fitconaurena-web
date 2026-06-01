@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Introduce un email válido." }, { status: 400 });
   }
-  if (!telefono || telefono.length > 40) {
-    return NextResponse.json({ error: "Introduce tu teléfono o WhatsApp." }, { status: 400 });
+  if (!telefono || telefono.length > 40 || telefono.replace(/\D/g, "").length < 9) {
+    return NextResponse.json({ error: "Introduce un teléfono válido (mínimo 9 dígitos)." }, { status: 400 });
   }
   // Todas las preguntas respondidas con un valor válido.
   const allAnswered = QUESTIONS.every((q) =>
