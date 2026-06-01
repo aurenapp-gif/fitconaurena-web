@@ -90,11 +90,27 @@ export default function AplicarPage() {
           </div>
 
           {/* VSL (vídeo de ventas), tras el titular/franja */}
-          {vslId && (
-            <div className="max-w-2xl mx-auto mb-12">
+          <div className="max-w-2xl mx-auto mb-12">
+            <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
+               style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
+              Paso 1: Ver el vídeo
+            </p>
+            {vslId ? (
               <YouTubeFacade id={vslId} title="Vídeo de presentación" />
-            </div>
-          )}
+            ) : (
+              <div className="aspect-video w-full rounded-2xl border border-[#252525] bg-gradient-to-br from-[#161616] to-[#0c0c0c] flex flex-col items-center justify-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                </span>
+                <p className="text-[#666666] text-xs mt-3 uppercase tracking-widest">Vídeo muy pronto</p>
+              </div>
+            )}
+            <p className="text-center text-sm md:text-base text-[#A0A0A0] mt-5">
+              Para saber cómo lograrlo, rellena el formulario para saber si podemos ayudarte y
+              agendar tu llamada gratuita, donde serás informada de cómo puedes solucionarlo
+              cuanto antes.
+            </p>
+          </div>
 
           {/* Formulario de calificación */}
           <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
