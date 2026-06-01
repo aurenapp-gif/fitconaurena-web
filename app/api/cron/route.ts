@@ -14,6 +14,14 @@ function madridDay(): string {
 function isoDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 }
+
+// Avisos del plan por etapa (horas activas transcurridas). Ordenados de mayor a
+// menor umbral: se envía el más alto alcanzado, uno cada vez.
+const PLAN_STAGES: { h: number; stage: number; subject: string; heading: string; message: string }[] = [
+  { h: 24, stage: 24, subject: "Tu plan estará listo en breve ⏳", heading: "Tu plan estará listo en breve ⏳", message: "Estamos rematando los últimos detalles para que sea perfecto para ti." },
+  { h: 8, stage: 8, subject: "Tu plan se está elaborando ✍️", heading: "Tu plan se está elaborando ✍️", message: "Tu coach ya le está dando forma a tu plan personalizado." },
+  { h: 6, stage: 6, subject: "Preparando tu plan 💪", heading: "Preparando tu plan 💪", message: "Tu coach está preparando toda tu información para crear tu plan." },
+];
 // Hora local de Madrid (0–23) de una fecha dada.
 function madridHour(d: Date): number {
   return Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "numeric", hourCycle: "h23" }).format(d));
@@ -75,6 +83,28 @@ export async function GET(req: NextRequest) {
       cta: "Ver mi plan",
     }));
     return NextResponse.json({ ok: true, test: to, result });
+  }
+
+  // Simulación con TIEMPOS REALES: ?simulate=correo&hours=N[&stage=S]
+  // Usa la misma lógica que el cron real y envía SOLO el aviso que tocaría a esa
+  // hora (uno cada vez). Ej.: hours=6 → el de 6h; hours=8 → el de 8h; etc.
+  const sim = req.nextUrl.searchParams.get("simulate");
+  if (sim) {
+    const to = normalizeEmail(sim);
+    if (!isValidEmail(to)) return NextResponse.json({ error: "Email no válido." }, { status: 400 });
+    const hours = Number(req.nextUrl.searchParams.get("hours"));
+    if (!Number.isFinite(hours)) return NextResponse.json({ error: "Indica ?hours=N (horas activas transcurridas)." }, { status: 400 });
+    const stage = Number(req.nextUrl.searchParams.get("stage") ?? "0") || 0;
+    const next = PLAN_STAGES.find((s) => hours >= s.h && stage < s.stage);
+    if (!next) {
+      return NextResponse.json({ ok: true, simulate: to, hours, stage, sent: null, info: "A esas horas todavía no toca ningún aviso." });
+    }
+    try {
+      await sendPlanUpdateEmail(to, { subject: next.subject, heading: next.heading, message: next.message });
+      return NextResponse.json({ ok: true, simulate: to, hours, stage, sent: `${next.stage}h`, info: `Enviado el aviso de ${next.stage}h (uno solo, el que corresponde a esa hora).` });
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: String(e) }, { status: 502 });
+    }
   }
 
   const members = (await getMembers()).filter((m) => !isAdmin(m.email));
@@ -148,11 +178,6 @@ export async function GET(req: NextRequest) {
       (await sbSelect<{ member_email: string }>("plans", "select=member_email")).map((r) => r.member_email)
     );
     const memberSet = new Set(members.map((m) => m.email));
-    const STAGES: { h: number; stage: number; subject: string; heading: string; message: string }[] = [
-      { h: 24, stage: 24, subject: "Tu plan estará listo en breve ⏳", heading: "Tu plan estará listo en breve ⏳", message: "Estamos rematando los últimos detalles para que sea perfecto para ti." },
-      { h: 8, stage: 8, subject: "Tu plan se está elaborando ✍️", heading: "Tu plan se está elaborando ✍️", message: "Tu coach ya le está dando forma a tu plan personalizado." },
-      { h: 6, stage: 6, subject: "Preparando tu plan 💪", heading: "Preparando tu plan 💪", message: "Tu coach está preparando toda tu información para crear tu plan." },
-    ];
 
     for (const p of profs) {
       if (!p.questionnaire_completed_at) continue;
@@ -160,7 +185,7 @@ export async function GET(req: NextRequest) {
       if (planMembers.has(p.email)) continue; // ya tiene plan → sin avisos de espera
       const stage = p.plan_notice_stage ?? 0;
       const hours = activeHoursBetween(new Date(p.questionnaire_completed_at), new Date());
-      const next = STAGES.find((s) => hours >= s.h && stage < s.stage); // umbral de horas activas alcanzado
+      const next = PLAN_STAGES.find((s) => hours >= s.h && stage < s.stage); // umbral de horas activas alcanzado
       if (!next) continue;
       try {
         await sendPlanUpdateEmail(p.email, { subject: next.subject, heading: next.heading, message: next.message });
