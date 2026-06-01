@@ -14,6 +14,7 @@ export default function HomePage() {
       <div className="container-content pb-20 md:pb-24">
         <SuccessCarousel
           images={casos}
+          className="mt-2 md:mt-4"
           header={
             <div className="text-center mb-8 max-w-2xl mx-auto">
               <p className="font-black text-white leading-snug" style={{ fontSize: "clamp(1.2rem, 3vw, 1.9rem)" }}>

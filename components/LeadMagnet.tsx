@@ -42,7 +42,7 @@ export default function LeadMagnet() {
   return (
     <section
       id="contenido-gratis"
-      className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden"
+      className="relative pt-16 overflow-hidden"
     >
       {/* Background glow */}
       <div
@@ -50,7 +50,7 @@ export default function LeadMagnet() {
         style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
       />
 
-      <div className="container-content relative z-10 py-16">
+      <div className="container-content relative z-10 pt-12 pb-6">
         {/* Prueba social, arriba del todo (fuera de la tarjeta) */}
         <p className="text-center font-black text-white mb-6" style={{ fontSize: "clamp(1.05rem, 2.6vw, 1.5rem)" }}>
           <span className="text-[#CAFF00]">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
