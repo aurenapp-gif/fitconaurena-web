@@ -1,17 +1,24 @@
 "use client";
 
-/* Carrusel de casos de éxito: dos columnas verticales que rotan en bucle
+/* Carrusel de casos de éxito: dos filas HORIZONTALES que se deslizan en bucle
  * infinito y en sentidos opuestos. Decorativo (no clicable). Si no hay
  * imágenes, no renderiza nada. Las fotos se descubren solas desde
  * public/casos-exito (ver app/aplicar/page.tsx). */
 
-function Column({ images, dir, seconds }: { images: string[]; dir: "up" | "down"; seconds: number }) {
+function Row({ images, dir, seconds }: { images: string[]; dir: "left" | "right"; seconds: number }) {
   const loop = [...images, ...images]; // duplicado para un bucle sin saltos
   return (
-    <div className="overflow-hidden h-full">
+    <div
+      className="overflow-hidden"
+      style={{
+        // Difuminado en los bordes (blanco = visible; funciona en todos los navegadores).
+        maskImage: "linear-gradient(to right, transparent, #fff 8%, #fff 92%, transparent)",
+        WebkitMaskImage: "linear-gradient(to right, transparent, #fff 8%, #fff 92%, transparent)",
+      }}
+    >
       <div
-        className="flex flex-col gap-4"
-        style={{ animation: `${dir === "up" ? "marqueeUp" : "marqueeDown"} ${seconds}s linear infinite` }}
+        className="flex w-max gap-4"
+        style={{ animation: `${dir === "left" ? "marqueeLeft" : "marqueeRight"} ${seconds}s linear infinite` }}
       >
         {loop.map((src, i) => (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -22,7 +29,7 @@ function Column({ images, dir, seconds }: { images: string[]; dir: "up" | "down"
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            className="w-full rounded-2xl border border-[#252525] object-cover"
+            className="h-52 md:h-64 w-auto rounded-2xl border border-[#252525] object-cover shrink-0"
           />
         ))}
       </div>
@@ -33,15 +40,15 @@ function Column({ images, dir, seconds }: { images: string[]; dir: "up" | "down"
 export default function SuccessCarousel({ images }: { images: string[] }) {
   if (!images.length) return null;
 
-  // Repartimos en dos columnas (par/impar). Si solo hay una imagen, ambas usan todas.
-  const colA = images.filter((_, i) => i % 2 === 0);
-  const colB = images.filter((_, i) => i % 2 === 1);
-  const a = colA.length ? colA : images;
-  const b = colB.length ? colB : images;
+  // Repartimos en dos filas (par/impar). Si solo hay una imagen, ambas usan todas.
+  const rowA = images.filter((_, i) => i % 2 === 0);
+  const rowB = images.filter((_, i) => i % 2 === 1);
+  const a = rowA.length ? rowA : images;
+  const b = rowB.length ? rowB : images;
 
-  // Velocidad proporcional al número de fotos (más fotos → bucle más largo).
-  const secA = Math.max(22, a.length * 7);
-  const secB = Math.max(22, b.length * 7);
+  // Velocidad proporcional al nº de fotos (más fotos → bucle más largo).
+  const secA = Math.max(25, a.length * 6);
+  const secB = Math.max(25, b.length * 6);
 
   return (
     <section className="mt-16 md:mt-20">
@@ -55,16 +62,9 @@ export default function SuccessCarousel({ images }: { images: string[] }) {
         Transformaciones de mujeres como tú.
       </p>
 
-      <div
-        className="grid grid-cols-2 gap-4 max-w-xl mx-auto"
-        style={{
-          height: 560,
-          maskImage: "linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)",
-        }}
-      >
-        <Column images={a} dir="up" seconds={secA} />
-        <Column images={b} dir="down" seconds={secB} />
+      <div className="flex flex-col gap-4">
+        <Row images={a} dir="left" seconds={secA} />
+        <Row images={b} dir="right" seconds={secB} />
       </div>
     </section>
   );
