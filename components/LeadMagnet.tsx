@@ -56,9 +56,13 @@ export default function LeadMagnet() {
           <h2 className="section-title mb-4">
             Accede a <span className="text-[#CAFF00]">contenido gratuito</span>
           </h2>
-          <p className="section-sub mb-8 max-w-lg mx-auto">
+          <p className="section-sub mb-6 max-w-lg mx-auto">
             Todo lo que debes saber para poder llevar tu físico y mentalidad al
             siguiente nivel. Déjanos tu email, confírmalo y tendrás acceso al instante.
+          </p>
+
+          <p className="font-bold text-white text-sm md:text-base mb-6">
+            <span className="text-[#CAFF00] font-black">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
           </p>
 
           {status === "sent" ? (
