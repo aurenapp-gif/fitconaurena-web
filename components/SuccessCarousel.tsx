@@ -47,8 +47,9 @@ export default function SuccessCarousel({ images }: { images: string[] }) {
   const b = rowB.length ? rowB : images;
 
   // Velocidad proporcional al nº de fotos (más fotos → bucle más largo).
-  const secA = Math.max(25, a.length * 6);
-  const secB = Math.max(25, b.length * 6);
+  // Filas a ritmos algo distintos para que se note el movimiento opuesto.
+  const secA = Math.max(14, a.length * 3);
+  const secB = Math.max(16, b.length * 3.4);
 
   return (
     <section className="mt-16 md:mt-20">
