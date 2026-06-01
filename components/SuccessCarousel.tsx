@@ -24,22 +24,16 @@ function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; 
         style={{ animation: `${dir === "left" ? "marqueeLeft" : "marqueeRight"} ${seconds}s linear infinite` }}
       >
         {loop.map((img, i) => (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          // Foto pintada como FONDO de un div (no es <img>): no se puede guardar
+          // con pulsación larga ni arrastrar. aspect-ratio reserva el espacio.
+          <div
             key={i}
-            src={img.src}
-            width={img.w}
-            height={img.h}
-            alt=""
             aria-hidden="true"
-            loading="eager"
-            decoding="async"
-            draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-            // Evita guardar/arrastrar: sin menú de pulsación larga (iOS), sin
-            // selección, sin interacción de puntero (son decorativas).
-            style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", pointerEvents: "none" }}
-            className="h-52 md:h-60 w-auto rounded-2xl border border-[#252525] object-cover bg-[#161616] shrink-0 select-none"
+            className="h-52 md:h-60 w-auto rounded-2xl border border-[#252525] bg-[#161616] bg-cover bg-center shrink-0 pointer-events-none select-none"
+            style={{
+              aspectRatio: `${img.w} / ${img.h}`,
+              backgroundImage: `url("${img.src}")`,
+            }}
           />
         ))}
       </div>
