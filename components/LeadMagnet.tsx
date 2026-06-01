@@ -51,18 +51,19 @@ export default function LeadMagnet() {
       />
 
       <div className="container-content relative z-10 py-16">
+        {/* Prueba social, arriba del todo (fuera de la tarjeta) */}
+        <p className="text-center font-black text-white mb-6" style={{ fontSize: "clamp(1.05rem, 2.6vw, 1.5rem)" }}>
+          <span className="text-[#CAFF00]">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
+        </p>
+
         <div className="card-dark p-8 md:p-12 text-center !transform-none">
           <span className="section-tag">Contenido gratuito</span>
           <h2 className="section-title mb-4">
             Accede a <span className="text-[#CAFF00]">contenido gratuito</span>
           </h2>
-          <p className="section-sub mb-6 max-w-lg mx-auto">
+          <p className="section-sub mb-8 max-w-lg mx-auto">
             Todo lo que debes saber para poder llevar tu físico y mentalidad al
             siguiente nivel. Déjanos tu email, confírmalo y tendrás acceso al instante.
-          </p>
-
-          <p className="font-bold text-white text-sm md:text-base mb-6">
-            <span className="text-[#CAFF00] font-black">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
           </p>
 
           {status === "sent" ? (
