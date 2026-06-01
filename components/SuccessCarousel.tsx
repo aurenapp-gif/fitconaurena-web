@@ -1,35 +1,40 @@
 "use client";
 
 /* Carrusel de casos de éxito: dos filas HORIZONTALES que se deslizan en bucle
- * infinito y en sentidos opuestos. Decorativo (no clicable). Si no hay
- * imágenes, no renderiza nada. Las fotos se descubren solas desde
- * public/casos-exito (ver app/aplicar/page.tsx). */
+ * infinito y en sentidos opuestos. Decorativo (no clicable). Cada foto lleva su
+ * tamaño real (width/height) para reservar el espacio desde el primer frame:
+ * así la cinta mide bien antes de cargar las imágenes → velocidad constante y
+ * sin huecos negros. Si no hay imágenes, no renderiza nada. */
 
-function Row({ images, dir, seconds }: { images: string[]; dir: "left" | "right"; seconds: number }) {
+export type Caso = { src: string; w: number; h: number };
+
+function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; seconds: number }) {
   const loop = [...images, ...images]; // duplicado para un bucle sin saltos
   return (
     <div
       className="overflow-hidden"
       style={{
         // Difuminado en los bordes (blanco = visible; funciona en todos los navegadores).
-        maskImage: "linear-gradient(to right, transparent, #fff 8%, #fff 92%, transparent)",
-        WebkitMaskImage: "linear-gradient(to right, transparent, #fff 8%, #fff 92%, transparent)",
+        maskImage: "linear-gradient(to right, transparent, #fff 7%, #fff 93%, transparent)",
+        WebkitMaskImage: "linear-gradient(to right, transparent, #fff 7%, #fff 93%, transparent)",
       }}
     >
       <div
         className="flex w-max gap-4"
         style={{ animation: `${dir === "left" ? "marqueeLeft" : "marqueeRight"} ${seconds}s linear infinite` }}
       >
-        {loop.map((src, i) => (
+        {loop.map((img, i) => (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             key={i}
-            src={src}
+            src={img.src}
+            width={img.w}
+            height={img.h}
             alt=""
             aria-hidden="true"
-            loading="lazy"
+            loading="eager"
             decoding="async"
-            className="h-52 md:h-64 w-auto rounded-2xl border border-[#252525] object-cover shrink-0"
+            className="h-52 md:h-60 w-auto rounded-2xl border border-[#252525] object-cover bg-[#161616] shrink-0"
           />
         ))}
       </div>
@@ -37,7 +42,7 @@ function Row({ images, dir, seconds }: { images: string[]; dir: "left" | "right"
   );
 }
 
-export default function SuccessCarousel({ images }: { images: string[] }) {
+export default function SuccessCarousel({ images }: { images: Caso[] }) {
   if (!images.length) return null;
 
   // Repartimos en dos filas (par/impar). Si solo hay una imagen, ambas usan todas.
@@ -46,7 +51,6 @@ export default function SuccessCarousel({ images }: { images: string[] }) {
   const a = rowA.length ? rowA : images;
   const b = rowB.length ? rowB : images;
 
-  // Velocidad proporcional al nº de fotos (más fotos → bucle más largo).
   // Filas a ritmos algo distintos para que se note el movimiento opuesto.
   const secA = Math.max(14, a.length * 3);
   const secB = Math.max(16, b.length * 3.4);
