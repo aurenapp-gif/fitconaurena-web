@@ -59,9 +59,19 @@ export default function ApplicationForm() {
   async function submit() {
     if (status === "loading") return;
     const allAnswered = QUESTIONS.every((q) => answers[q.id]);
-    if (!allAnswered || !motivacion.trim() || !nombre || !email || !telefono) {
+    if (!allAnswered || !motivacion.trim() || !nombre.trim()) {
       setStatus("error");
-      setMessage("Completa todos los pasos y tus datos.");
+      setMessage("Completa todos los pasos y tu nombre.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setStatus("error");
+      setMessage("Introduce un email válido (ejemplo: nombre@correo.com).");
+      return;
+    }
+    if (telefono.replace(/\D/g, "").length < 9) {
+      setStatus("error");
+      setMessage("Introduce un número de teléfono válido (mínimo 9 dígitos).");
       return;
     }
     setStatus("loading");
