@@ -34,7 +34,12 @@ function Row({ images, dir, seconds }: { images: Caso[]; dir: "left" | "right"; 
             aria-hidden="true"
             loading="eager"
             decoding="async"
-            className="h-52 md:h-60 w-auto rounded-2xl border border-[#252525] object-cover bg-[#161616] shrink-0"
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+            // Evita guardar/arrastrar: sin menú de pulsación larga (iOS), sin
+            // selección, sin interacción de puntero (son decorativas).
+            style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", pointerEvents: "none" }}
+            className="h-52 md:h-60 w-auto rounded-2xl border border-[#252525] object-cover bg-[#161616] shrink-0 select-none"
           />
         ))}
       </div>
