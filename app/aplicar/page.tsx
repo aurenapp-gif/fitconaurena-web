@@ -1,6 +1,9 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ApplicationForm from "@/components/ApplicationForm";
+import SuccessCarousel from "@/components/SuccessCarousel";
 
 export const metadata: Metadata = {
   title: "Solicitud — Programa Fit con Aurena",
@@ -8,7 +11,22 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
+// Descubre automáticamente las fotos de public/casos-exito (sin tocar código).
+function getCasosExito(): string[] {
+  try {
+    const dir = path.join(process.cwd(), "public", "casos-exito");
+    return fs
+      .readdirSync(dir)
+      .filter((f) => /\.(jpe?g|png|webp|avif|gif)$/i.test(f))
+      .sort()
+      .map((f) => `/casos-exito/${f}`);
+  } catch {
+    return [];
+  }
+}
+
 export default function AplicarPage() {
+  const casos = getCasosExito();
   return (
     <>
       <Navbar />
@@ -52,6 +70,9 @@ export default function AplicarPage() {
             </p>
             <ApplicationForm />
           </div>
+
+          {/* Casos de éxito (debajo del cuestionario) */}
+          <SuccessCarousel images={casos} />
         </div>
       </main>
     </>
