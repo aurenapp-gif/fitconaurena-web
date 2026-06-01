@@ -49,8 +49,10 @@ export async function GET(req: NextRequest) {
     const to = normalizeEmail(testTo);
     if (!isValidEmail(to)) return NextResponse.json({ error: "Email de prueba no válido." }, { status: 400 });
     const result: Record<string, string> = {};
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     const tryStep = async (key: string, fn: () => Promise<void>) => {
       try { await fn(); result[key] = "enviado"; } catch (e) { result[key] = `error: ${String(e)}`; }
+      await sleep(350); // respeta el límite de Resend (5 emails/seg)
     };
     await tryStep("call", () => sendCallReminder(to));
     await tryStep("checkin", () => sendCheckinReminder(to));
