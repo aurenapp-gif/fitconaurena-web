@@ -128,6 +128,31 @@ export default function AplicarPage() {
           {/* Casos de éxito (debajo del cuestionario) */}
           <SuccessCarousel images={casos} />
 
+          {/* "Esto es para ti si…" (debajo de las fotos) */}
+          <div className="rounded-2xl bg-[#CAFF00] text-[#0A0A0A] px-6 py-7 md:px-10 md:py-9 mt-14 max-w-xl mx-auto shadow-[0_8px_40px_rgba(202,255,0,0.25)]">
+            <p className="font-black text-center mb-5" style={{ fontSize: "clamp(1.2rem, 3vw, 1.7rem)" }}>
+              Esto es para ti si…
+            </p>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                "Te has abandonado por trabajo",
+                "Te has dejado de poner ropa que te gusta",
+                "No vas a la playa o piscina por vergüenza",
+                "Estás harta de dietas",
+                "Tienes ansiedad por la comida",
+                "Has sufrido el efecto rebote",
+                "Lo has intentado todo y no consigues bajar de peso",
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2.5 font-semibold text-sm md:text-base">
+                  <svg className="shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Testimonios en vídeo (debajo de las fotos) */}
           <VideoTestimonials ids={testimonialIds} vertical={TESTIMONIALS_VERTICAL} />
         </div>
