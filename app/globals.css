@@ -114,16 +114,16 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Carrusel vertical de casos de éxito (dos columnas en sentidos opuestos).
+/* Carrusel horizontal de casos de éxito (dos filas en sentidos opuestos).
    El contenido va duplicado, así que 0 ↔ -50% muestran la misma vista y el
    bucle no tiene saltos en ninguna dirección. */
-@keyframes marqueeUp {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
+@keyframes marqueeLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
-@keyframes marqueeDown {
-  from { transform: translateY(-50%); }
-  to { transform: translateY(0); }
+@keyframes marqueeRight {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 
 /* Respeta a quien prefiere menos movimiento (accesibilidad). */
