@@ -45,7 +45,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Reactiva el acceso por si estaba revocada de antes.
-  await sbUpsert("profiles", { email, access_revoked: false, updated_at: new Date().toISOString() }).catch(() => {});
+  await sbUpsert("profiles", {
+    email,
+    ...(name ? { display_name: name } : {}),
+    access_revoked: false,
+    updated_at: new Date().toISOString(),
+  }).catch(() => {});
 
   // 2) Email de bienvenida con acceso directo (enlace válido 7 días).
   try {
