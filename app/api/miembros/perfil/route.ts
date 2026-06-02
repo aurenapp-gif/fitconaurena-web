@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sanitizeQuestionnaire } from "@/lib/profile";
+import { sanitizeQuestionnaire, questionnaireComplete } from "@/lib/profile";
 import { sbUpsert, sbSelect } from "@/lib/supabase";
 
 export const runtime = "nodejs";
-
-// Campos mínimos para considerar el cuestionario "completo" (dispara la
-// secuencia de avisos del plan, una sola vez).
-const REQUIRED = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
 
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  let body: { display_name?: unknown; questionnaire?: unknown };
+  let body: { display_name?: unknown; questionnaire?: unknown; submitted?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -25,12 +21,19 @@ export async function POST(req: NextRequest) {
   const display_name =
     typeof body.display_name === "string" ? body.display_name.trim().slice(0, 60) : "";
   const questionnaire = sanitizeQuestionnaire(body.questionnaire);
+  const submitted = body.submitted === true;
 
-  // Si el cuestionario queda completo y aún no se había marcado, guardamos la
-  // fecha (una sola vez) para arrancar la secuencia de avisos del plan.
-  const complete = REQUIRED.every((k) => (questionnaire[k] ?? "").toString().trim() !== "");
+  // El ciclo de avisos del plan SOLO arranca cuando la clienta pulsa
+  // "Enviar cuestionario" (submitted: true) y está completo. Guardar sin enviar
+  // no lo activa. Se marca una sola vez (no se reinicia en envíos posteriores).
   let questionnaire_completed_at: string | undefined;
-  if (complete) {
+  if (submitted) {
+    if (!questionnaireComplete(questionnaire)) {
+      return NextResponse.json(
+        { error: "Completa todos los campos obligatorios antes de enviar." },
+        { status: 400 }
+      );
+    }
     try {
       const rows = await sbSelect<{ questionnaire_completed_at: string | null }>(
         "profiles",

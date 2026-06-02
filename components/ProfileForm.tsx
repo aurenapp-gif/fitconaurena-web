@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PROFILE_FIELDS, type Questionnaire } from "@/lib/profile";
+import { PROFILE_FIELDS, REQUIRED_QUESTIONNAIRE, questionnaireComplete, type Questionnaire } from "@/lib/profile";
 import { resizeImage } from "@/lib/image";
 
 export default function ProfileForm({
@@ -10,11 +10,13 @@ export default function ProfileForm({
   initialQuestionnaire,
   photoUrl,
   admin = false,
+  submitted = false,
 }: {
   initialName: string;
   initialQuestionnaire: Questionnaire;
   photoUrl?: string;
   admin?: boolean;
+  submitted?: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -22,6 +24,9 @@ export default function ProfileForm({
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [msg, setMsg] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [sent, setSent] = useState(submitted);
+
+  const isComplete = questionnaireComplete(q);
 
   function set(id: string, v: string) {
     setQ((p) => ({ ...p, [id]: v }));
@@ -39,8 +44,9 @@ export default function ProfileForm({
     }
   }
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  // submit=false → solo guarda los datos. submit=true → "Enviar cuestionario":
+  // marca el cuestionario como enviado y arranca el ciclo de avisos del plan.
+  async function save(submit: boolean) {
     if (status === "saving") return;
     setStatus("saving");
     setMsg("");
@@ -48,7 +54,7 @@ export default function ProfileForm({
       const res = await fetch("/api/miembros/perfil", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: name, questionnaire: q }),
+        body: JSON.stringify({ display_name: name, questionnaire: q, submitted: submit }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -57,6 +63,7 @@ export default function ProfileForm({
         return;
       }
       setStatus("saved");
+      if (submit) setSent(true);
       router.refresh();
     } catch {
       setStatus("error");
@@ -68,7 +75,7 @@ export default function ProfileForm({
     "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
 
   return (
-    <form onSubmit={save} className="flex flex-col gap-6">
+    <form onSubmit={(e) => { e.preventDefault(); save(false); }} className="flex flex-col gap-6">
       {/* Foto + nombre */}
       <div className="card-dark p-6 !transform-none flex items-center gap-5 flex-wrap">
         <div className="w-20 h-20 rounded-full overflow-hidden bg-[#1c1c1c] border border-[#252525] flex items-center justify-center shrink-0">
@@ -105,7 +112,10 @@ export default function ProfileForm({
       {!admin && (
       <div className="card-dark p-6 !transform-none">
         <h3 className="font-bold text-white mb-1">Tu cuestionario</h3>
-        <p className="text-sm text-[#A0A0A0] mb-5">Estos datos nos sirven para crear tu plan personalizado.</p>
+        <p className="text-sm text-[#A0A0A0] mb-5">
+          Rellena tus datos y pulsa <strong className="text-white">Enviar cuestionario</strong>. Así tu coach
+          empieza a preparar tu plan personalizado.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {PROFILE_FIELDS.map((f) => (
             <div key={f.id} className={f.type === "textarea" ? "sm:col-span-2" : ""}>
@@ -123,13 +133,45 @@ export default function ProfileForm({
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-3 mt-5">
-          <button type="submit" disabled={status === "saving"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
-            {status === "saving" ? "Guardando…" : "Guardar perfil"}
-          </button>
-          {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
-          {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
-        </div>
+        {sent ? (
+          <div className="mt-5 rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5 px-4 py-3">
+            <p className="text-sm font-bold text-[#CAFF00]">✓ Cuestionario enviado</p>
+            <p className="text-xs text-[#A0A0A0] mt-0.5">
+              Tu coach ya está preparando tu plan. Puedes seguir actualizando tus datos cuando quieras.
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <button type="button" onClick={() => save(false)} disabled={status === "saving"} className="btn-outline text-sm px-5 py-2.5 disabled:opacity-60">
+                {status === "saving" ? "Guardando…" : "Guardar cambios"}
+              </button>
+              {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
+              {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <button type="button" onClick={() => save(false)} disabled={status === "saving"} className="btn-outline text-sm px-5 py-2.5 disabled:opacity-60">
+                {status === "saving" ? "Guardando…" : "Guardar borrador"}
+              </button>
+              <button
+                type="button"
+                onClick={() => save(true)}
+                disabled={status === "saving" || !isComplete}
+                title={isComplete ? "" : "Completa todos los campos obligatorios para enviar"}
+                className="btn-brand text-sm px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {status === "saving" ? "Enviando…" : "Enviar cuestionario"}
+              </button>
+              {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
+              {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+            </div>
+            {!isComplete && (
+              <p className="text-xs text-[#666666] mt-2">
+                Para enviar, completa: {REQUIRED_QUESTIONNAIRE.map((k) => PROFILE_FIELDS.find((f) => f.id === k)?.label ?? k).join(", ")}.
+              </p>
+            )}
+          </div>
+        )}
       </div>
       )}
     </form>

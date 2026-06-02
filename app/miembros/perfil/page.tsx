@@ -14,7 +14,7 @@ import type { Questionnaire } from "@/lib/profile";
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null };
+type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
 
@@ -113,6 +113,7 @@ export default async function PerfilPage() {
       initialQuestionnaire={profile?.questionnaire ?? {}}
       photoUrl={photoUrl}
       admin={admin}
+      submitted={!!profile?.questionnaire_completed_at}
     />
   );
 

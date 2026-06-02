@@ -28,6 +28,15 @@ export const PROFILE_FIELDS: Field[] = [
 
 export type Questionnaire = Record<string, string>;
 
+/** Campos mínimos para poder ENVIAR el cuestionario (y arrancar el ciclo de
+ * avisos del plan). Usado en cliente (habilitar el botón) y servidor (validar). */
+export const REQUIRED_QUESTIONNAIRE = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
+
+/** ¿Están todos los campos obligatorios rellenos? */
+export function questionnaireComplete(q: Questionnaire): boolean {
+  return REQUIRED_QUESTIONNAIRE.every((k) => (q[k] ?? "").toString().trim() !== "");
+}
+
 /** Fecha (YYYY-MM-DD) un mes después de `from` (por defecto, hoy). */
 export function plusOneMonthISO(from: Date = new Date()): string {
   const d = new Date(from);
