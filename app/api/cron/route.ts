@@ -143,11 +143,17 @@ export async function GET(req: NextRequest) {
     const recent = new Set(
       (await sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)).map((r) => r.member_email)
     );
-    const profs = await sbSelect<{ email: string; last_checkin_reminder: string | null }>("profiles", "select=email,last_checkin_reminder");
+    const profs = await sbSelect<{ email: string; last_checkin_reminder: string | null; created_at: string | null }>("profiles", "select=email,last_checkin_reminder,created_at");
     const remMap = new Map(profs.map((p) => [p.email, p.last_checkin_reminder]));
+    const joinedMap = new Map(profs.map((p) => [p.email, p.created_at]));
 
     for (const m of members) {
       if (recent.has(m.email)) continue; // hizo check-in hace poco
+      // Margen para clientas nuevas: no se les recuerda hasta 15 días después del
+      // alta. Si no, una recién dada de alta (sin check-ins aún) recibiría el
+      // recordatorio el primer día.
+      const joined = joinedMap.get(m.email);
+      if (joined && joined.slice(0, 10) >= since) continue;
       const lastRem = remMap.get(m.email);
       if (lastRem && lastRem >= since) continue; // ya se le recordó hace <15d
       try {
