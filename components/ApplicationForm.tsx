@@ -31,7 +31,7 @@ const CALENDLY_SRC = CALENDLY_URL
 
 const DRIVE_URL =
   process.env.NEXT_PUBLIC_GUIDE_URL ??
-  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
+  "https://drive.google.com/drive/folders/1E2ObPxptiA_VF1cfyQWML7LWcsf1O2VA";
 
 export default function ApplicationForm() {
   const [step, setStep] = useState(0);

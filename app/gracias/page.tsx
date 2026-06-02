@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 // Se puede sobreescribir con NEXT_PUBLIC_GUIDE_URL en el entorno.
 const DRIVE_URL =
   process.env.NEXT_PUBLIC_GUIDE_URL ??
-  "https://drive.google.com/drive/folders/1WYqSTwxTcAC4rQAULf-EwhBp2XDfxVOc";
+  "https://drive.google.com/drive/folders/1E2ObPxptiA_VF1cfyQWML7LWcsf1O2VA";
 
 export default function GraciasPage({
   searchParams,
