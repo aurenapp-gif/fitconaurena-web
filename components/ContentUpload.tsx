@@ -3,10 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function ContentUpload() {
+type Section = { id: number; name: string };
+
+export default function ContentUpload({ sections = [] }: { sections?: Section[] }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [sectionId, setSectionId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -25,6 +28,7 @@ export default function ContentUpload() {
       const fd = new FormData();
       fd.append("title", title);
       fd.append("description", description);
+      if (sectionId) fd.append("section_id", sectionId);
       fd.append("file", file);
       const res = await fetch("/api/miembros/contenido", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
@@ -35,6 +39,7 @@ export default function ContentUpload() {
       }
       setTitle("");
       setDescription("");
+      setSectionId("");
       setFile(null);
       setStatus("idle");
       (e.target as HTMLFormElement).reset();
@@ -59,6 +64,15 @@ export default function ContentUpload() {
           placeholder="Descripción (opcional)" aria-label="Descripción"
           className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
         />
+        <select
+          value={sectionId} onChange={(e) => setSectionId(e.target.value)} aria-label="Sección"
+          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white outline-none focus:border-[#CAFF00]"
+        >
+          <option value="">Sin sección</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
         <input
           type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           aria-label="Archivo"
