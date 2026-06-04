@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-type Profile = { display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null };
+type Profile = { display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; content_seen: boolean | null };
 
 function Card({ title, desc, children }: { title: string; desc: string; children?: React.ReactNode }) {
   return (
@@ -31,7 +31,7 @@ export default async function MiembrosPage() {
 
   let profile: Profile | null = null;
   try {
-    profile = (await sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire&email=eq.${encodeURIComponent(email)}`))[0] ?? null;
+    profile = (await sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,content_seen&email=eq.${encodeURIComponent(email)}`))[0] ?? null;
   } catch (e) { console.error("[dashboard] profile", e); }
 
   const name = profile?.display_name || email.split("@")[0];
@@ -48,6 +48,7 @@ export default async function MiembrosPage() {
   const reqQ = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
   const quesDone = reqQ.every((k) => (q[k] ?? "").toString().trim() !== "");
   const steps = [
+    { label: "Mira los vídeos de tu primera fase", done: !!profile?.content_seen, href: "/miembros/contenido" },
     { label: "Sube tu foto de perfil", done: !!profile?.photo_path, href: "/miembros/perfil" },
     { label: "Completa tu cuestionario", done: quesDone, href: "/miembros/perfil" },
     { label: "Salúdame por el chat", done: chatDone, href: "/miembros/chat" },

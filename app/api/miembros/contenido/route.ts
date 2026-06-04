@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
 
   const title = String(form.get("title") ?? "").trim();
   const description = String(form.get("description") ?? "").trim();
+  const sectionRaw = String(form.get("section_id") ?? "").trim();
+  const section_id = sectionRaw && Number.isFinite(Number(sectionRaw)) ? Number(sectionRaw) : null;
   const file = form.get("file");
 
   if (!title) return NextResponse.json({ error: "Falta el título." }, { status: 400 });
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const path = safePath(file.name || "archivo");
     await sbUpload("contenido", path, await file.arrayBuffer(), file.type || "application/octet-stream");
-    await sbInsert("content", { title, description: description || null, file_path: path });
+    await sbInsert("content", { title, description: description || null, file_path: path, section_id });
   } catch (err) {
     console.error("[api/miembros/contenido] error", err);
     return NextResponse.json({ error: "No se pudo subir el contenido." }, { status: 500 });
