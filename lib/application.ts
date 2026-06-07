@@ -30,7 +30,7 @@ export const QUESTIONS: Question[] = [
       { value: "25-30", label: "25 - 30" },
       { value: "31-35", label: "31 - 35" },
       { value: "36-40", label: "36 - 40" },
-      { value: "+40", label: "Más de 40", disqualifies: true },
+      { value: "+40", label: "Más de 40" },
     ],
   },
   {
