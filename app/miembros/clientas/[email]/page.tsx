@@ -102,6 +102,9 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 </div>
               </div>
             )}
+            <p className="text-sm text-[#A0A0A0] mb-3">
+              Nombre de clienta: <span className="font-bold text-white">“{profile?.display_name || member}”</span>
+            </p>
             <WeightChart points={points} />
           </div>
 
