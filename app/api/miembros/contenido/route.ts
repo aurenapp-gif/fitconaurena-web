@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
-import { sbInsert, sbUpload, safePath } from "@/lib/supabase";
+import { sbInsert, sbUpload, sbSelect, sbDelete, sbDeleteObject, safePath } from "@/lib/supabase";
 import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
@@ -45,5 +45,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo subir el contenido." }, { status: 500 });
   }
 
+  return NextResponse.json({ ok: true });
+}
+
+// Borrar un contenido (admin): elimina el archivo del almacenamiento y su registro.
+export async function DELETE(req: NextRequest) {
+  if (!adminEmail(req)) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+  let body: { id?: unknown };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+  const id = String(body.id ?? "").trim();
+  if (!id) return NextResponse.json({ error: "Falta el contenido." }, { status: 400 });
+
+  try {
+    const rows = await sbSelect<{ file_path: string | null }>(
+      "content",
+      `select=file_path&id=eq.${encodeURIComponent(id)}&limit=1`
+    );
+    const filePath = rows[0]?.file_path;
+    if (filePath) {
+      await sbDeleteObject("contenido", filePath).catch((e) => console.error("[contenido] borrar archivo", e));
+    }
+    await sbDelete("content", `id=eq.${encodeURIComponent(id)}`);
+  } catch (err) {
+    console.error("[api/miembros/contenido] DELETE error", err);
+    return NextResponse.json({ error: "No se pudo borrar." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

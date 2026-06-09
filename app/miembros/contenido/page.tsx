@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import ContentUpload from "@/components/ContentUpload";
 import SectionManager, { type Section } from "@/components/SectionManager";
+import DeleteContentButton from "@/components/DeleteContentButton";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbUpsert } from "@/lib/supabase";
@@ -34,7 +35,7 @@ function kindOf(path: string | null): Kind {
 
 type Item = Content & { url?: string; kind: Kind };
 
-function ContentCard({ it }: { it: Item }) {
+function ContentCard({ it, admin }: { it: Item; admin: boolean }) {
   return (
     <div className="card-dark p-5 !transform-none flex flex-col">
       <h3 className="font-bold text-white mb-1">{it.title}</h3>
@@ -57,6 +58,7 @@ function ContentCard({ it }: { it: Item }) {
           Abrir
         </a>
       )}
+      {admin && <DeleteContentButton id={it.id} title={it.title} />}
     </div>
   );
 }
@@ -150,7 +152,7 @@ export default async function ContenidoPage() {
                       <p className="text-sm text-[#666666]">Aún no hay vídeos en esta sección.</p>
                     ) : (
                       <div className="grid gap-4 sm:grid-cols-2">
-                        {list.map((it) => <ContentCard key={it.id} it={it} />)}
+                        {list.map((it) => <ContentCard key={it.id} it={it} admin={admin} />)}
                       </div>
                     )}
                   </section>
@@ -161,7 +163,7 @@ export default async function ContenidoPage() {
                 <section>
                   <h2 className="font-black text-white text-xl mb-4">{sections.length > 0 ? "Otros" : "Contenido"}</h2>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {noSection.map((it) => <ContentCard key={it.id} it={it} />)}
+                    {noSection.map((it) => <ContentCard key={it.id} it={it} admin={admin} />)}
                   </div>
                 </section>
               )}
