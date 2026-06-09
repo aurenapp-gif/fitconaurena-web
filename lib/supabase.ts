@@ -103,6 +103,21 @@ export async function sbDelete(table: string, filter: string): Promise<void> {
   if (!res.ok) throw new Error(`sbDelete ${table}: ${res.status} ${await res.text()}`);
 }
 
+/**
+ * Crea una URL firmada para que el cliente suba un archivo DIRECTAMENTE a
+ * Storage (PUT), sin pasar por el servidor de la web. Evita el límite de tamaño
+ * de las funciones y que los vídeos pesados carguen el servidor.
+ */
+export async function sbSignedUploadUrl(bucket: string, path: string): Promise<{ uploadUrl: string; path: string }> {
+  const res = await fetchT(`${URL_BASE}/storage/v1/object/upload/sign/${bucket}/${path}`, {
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+  });
+  if (!res.ok) throw new Error(`sbSignedUploadUrl ${bucket}/${path}: ${res.status} ${await res.text()}`);
+  const { url } = await res.json();
+  return { uploadUrl: `${URL_BASE}/storage/v1${url}`, path };
+}
+
 /** Borra un objeto de un bucket (no lanza si falla). */
 export async function sbDeleteObject(bucket: string, path: string): Promise<void> {
   try {

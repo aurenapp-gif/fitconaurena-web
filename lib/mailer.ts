@@ -133,6 +133,38 @@ export async function sendNewMessageNotice(
   await send({ to, subject, html, text });
 }
 
+/** Avisa a la coach de que una clienta ha subido un vídeo de técnica. */
+export async function sendTechniqueUploadNotice(to: string[], fromMember: string, exercise: string): Promise<void> {
+  const url = `${SITE_URL}/miembros/tecnica`;
+  const ex = exercise ? ` (${exercise})` : "";
+  const subject = `🎥 ${fromMember} ha subido un vídeo de técnica`;
+  const text = `${fromMember} ha subido un vídeo de técnica${ex} para que se lo corrijas.\n\nReví­salo: ${url}`;
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">Nuevo vídeo de técnica 🎥</h2>
+    <p style="font-size:14px;line-height:1.5;"><strong>${fromMember}</strong> ha subido un vídeo${ex} para que se lo corrijas.</p>
+    <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Revisar el vídeo</a>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
+/** Avisa a la clienta de que su coach ha corregido su vídeo de técnica. */
+export async function sendTechniqueReplyEmail(to: string): Promise<void> {
+  const url = `${SITE_URL}/miembros/tecnica`;
+  const subject = "Tu coach ha corregido tu técnica 🎯";
+  const text = `Tu coach ha revisado tu vídeo de técnica y te ha dejado su corrección. Míralo aquí: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Corrección de técnica lista 🎯</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Tu coach ha revisado tu vídeo y te ha dejado su corrección. Entra para verla.</p>
+      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi corrección</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 /** Email de bienvenida con acceso (al dar de alta a una clienta). */
 export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<void> {
   const subject = "¡Bienvenida a Fit con Aurena! 💚 Tu área privada";

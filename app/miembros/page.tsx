@@ -124,6 +124,9 @@ export default async function MiembrosPage() {
             <Card title="Chat con tu coach" desc="Tu canal privado 1:1 con Aurena. Escríbele cuando lo necesites.">
               <Link href="/miembros/chat" className="btn-brand text-sm px-6 py-3">Abrir chat</Link>
             </Card>
+            <Card title="Revisión de técnica" desc="Sube un vídeo corto de tu ejercicio y tu coach te corrige la técnica.">
+              <Link href="/miembros/tecnica" className="btn-brand text-sm px-6 py-3">Subir vídeo de técnica</Link>
+            </Card>
             <Card title="Comunidad" desc="Comparte tus wins y recetas, y dale me gusta a las demás.">
               <Link href="/miembros/comunidad" className="btn-brand text-sm px-6 py-3">Ir a la comunidad</Link>
             </Card>

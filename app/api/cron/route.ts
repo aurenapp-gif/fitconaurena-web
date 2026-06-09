@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMembers, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbSelect, sbUpsert } from "@/lib/supabase";
+import { sbSelect, sbUpsert, sbUpdate, sbDeleteObject } from "@/lib/supabase";
 import { sendCallReminder, sendCheckinReminder, sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 
@@ -203,5 +203,26 @@ export async function GET(req: NextRequest) {
     console.error("[cron] plan sequence", e);
   }
 
-  return NextResponse.json({ ok: true, callSent, checkinSent, planSeqSent });
+  // 4) Limpieza de vídeos de técnica ya corregidos hace +14 días. Se borra el
+  //    archivo pesado de Storage (la corrección en texto se conserva).
+  let techniqueCleaned = 0;
+  try {
+    const cutoff = new Date(Date.now() - 14 * 86400000).toISOString();
+    const old = await sbSelect<{ id: string; video_path: string | null; coach_reply_path: string | null }>(
+      "technique_reviews",
+      `select=id,video_path,coach_reply_path&coach_reply_at=lt.${cutoff}&video_path=not.is.null`
+    );
+    for (const r of old) {
+      try {
+        if (r.video_path) await sbDeleteObject("tecnica", r.video_path);
+        if (r.coach_reply_path) await sbDeleteObject("tecnica", r.coach_reply_path);
+        await sbUpdate("technique_reviews", `id=eq.${encodeURIComponent(r.id)}`, { video_path: null, coach_reply_path: null });
+        techniqueCleaned++;
+      } catch (e) { console.error("[cron] limpieza técnica", r.id, e); }
+    }
+  } catch (e) {
+    console.error("[cron] técnica cleanup", e);
+  }
+
+  return NextResponse.json({ ok: true, callSent, checkinSent, planSeqSent, techniqueCleaned });
 }
