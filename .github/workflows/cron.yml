@@ -1,14 +1,13 @@
-name: Cron horario
+name: Cron (respaldo manual)
 
-# Vercel Hobby solo permite cron diario, así que llamamos a /api/cron cada hora
-# desde aquí para que la secuencia de avisos del plan (6h/8h/24h) sea puntual.
+# La ejecución horaria la hace ahora el Cron NATIVO de Vercel (vercel.json), que
+# en plan Pro corre cada hora de forma fiable. Antes usábamos el schedule de
+# GitHub Actions porque Vercel Hobby solo permitía cron diario, pero ese
+# scheduler se disparaba tarde y a saltos. Dejamos este workflow solo como
+# respaldo MANUAL: se lanza a mano desde la pestaña Actions si alguna vez hace
+# falta forzar una pasada del cron.
 on:
-  schedule:
-    - cron: "0 * * * *" # cada hora en punto (UTC)
-  workflow_dispatch: {} # permite lanzarlo a mano desde la pestaña Actions
-  push:
-    paths:
-      - ".github/workflows/cron.yml" # se autoejecuta al editar este archivo (útil para verificar)
+  workflow_dispatch: {} # lanzar a mano desde la pestaña Actions
 
 jobs:
   ping:
