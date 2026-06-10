@@ -111,9 +111,11 @@ export async function sbDelete(table: string, filter: string): Promise<void> {
  * de las funciones y que los vídeos pesados carguen el servidor.
  */
 export async function sbSignedUploadUrl(bucket: string, path: string): Promise<{ uploadUrl: string; path: string }> {
+  // El body "{}" es obligatorio: Storage rechaza un POST JSON con cuerpo vacío.
   const res = await fetchT(`${URL_BASE}/storage/v1/object/upload/sign/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
+    body: "{}",
   });
   if (!res.ok) throw new Error(`sbSignedUploadUrl ${bucket}/${path}: ${res.status} ${await res.text()}`);
   const { url } = await res.json();
