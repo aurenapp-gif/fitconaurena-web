@@ -86,11 +86,13 @@ export async function sbUpload(
   data: ArrayBuffer,
   contentType: string
 ): Promise<void> {
+  // Timeout amplio: los archivos grandes (vídeos de contenido hasta 100 MB) no
+  // deben abortar con el timeout corto por defecto (8s).
   const res = await fetchT(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": contentType, "x-upsert": "true" }),
     body: new Uint8Array(data),
-  });
+  }, 55000);
   if (!res.ok) throw new Error(`sbUpload ${bucket}/${path}: ${res.status} ${await res.text()}`);
 }
 

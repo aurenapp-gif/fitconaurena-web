@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       await sbUpsert("login_codes", {
         email,
         code,
+        attempts: 0,
         expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       });
       await sendMagicLink(email, url, code);

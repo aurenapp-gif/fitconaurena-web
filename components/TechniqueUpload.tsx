@@ -68,7 +68,7 @@ export default function TechniqueUpload() {
       const rec = await fetch("/api/miembros/tecnica", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exercise, note, video_path: signData.path }),
+        body: JSON.stringify({ exercise, note, video_path: signData.path, pathToken: signData.pathToken }),
       });
       if (!rec.ok) { const d = await rec.json().catch(() => ({})); setStatus("idle"); setError(d.error ?? "No se pudo guardar."); return; }
 

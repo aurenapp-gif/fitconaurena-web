@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbSignedUploadUrl, safePath } from "@/lib/supabase";
+import { signPath } from "@/lib/token";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,9 @@ export async function POST(req: NextRequest) {
   const path = (kind === "reply" ? "respuestas/" : "") + safePath(filename);
   try {
     const { uploadUrl } = await sbSignedUploadUrl("tecnica", path);
-    return NextResponse.json({ uploadUrl, path });
+    // pathToken ata esta ruta a una emisión del servidor: al registrar el vídeo
+    // se valida, así el cliente no puede inyectar una ruta arbitraria.
+    return NextResponse.json({ uploadUrl, path, pathToken: signPath(path) });
   } catch (e) {
     console.error("[tecnica/sign]", e);
     return NextResponse.json({ error: "No se pudo preparar la subida." }, { status: 500 });

@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbInsert, sbSelect, sbDelete, sbDeleteObject } from "@/lib/supabase";
 import { sendTechniqueUploadNotice } from "@/lib/mailer";
+import { verifyPath } from "@/lib/token";
 
 export const runtime = "nodejs";
 
@@ -12,13 +13,19 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Acceso no disponible." }, { status: 403 });
 
-  let body: { exercise?: unknown; note?: unknown; video_path?: unknown };
+  let body: { exercise?: unknown; note?: unknown; video_path?: unknown; pathToken?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const exercise = typeof body.exercise === "string" ? body.exercise.trim().slice(0, 120) : "";
   const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
   const video_path = typeof body.video_path === "string" ? body.video_path : "";
+  const pathToken = typeof body.pathToken === "string" ? body.pathToken : "";
   if (!video_path) return NextResponse.json({ error: "Falta el vídeo." }, { status: 400 });
+  // La ruta debe ser una emitida por /sign (no manipulable) y de vídeo de clienta
+  // (no de la carpeta de respuestas de la coach).
+  if (!verifyPath(video_path, pathToken) || video_path.startsWith("respuestas/")) {
+    return NextResponse.json({ error: "Vídeo no válido." }, { status: 400 });
+  }
 
   try {
     await sbInsert("technique_reviews", {
@@ -45,6 +52,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (await isAccessRevoked(email)) return NextResponse.json({ error: "Acceso no disponible." }, { status: 403 });
 
   let body: { id?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

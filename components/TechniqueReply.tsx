@@ -23,6 +23,7 @@ export default function TechniqueReply({ id }: { id: string }) {
 
     try {
       let reply_path: string | undefined;
+      let pathToken: string | undefined;
       if (file) {
         const signRes = await fetch("/api/miembros/tecnica/sign", {
           method: "POST",
@@ -35,12 +36,13 @@ export default function TechniqueReply({ id }: { id: string }) {
         const up = await fetch(signData.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type || "video/mp4" }, body: file });
         if (!up.ok) { setStatus("idle"); setError("Falló la subida del vídeo."); return; }
         reply_path = signData.path;
+        pathToken = signData.pathToken;
       }
       setStatus("saving");
       const res = await fetch("/api/miembros/tecnica/responder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, reply, reply_path }),
+        body: JSON.stringify({ id, reply, reply_path, pathToken }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setStatus("idle"); setError(d.error ?? "No se pudo guardar."); return; }
       setStatus("idle");

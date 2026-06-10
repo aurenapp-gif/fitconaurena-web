@@ -2,7 +2,9 @@
 
 // Pragmatic email check — good enough to reject obvious garbage without
 // rejecting valid-but-unusual addresses. Real validation happens at delivery.
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Excluye además caracteres especiales de PostgREST (, ( ) ' " ;) como defensa
+// en profundidad frente a inyección en filtros, aunque siempre se codifican.
+const EMAIL_RE = /^[^\s@,()'";]+@[^\s@,()'";]+\.[^\s@,()'";]+$/;
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();

@@ -47,6 +47,21 @@ export function createToken(email: string, ttlMs: number = DEFAULT_TTL_MS): stri
   return `${encoded}.${sign(encoded)}`;
 }
 
+/**
+ * Firma una ruta de Storage (HMAC) para que el cliente no pueda registrar una
+ * ruta arbitraria: el servidor emite la ruta en /sign y la valida al guardar.
+ */
+export function signPath(path: string): string {
+  return sign(base64url(path));
+}
+
+export function verifyPath(path: string, token: string): boolean {
+  if (!path || !token) return false;
+  const expected = fromBase64url(signPath(path));
+  const got = fromBase64url(token);
+  return expected.length === got.length && timingSafeEqual(expected, got);
+}
+
 export type VerifyResult =
   | { ok: true; email: string }
   | { ok: false; reason: "malformed" | "invalid" | "expired" };
