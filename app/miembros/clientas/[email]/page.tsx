@@ -32,12 +32,19 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const member = normalizeEmail(decodeURIComponent(params.email));
   if (!isValidEmail(member)) redirect("/miembros/clientas");
 
-  let profile: Prof | null = null;
-  let plans: Plan[] = [];
-  let checkins: CheckIn[] = [];
-  try { profile = (await sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`))[0] ?? null; } catch (e) { console.error(e); }
-  try { plans = await sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`); } catch (e) { console.error(e); }
-  try { checkins = await sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`); } catch (e) { console.error(e); }
+  // Todas las lecturas independientes en paralelo (perfil, planes, check-ins y contrato).
+  const [profile, plans, checkins, contractTpl, contractSig] = await Promise.all([
+    sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`)
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`)
+      .catch((e) => { console.error(e); return [] as Plan[]; }),
+    sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
+      .catch((e) => { console.error(e); return [] as CheckIn[]; }),
+    sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    sbSelect<ContractSignature>("contract_signatures", `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`)
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+  ]);
 
   const q = profile?.questionnaire ?? {};
   const r = renewalInfo(profile?.renewal_date ?? null);
@@ -50,21 +57,12 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const lastWeight = points.length ? points[points.length - 1].weight : null;
   // Positivo = kg bajados.
   const lost = firstWeight != null && lastWeight != null ? Math.round((firstWeight - lastWeight) * 10) / 10 : null;
-  const plansWithUrl = await Promise.all(
-    plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))
-  );
 
-  // Contrato: plantilla vigente + última firma de esta clienta.
-  let contractTpl: ContractTemplate | null = null;
-  let contractSig: ContractSignature | null = null;
-  try { contractTpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0] ?? null; } catch (e) { console.error(e); }
-  try {
-    contractSig = (await sbSelect<ContractSignature>(
-      "contract_signatures",
-      `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`
-    ))[0] ?? null;
-  } catch (e) { console.error(e); }
-  const signedPdfUrl = contractSig?.signed_pdf_path ? await sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : undefined;
+  // URLs firmadas en paralelo: planes + PDF del contrato.
+  const [plansWithUrl, signedPdfUrl] = await Promise.all([
+    Promise.all(plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
+    contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+  ]);
   const contractOutdated = !!contractSig && !!contractTpl && contractSig.version < contractTpl.version;
 
   return (

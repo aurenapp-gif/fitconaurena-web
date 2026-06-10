@@ -36,14 +36,25 @@ export default async function AdminPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
 
-  let msgs: Msg[] = [];
-  let checkins: CheckIn[] = [];
-  try {
-    msgs = await sbSelect<Msg>("messages", "select=id,member_email,sender,body,read_by_coach,created_at&order=created_at.desc&limit=300");
-  } catch (e) { console.error("[admin] msgs", e); }
-  try {
-    checkins = await sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10");
-  } catch (e) { console.error("[admin] checkins", e); }
+  const since = isoDaysAgo(15);
+
+  // Todas las lecturas independientes del panel, en paralelo (antes iban en cascada).
+  const [msgs, checkins, members, profiles, recentList, pending, contractTpl] = await Promise.all([
+    sbSelect<Msg>("messages", "select=id,member_email,sender,body,read_by_coach,created_at&order=created_at.desc&limit=300")
+      .catch((e) => { console.error("[admin] msgs", e); return [] as Msg[]; }),
+    sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10")
+      .catch((e) => { console.error("[admin] checkins", e); return [] as CheckIn[]; }),
+    getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email)))
+      .catch((e) => { console.error("[admin] members", e); return [] as { email: string; name: string }[]; }),
+    sbSelect<Prof>("profiles", "select=email,display_name,renewal_date")
+      .catch((e) => { console.error("[admin] profiles", e); return [] as Prof[]; }),
+    sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)
+      .catch((e) => { console.error("[admin] recent", e); return [] as { member_email: string }[]; }),
+    sbSelect<{ id: string }>("check_ins", "select=id&coach_reply=is.null")
+      .catch((e) => { console.error("[admin] pending", e); return [] as { id: string }[]; }),
+    sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
+      .then((r) => r[0] ?? null).catch((e) => { console.error("[admin] contract", e); return null; }),
+  ]);
 
   // Agrupar conversaciones por clienta.
   const convs = new Map<string, { last: Msg; unread: number }>();
@@ -56,29 +67,13 @@ export default async function AdminPage() {
   const conversations = Array.from(convs.entries());
   const unreadConvs = conversations.filter(([, v]) => v.unread > 0);
 
-  // --- Datos para el panel "Hoy" (todo con degradación segura) ---
-  const members = (await getMembers()).filter((m) => !isAdmin(m.email));
-  let profiles: Prof[] = [];
-  try { profiles = await sbSelect<Prof>("profiles", "select=email,display_name,renewal_date"); } catch (e) { console.error("[admin] profiles", e); }
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
   const nameOf = (e: string) => byEmail.get(e)?.display_name || members.find((m) => m.email === e)?.name || e;
+  const recentSet = new Set(recentList.map((r) => r.member_email));
+  const pendingCount = pending.length;
 
-  const since = isoDaysAgo(15);
-  let recentSet = new Set<string>();
-  try {
-    recentSet = new Set(
-      (await sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)).map((r) => r.member_email)
-    );
-  } catch (e) { console.error("[admin] recent", e); }
-  let pendingCount = 0;
-  try {
-    pendingCount = (await sbSelect<{ id: string }>("check_ins", "select=id&coach_reply=is.null")).length;
-  } catch (e) { console.error("[admin] pending", e); }
-
-  // Contrato: plantilla vigente y nº de firmas de la versión actual.
-  let contractTpl: ContractTemplate | null = null;
+  // Nº de firmas de la versión actual del contrato (depende de la plantilla).
   let signedCurrent = 0;
-  try { contractTpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0] ?? null; } catch (e) { console.error("[admin] contract", e); }
   if (contractTpl) {
     try {
       signedCurrent = (await sbSelect<Pick<ContractSignature, "id">>(
