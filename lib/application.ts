@@ -27,7 +27,7 @@ export const QUESTIONS: Question[] = [
     label: "¿Qué edad tienes?",
     options: [
       { value: "-25", label: "Menos de 25", disqualifies: true },
-      { value: "25-30", label: "25 - 30" },
+      { value: "25-30", label: "25 - 30", disqualifies: true },
       { value: "31-35", label: "31 - 35" },
       { value: "36-40", label: "36 - 40" },
       { value: "+40", label: "Más de 40" },
