@@ -6,12 +6,12 @@ import Navbar from "@/components/Navbar";
 import ChatRoom from "@/components/ChatRoom";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbSelect } from "@/lib/supabase";
+import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Chat (admin)", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string };
+type Msg = { id: string; sender: "member" | "coach"; body: string; audio_path: string | null; created_at: string };
 
 export default async function AdminChatPage({ params }: { params: { email: string } }) {
   const me = verifySession(cookies().get(SESSION_COOKIE)?.value);
@@ -21,11 +21,17 @@ export default async function AdminChatPage({ params }: { params: { email: strin
   const member = normalizeEmail(decodeURIComponent(params.email));
   if (!isValidEmail(member)) redirect("/miembros/admin");
 
-  let messages: Msg[] = [];
+  let messages: (Msg & { audio_url?: string })[] = [];
   try {
-    messages = await sbSelect<Msg>(
+    const rows = await sbSelect<Msg>(
       "messages",
-      `select=id,sender,body,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc&limit=300`
+      `select=id,sender,body,audio_path,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc&limit=300`
+    );
+    messages = await Promise.all(
+      rows.map(async (m) => ({
+        ...m,
+        audio_url: m.audio_path ? await sbSignedUrl("chat-audio", m.audio_path, 3600).catch(() => undefined) : undefined,
+      }))
     );
   } catch (e) {
     console.error("[admin chat] error", e);

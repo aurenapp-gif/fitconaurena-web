@@ -9,11 +9,13 @@ const PLAN_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-export type UploadKind = "image" | "plan" | "content";
+export type UploadKind = "image" | "plan" | "content" | "audio";
 
 const RULES: Record<UploadKind, { maxBytes: number; allow: ((t: string) => boolean) | null }> = {
   // Fotos (perfil, check-ins, comunidad): solo imágenes, hasta 10 MB.
   image: { maxBytes: 10 * MB, allow: (t) => t.startsWith("image/") },
+  // Notas de voz (chat): solo audio, hasta 25 MB.
+  audio: { maxBytes: 25 * MB, allow: (t) => t.startsWith("audio/") },
   // Planes de la coach: PDF / Word / imagen, hasta 25 MB.
   plan: { maxBytes: 25 * MB, allow: (t) => t.startsWith("image/") || PLAN_TYPES.includes(t.toLowerCase()) },
   // Contenido (vídeo/audio/pdf/…): cualquier tipo, hasta 100 MB (solo límite de tamaño).

@@ -27,6 +27,12 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
 }
 
+// La nota de voz de la coach lleva el prefijo "audio-" (o extensión de audio).
+function isAudioReply(path: string | null): boolean {
+  if (!path) return false;
+  return /-audio-/.test(path) || /\.(m4a|mp3|aac|wav|ogg)$/i.test(path);
+}
+
 export default async function TecnicaPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
@@ -100,9 +106,13 @@ export default async function TecnicaPage() {
                         <p className="text-xs font-bold text-[#CAFF00] mb-1">Corrección de tu coach</p>
                         {it.coach_reply && <p className="text-sm text-white whitespace-pre-wrap mb-2">{it.coach_reply}</p>}
                         {it.replyUrl && (
-                          <video controls preload="metadata" playsInline className="w-full rounded-lg border border-[#252525] bg-black">
-                            <source src={it.replyUrl} />
-                          </video>
+                          isAudioReply(it.coach_reply_path) ? (
+                            <audio controls preload="none" src={it.replyUrl} className="w-full" />
+                          ) : (
+                            <video controls preload="metadata" playsInline className="w-full rounded-lg border border-[#252525] bg-black">
+                              <source src={it.replyUrl} />
+                            </video>
+                          )
                         )}
                       </div>
                     )}

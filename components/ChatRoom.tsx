@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import AudioRecorder, { audioExt } from "@/components/AudioRecorder";
 
-type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string };
+type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string; audio_url?: string };
 
 export default function ChatRoom({
   role,
@@ -88,6 +89,29 @@ export default function ChatRoom({
     }
   }
 
+  async function sendAudio(blob: Blob, mime: string) {
+    if (sending) return;
+    setSending(true);
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Msg = { id: tempId, sender: role, body: "🎤 Nota de voz", created_at: new Date().toISOString() };
+    setMessages((prev) => [...prev, optimistic]);
+    try {
+      const fd = new FormData();
+      fd.append("audio", new File([blob], `nota.${audioExt(mime)}`, { type: mime.split(";")[0] }));
+      if (member) fd.append("member", member);
+      const res = await fetch("/api/miembros/chat", { method: "POST", body: fd });
+      if (res.ok) {
+        await load();
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      setSending(false);
+    }
+  }
+
   const isMine = (m: Msg) => m.sender === role;
 
   return (
@@ -103,7 +127,11 @@ export default function ChatRoom({
                   isMine(m) ? "bg-[#CAFF00] text-[#0A0A0A]" : "bg-[#1c1c1c] text-white"
                 }`}
               >
-                <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                {m.audio_url ? (
+                  <audio controls preload="none" src={m.audio_url} className="max-w-full h-10" />
+                ) : (
+                  <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                )}
               </div>
               <p className={`text-[10px] text-[#666666] mt-1 ${isMine(m) ? "text-right" : ""}`}>
                 {new Date(m.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -113,14 +141,15 @@ export default function ChatRoom({
         )}
         <div ref={endRef} />
       </div>
-      <form onSubmit={send} className="flex gap-2 border-t border-[#252525] p-3">
+      <form onSubmit={send} className="flex items-center gap-2 border-t border-[#252525] p-3 flex-wrap">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Escribe un mensaje…"
           aria-label="Mensaje"
-          className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
+          className="flex-1 min-w-[140px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
         />
+        <AudioRecorder onSend={sendAudio} disabled={sending} />
         <button type="submit" disabled={sending} className="btn-brand text-sm px-5 py-3 disabled:opacity-60">
           Enviar
         </button>

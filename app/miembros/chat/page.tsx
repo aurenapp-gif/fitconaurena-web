@@ -5,22 +5,28 @@ import Navbar from "@/components/Navbar";
 import ChatRoom from "@/components/ChatRoom";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { sbSelect } from "@/lib/supabase";
+import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Chat", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string };
+type Msg = { id: string; sender: "member" | "coach"; body: string; audio_path: string | null; created_at: string };
 
 export default async function ChatPage() {
   const email = await requireMember();
   if (isAdmin(email)) redirect("/miembros/admin"); // la coach usa el panel
 
-  let messages: Msg[] = [];
+  let messages: (Msg & { audio_url?: string })[] = [];
   try {
-    messages = await sbSelect<Msg>(
+    const rows = await sbSelect<Msg>(
       "messages",
-      `select=id,sender,body,created_at&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc&limit=300`
+      `select=id,sender,body,audio_path,created_at&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc&limit=300`
+    );
+    messages = await Promise.all(
+      rows.map(async (m) => ({
+        ...m,
+        audio_url: m.audio_path ? await sbSignedUrl("chat-audio", m.audio_path, 3600).catch(() => undefined) : undefined,
+      }))
     );
   } catch (e) {
     console.error("[chat] error", e);
