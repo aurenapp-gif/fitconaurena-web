@@ -28,6 +28,11 @@ create table if not exists public.contract_signatures (
 create index if not exists contract_signatures_member_idx
   on public.contract_signatures (member_email);
 
+-- RLS activado (igual que el resto de tablas). El backend accede con la service
+-- key, que ignora RLS; esto solo bloquea accesos con la clave pública/anon.
+alter table public.contract_template   enable row level security;
+alter table public.contract_signatures enable row level security;
+
 -- 3) Bucket privado de Storage para la plantilla, las firmas y los PDF firmados.
 insert into storage.buckets (id, name, public)
 values ('contratos', 'contratos', false)
