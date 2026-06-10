@@ -133,6 +133,20 @@ export async function sendNewMessageNotice(
   await send({ to, subject, html, text });
 }
 
+/** Avisa a la coach de que una clienta ha firmado el contrato. */
+export async function sendContractSignedNotice(to: string[], member: string, name: string): Promise<void> {
+  const url = `${SITE_URL}/miembros/clientas/${encodeURIComponent(member)}`;
+  const subject = `✍️ ${name} ha firmado el contrato`;
+  const text = `${name} (${member}) ha firmado el contrato. Descárgalo firmado en su ficha: ${url}`;
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">Contrato firmado ✍️</h2>
+    <p style="font-size:14px;line-height:1.5;"><strong>${name}</strong> (${member}) ha firmado el contrato.</p>
+    <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver y descargar firmado</a>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 /** Avisa a la coach de que una clienta ha subido un vídeo de técnica. */
 export async function sendTechniqueUploadNotice(to: string[], fromMember: string, exercise: string): Promise<void> {
   const url = `${SITE_URL}/miembros/tecnica`;

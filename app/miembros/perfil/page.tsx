@@ -6,10 +6,12 @@ import PushToggle from "@/components/PushToggle";
 import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
 import HabitsTracker from "@/components/HabitsTracker";
+import ContractSign from "@/components/ContractSign";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import type { Questionnaire } from "@/lib/profile";
+import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -78,6 +80,25 @@ export default async function PerfilPage() {
     return { label: new Date(ds + "T00:00:00Z").toLocaleDateString("es-ES", { weekday: "narrow", timeZone: "UTC" }), done: loggedDays.has(ds) };
   });
 
+  // Contrato (solo clientas): plantilla vigente + si esta clienta ya la firmó.
+  let contractTpl: ContractTemplate | null = null;
+  let contractSig: ContractSignature | null = null;
+  if (!admin) {
+    try {
+      contractTpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0] ?? null;
+    } catch (e) { console.error("[perfil] contract template", e); }
+    if (contractTpl) {
+      try {
+        contractSig = (await sbSelect<ContractSignature>(
+          "contract_signatures",
+          `select=*&member_email=eq.${encodeURIComponent(email)}&version=eq.${contractTpl.version}`
+        ))[0] ?? null;
+      } catch (e) { console.error("[perfil] contract signature", e); }
+    }
+  }
+  const contractTplUrl = contractTpl ? await sbSignedUrl(CONTRACT_BUCKET, contractTpl.file_path, 3600).catch(() => undefined) : undefined;
+  const signedPdfUrl = contractSig?.signed_pdf_path ? await sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : undefined;
+
   const planCard = (
     <div className="card-dark p-6 !transform-none">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -137,6 +158,16 @@ export default async function PerfilPage() {
               tabs={[
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
                 { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} /> },
+                { id: "contrato", icon: "📄", label: "Contrato", node: (
+                  <ContractSign
+                    hasTemplate={!!contractTpl}
+                    templateUrl={contractTplUrl}
+                    signed={!!contractSig}
+                    signedAt={contractSig?.signed_at}
+                    signedPdfUrl={signedPdfUrl}
+                    defaultName={profile?.display_name ?? ""}
+                  />
+                ) },
                 { id: "ajustes", icon: "⚙️", label: "Ajustes", node: <div className="flex flex-col gap-6"><PushToggle /><PwaInstall /></div> },
               ]}
             />

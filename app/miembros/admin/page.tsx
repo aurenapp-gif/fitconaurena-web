@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
+import ContractTemplateUpload from "@/components/ContractTemplateUpload";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
 import { sbSelect } from "@/lib/supabase";
+import { type ContractTemplate, type ContractSignature } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Panel admin", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -72,6 +74,19 @@ export default async function AdminPage() {
   try {
     pendingCount = (await sbSelect<{ id: string }>("check_ins", "select=id&coach_reply=is.null")).length;
   } catch (e) { console.error("[admin] pending", e); }
+
+  // Contrato: plantilla vigente y nº de firmas de la versión actual.
+  let contractTpl: ContractTemplate | null = null;
+  let signedCurrent = 0;
+  try { contractTpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0] ?? null; } catch (e) { console.error("[admin] contract", e); }
+  if (contractTpl) {
+    try {
+      signedCurrent = (await sbSelect<Pick<ContractSignature, "id">>(
+        "contract_signatures",
+        `select=id&version=eq.${contractTpl.version}`
+      )).length;
+    } catch (e) { console.error("[admin] contract signs", e); }
+  }
 
   const renewals = members
     .map((m) => ({ m, r: renewalInfo(byEmail.get(m.email)?.renewal_date ?? null) }))
@@ -149,6 +164,26 @@ export default async function AdminPage() {
                 )}
               </div>
             )}
+          </section>
+
+          {/* Contrato (plantilla única para todas) */}
+          <section className="mb-8">
+            <div className="card-dark p-6 !transform-none">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <h2 className="font-bold text-white">Contrato (plantilla)</h2>
+                {contractTpl && (
+                  <span className="text-xs text-[#A0A0A0]">
+                    v{contractTpl.version} · {signedCurrent} firmada{signedCurrent === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-[#A0A0A0] mb-4">
+                {contractTpl
+                  ? <>Contrato actual{contractTpl.title ? <>: <span className="text-white font-bold">{contractTpl.title}</span></> : ""}. Las clientas lo firman desde su perfil.</>
+                  : "Sube el PDF del contrato. Será el mismo para todas y cada clienta lo firmará desde su perfil."}
+              </p>
+              <ContractTemplateUpload hasTemplate={!!contractTpl} />
+            </div>
           </section>
 
           <div className="grid gap-6 lg:grid-cols-2">

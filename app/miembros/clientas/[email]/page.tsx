@@ -11,6 +11,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -52,6 +53,19 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const plansWithUrl = await Promise.all(
     plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))
   );
+
+  // Contrato: plantilla vigente + última firma de esta clienta.
+  let contractTpl: ContractTemplate | null = null;
+  let contractSig: ContractSignature | null = null;
+  try { contractTpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0] ?? null; } catch (e) { console.error(e); }
+  try {
+    contractSig = (await sbSelect<ContractSignature>(
+      "contract_signatures",
+      `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`
+    ))[0] ?? null;
+  } catch (e) { console.error(e); }
+  const signedPdfUrl = contractSig?.signed_pdf_path ? await sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : undefined;
+  const contractOutdated = !!contractSig && !!contractTpl && contractSig.version < contractTpl.version;
 
   return (
     <>
@@ -125,6 +139,37 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Contrato */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+              <h2 className="font-bold text-white">Contrato</h2>
+              {contractTpl && (
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${contractSig ? "bg-[#CAFF00] text-[#0A0A0A]" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                  {contractSig ? "✍️ Firmado" : "⏳ Pendiente de firma"}
+                </span>
+              )}
+            </div>
+            {!contractTpl ? (
+              <p className="text-sm text-[#666666]">Aún no has subido la plantilla de contrato. Hazlo desde el panel de la coach.</p>
+            ) : contractSig ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-[#A0A0A0]">
+                  Firmado por <span className="font-bold text-white">{contractSig.signer_name}</span> el {new Date(contractSig.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}.
+                </p>
+                {contractOutdated && (
+                  <p className="text-xs text-[#FF6B6B]">Firmó una versión anterior (v{contractSig.version}); el contrato actual es la v{contractTpl.version}.</p>
+                )}
+                {signedPdfUrl && (
+                  <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 mt-1 inline-flex self-start">
+                    Descargar contrato firmado
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[#666666]">La clienta todavía no ha firmado el contrato.</p>
             )}
           </div>
 
