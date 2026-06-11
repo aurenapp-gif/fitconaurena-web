@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import AudioRecorder, { audioExt } from "@/components/AudioRecorder";
 
-type Msg = { id: string; sender: "member" | "coach"; body: string; created_at: string; audio_url?: string };
+type Msg = {
+  id: string;
+  sender: "member" | "coach";
+  body: string;
+  created_at: string;
+  audio_url?: string;
+  read_by_coach?: boolean;
+  read_by_member?: boolean;
+};
 
 export default function ChatRoom({
   role,
@@ -113,6 +121,11 @@ export default function ChatRoom({
   }
 
   const isMine = (m: Msg) => m.sender === role;
+  // ¿La ha leído el otro lado? (coach lee los del member y viceversa).
+  const readByOther = (m: Msg) => (role === "member" ? m.read_by_coach : m.read_by_member);
+  // "Visto" solo bajo el último mensaje propio ya leído (estilo WhatsApp).
+  let lastSeenId: string | null = null;
+  for (const m of messages) if (isMine(m) && readByOther(m)) lastSeenId = m.id;
 
   return (
     <div className="card-dark p-0 !transform-none overflow-hidden flex flex-col" style={{ height: "min(68vh, 560px)", minHeight: 380 }}>
@@ -135,6 +148,7 @@ export default function ChatRoom({
               </div>
               <p className={`text-[10px] text-[#666666] mt-1 ${isMine(m) ? "text-right" : ""}`}>
                 {new Date(m.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                {m.id === lastSeenId && <span className="text-[#CAFF00]"> · Visto ✓✓</span>}
               </p>
             </div>
           ))

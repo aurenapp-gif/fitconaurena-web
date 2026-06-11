@@ -5,6 +5,7 @@ import CheckinForm from "@/components/CheckinForm";
 import AdminCheckinReply from "@/components/AdminCheckinReply";
 import WeightChart from "@/components/WeightChart";
 import ProgressSummary from "@/components/ProgressSummary";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
@@ -24,7 +25,20 @@ type CheckIn = {
   coach_reply: string | null;
   coach_reply_at: string | null;
   created_at: string;
+  waist: number | null;
+  hips: number | null;
+  chest: number | null;
+  arm: number | null;
+  thigh: number | null;
 };
+
+const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
+  { key: "waist", label: "Cintura" },
+  { key: "hips", label: "Cadera" },
+  { key: "chest", label: "Pecho" },
+  { key: "arm", label: "Brazo" },
+  { key: "thigh", label: "Pierna" },
+];
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
@@ -90,6 +104,18 @@ export default async function CheckinsPage() {
     console.error("[checkins] error", e);
   }
 
+  // Objetivo de peso (del cuestionario) para la barra de progreso de la clienta.
+  let goalWeight: number | null = null;
+  if (!admin) {
+    try {
+      const p = (await sbSelect<{ questionnaire: Record<string, string> | null }>(
+        "profiles", `select=questionnaire&email=eq.${encodeURIComponent(email)}`
+      ))[0];
+      const g = Number(p?.questionnaire?.peso_objetivo);
+      goalWeight = Number.isFinite(g) ? g : null;
+    } catch (e) { console.error("[checkins] goal", e); }
+  }
+
   const items = await withPhoto(admin ? rows : [...rows].reverse());
   // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
   const points = (admin ? [] : rows)
@@ -104,6 +130,10 @@ export default async function CheckinsPage() {
   const weightDelta =
     firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
   const streak = admin ? 0 : weeklyStreak(mine.map((r) => r.created_at));
+  // Cintura: primera vs última medida registrada (medida estrella del progreso).
+  const waists = mine.map((r) => Number(r.waist)).filter((w) => Number.isFinite(w));
+  const firstWaist = waists.length ? waists[0] : null;
+  const lastWaist = waists.length ? waists[waists.length - 1] : null;
   const firstWithFront = mine.find((r) => r.photo_front);
   const lastWithFront = [...mine].reverse().find((r) => r.photo_front);
   const [beforePhoto, afterPhoto] = await Promise.all([
@@ -132,6 +162,9 @@ export default async function CheckinsPage() {
                 firstWeight={firstWeight}
                 lastWeight={lastWeight}
                 weightDelta={weightDelta}
+                goalWeight={goalWeight}
+                firstWaist={firstWaist}
+                lastWaist={lastWaist}
                 beforePhoto={beforePhoto}
                 afterPhoto={afterPhoto}
                 beforeDate={firstWithFront ? fmt(firstWithFront.created_at) : undefined}
@@ -163,17 +196,16 @@ export default async function CheckinsPage() {
                     <span className="text-xs text-[#666666]">{fmt(it.created_at)}</span>
                   </div>
                   {it.note && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap mb-3">{it.note}</p>}
-                  {it.photos.length > 0 && (
-                    <div className="flex gap-3 flex-wrap mb-1">
-                      {it.photos.map((p, i) => (
-                        <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className="text-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.thumb} alt={p.label} loading="lazy" decoding="async" className="max-h-44 rounded-lg border border-[#252525]" />
-                          <span className="block text-[10px] text-[#666666] mt-1">{p.label}</span>
-                        </a>
+                  {MEASURE_LABELS.some((m) => it[m.key] != null) && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => (
+                        <span key={m.key} className="text-xs text-[#A0A0A0] rounded-lg border border-[#252525] bg-[#141414] px-2.5 py-1">
+                          {m.label}: <span className="text-white font-semibold">{it[m.key] as number} cm</span>
+                        </span>
                       ))}
                     </div>
                   )}
+                  {it.photos.length > 0 && <PhotoLightbox photos={it.photos} />}
                   {it.coach_reply ? (
                     <div className="mt-3 rounded-lg border border-[#CAFF00]/30 bg-[#CAFF00]/5 px-4 py-3">
                       <p className="text-xs font-bold text-[#CAFF00] mb-1">Respuesta de tu coach</p>

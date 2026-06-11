@@ -7,6 +7,7 @@ import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
 import HabitsTracker from "@/components/HabitsTracker";
 import ContractSign from "@/components/ContractSign";
+import FileViewer from "@/components/FileViewer";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
@@ -107,7 +108,7 @@ export default async function PerfilPage() {
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-1">🥗 Nutrición</p>
           {nutUrl ? (
-            <a href={nutUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 mt-2 inline-flex">Ver plan</a>
+            <FileViewer url={nutUrl} label="Plan de nutrición" />
           ) : (
             <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de nutrición.</p>
           )}
@@ -115,7 +116,7 @@ export default async function PerfilPage() {
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-1">🏋️ Entrenamiento</p>
           {entUrl ? (
-            <a href={entUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 mt-2 inline-flex">Ver plan</a>
+            <FileViewer url={entUrl} label="Plan de entrenamiento" />
           ) : (
             <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de entrenamiento.</p>
           )}

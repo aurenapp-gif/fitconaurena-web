@@ -178,6 +178,27 @@ export async function GET(req: NextRequest) {
     console.error("[cron] checkin reminders", e);
   }
 
+  // 2b) Recordatorio DIARIO de hábitos (push) a una hora fija, solo a quien
+  //     todavía no ha registrado sus hábitos hoy. Empuja a no perder la racha.
+  const HABIT_HOUR = 19; // 19:00 (hora de Madrid)
+  let habitPushed = 0;
+  if (nowHour === HABIT_HOUR) try {
+    const logged = new Set(
+      (await sbSelect<{ member_email: string }>("habit_logs", `select=member_email&day=eq.${today}`)).map((r) => r.member_email)
+    );
+    for (const m of members) {
+      if (logged.has(m.email)) continue; // ya registró hoy
+      sendPushToEmail(m.email, {
+        title: "¿Tus hábitos de hoy? 💧",
+        body: "Registra tu agua, pasos y sueño para no perder la racha.",
+        url: "/miembros/perfil",
+      }).catch((e) => console.error("[cron] push habito", e));
+      habitPushed++;
+    }
+  } catch (e) {
+    console.error("[cron] habit reminder", e);
+  }
+
   // 3) Secuencia de avisos del plan tras completar el cuestionario (email).
   //    Idempotente vía profiles.plan_notice_stage (0 → 6 → 8 → 24). Se detiene si
   //    la clienta ya tiene plan subido. Solo cuenta horas activas (08:00–24:00) y
@@ -231,5 +252,5 @@ export async function GET(req: NextRequest) {
     console.error("[cron] técnica cleanup", e);
   }
 
-  return NextResponse.json({ ok: true, callSent, checkinSent, planSeqSent, techniqueCleaned });
+  return NextResponse.json({ ok: true, callSent, checkinSent, habitPushed, planSeqSent, techniqueCleaned });
 }
