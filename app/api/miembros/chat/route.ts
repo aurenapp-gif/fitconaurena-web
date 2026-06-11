@@ -17,6 +17,8 @@ type Msg = {
   body: string;
   audio_path: string | null;
   created_at: string;
+  read_by_coach: boolean;
+  read_by_member: boolean;
 };
 
 /** Canal de la conversación según rol. Devuelve null si no autorizado. */
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
   try {
     const rows = await sbSelect<Msg>(
       "messages",
-      `select=id,member_email,sender,body,audio_path,created_at&member_email=eq.${encodeURIComponent(channel)}&order=created_at.asc&limit=300`
+      `select=id,member_email,sender,body,audio_path,created_at,read_by_coach,read_by_member&member_email=eq.${encodeURIComponent(channel)}&order=created_at.asc&limit=300`
     );
     // Firma las URLs de las notas de voz (la caché interna evita re-firmar en cada poll).
     const messages = await Promise.all(
