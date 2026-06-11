@@ -112,9 +112,16 @@ export async function GET(req: NextRequest) {
   let callSent = 0;
   let checkinSent = 0;
 
+  // El cron corre cada hora (UTC), pero los recordatorios de videollamada y de
+  // revisión deben salir por la mañana, no de madrugada. Los enviamos en la
+  // primera ejecución a partir de esta hora local de Madrid (la idempotencia
+  // evita reenvíos el resto del día).
+  const REMINDER_HOUR = 10; // 10:00 (hora de Madrid)
+  const nowHour = madridHour(new Date());
+
   // 1) Recordatorio de videollamada los jueves (idempotente: si el cron se
   //    dispara dos veces el mismo día, no reenvía gracias a last_call_reminder).
-  if (madridDay() === "Thu") {
+  if (madridDay() === "Thu" && nowHour >= REMINDER_HOUR) {
     let callMap = new Map<string, string | null>();
     try {
       const profs = await sbSelect<{ email: string; last_call_reminder: string | null }>("profiles", "select=email,last_call_reminder");
@@ -137,8 +144,8 @@ export async function GET(req: NextRequest) {
   }
 
   // 2) Recordatorio de revisión cada ~15 días (si no ha hecho check-in ni se le
-  //    ha recordado en los últimos 15 días).
-  try {
+  //    ha recordado en los últimos 15 días). Solo por la mañana (no de madrugada).
+  if (nowHour >= REMINDER_HOUR) try {
     const since = isoDaysAgo(15);
     const recent = new Set(
       (await sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)).map((r) => r.member_email)

@@ -166,11 +166,14 @@ export default async function AdminPage() {
             <div className="card-dark p-6 !transform-none">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
                 <h2 className="font-bold text-white">Contrato (plantilla)</h2>
-                {contractTpl && (
-                  <span className="text-xs text-[#A0A0A0]">
-                    v{contractTpl.version} · {signedCurrent} firmada{signedCurrent === 1 ? "" : "s"}
-                  </span>
-                )}
+                <div className="flex items-center gap-3">
+                  {contractTpl && (
+                    <span className="text-xs text-[#A0A0A0]">
+                      v{contractTpl.version} · {signedCurrent} firmada{signedCurrent === 1 ? "" : "s"}
+                    </span>
+                  )}
+                  <Link href="/miembros/contratos" className="text-[#CAFF00] text-sm font-semibold">Ver firmados →</Link>
+                </div>
               </div>
               <p className="text-sm text-[#A0A0A0] mb-4">
                 {contractTpl

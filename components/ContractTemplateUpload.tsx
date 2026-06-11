@@ -3,17 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-/** Subida/reemplazo de la plantilla de contrato (solo coach). PDF único para todas. */
+/** Subida/reemplazo/borrado de la plantilla de contrato (solo coach). PDF único para todas. */
 export default function ContractTemplateUpload({ hasTemplate }: { hasTemplate: boolean }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "deleting" | "error">("idle");
   const [msg, setMsg] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (status === "loading") return;
+    if (status === "loading" || status === "deleting") return;
     if (!file) { setStatus("error"); setMsg("Adjunta el PDF del contrato."); return; }
     setStatus("loading"); setMsg("");
     try {
@@ -28,6 +28,19 @@ export default function ContractTemplateUpload({ hasTemplate }: { hasTemplate: b
     } catch { setStatus("error"); setMsg("Error de conexión."); }
   }
 
+  async function remove() {
+    if (status === "loading" || status === "deleting") return;
+    if (!confirm("¿Borrar el contrato actual? Las clientas dejarán de verlo hasta que subas uno nuevo. Las firmas ya hechas se conservan.")) return;
+    setStatus("deleting"); setMsg("");
+    try {
+      const res = await fetch("/api/miembros/contrato/plantilla", { method: "DELETE" });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setStatus("error"); setMsg(d.error ?? "No se pudo borrar."); return; }
+      setStatus("idle");
+      router.refresh();
+    } catch { setStatus("error"); setMsg("Error de conexión."); }
+  }
+
+  const busy = status === "loading" || status === "deleting";
   const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
 
   return (
@@ -36,11 +49,19 @@ export default function ContractTemplateUpload({ hasTemplate }: { hasTemplate: b
       <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="PDF del contrato"
         className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#CAFF00] file:px-4 file:py-2 file:font-bold file:text-[#0A0A0A]" />
       {status === "error" && <p className="text-sm text-[#FF6B6B]">{msg}</p>}
-      <button type="submit" disabled={status === "loading"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
-        {status === "loading" ? "Subiendo…" : hasTemplate ? "Reemplazar contrato" : "Subir contrato"}
-      </button>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button type="submit" disabled={busy} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
+          {status === "loading" ? "Subiendo…" : hasTemplate ? "Reemplazar contrato" : "Subir contrato"}
+        </button>
+        {hasTemplate && (
+          <button type="button" onClick={remove} disabled={busy}
+            className="text-sm px-5 py-3 rounded-xl border border-[#FF6B6B]/40 text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-colors disabled:opacity-60">
+            {status === "deleting" ? "Borrando…" : "Borrar contrato actual"}
+          </button>
+        )}
+      </div>
       {hasTemplate && (
-        <p className="text-xs text-[#666666]">Al reemplazarlo, las clientas que ya firmaron deberán firmar la nueva versión.</p>
+        <p className="text-xs text-[#666666]">Al reemplazarlo, las clientas que ya firmaron deberán firmar la nueva versión. Borrarlo lo retira hasta que subas otro.</p>
       )}
     </form>
   );
