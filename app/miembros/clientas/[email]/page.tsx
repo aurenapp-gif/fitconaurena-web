@@ -11,6 +11,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -31,12 +32,19 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const member = normalizeEmail(decodeURIComponent(params.email));
   if (!isValidEmail(member)) redirect("/miembros/clientas");
 
-  let profile: Prof | null = null;
-  let plans: Plan[] = [];
-  let checkins: CheckIn[] = [];
-  try { profile = (await sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`))[0] ?? null; } catch (e) { console.error(e); }
-  try { plans = await sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`); } catch (e) { console.error(e); }
-  try { checkins = await sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`); } catch (e) { console.error(e); }
+  // Todas las lecturas independientes en paralelo (perfil, planes, check-ins y contrato).
+  const [profile, plans, checkins, contractTpl, contractSig] = await Promise.all([
+    sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`)
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`)
+      .catch((e) => { console.error(e); return [] as Plan[]; }),
+    sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
+      .catch((e) => { console.error(e); return [] as CheckIn[]; }),
+    sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    sbSelect<ContractSignature>("contract_signatures", `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`)
+      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+  ]);
 
   const q = profile?.questionnaire ?? {};
   const r = renewalInfo(profile?.renewal_date ?? null);
@@ -49,9 +57,13 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const lastWeight = points.length ? points[points.length - 1].weight : null;
   // Positivo = kg bajados.
   const lost = firstWeight != null && lastWeight != null ? Math.round((firstWeight - lastWeight) * 10) / 10 : null;
-  const plansWithUrl = await Promise.all(
-    plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))
-  );
+
+  // URLs firmadas en paralelo: planes + PDF del contrato.
+  const [plansWithUrl, signedPdfUrl] = await Promise.all([
+    Promise.all(plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
+    contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+  ]);
+  const contractOutdated = !!contractSig && !!contractTpl && contractSig.version < contractTpl.version;
 
   return (
     <>
@@ -125,6 +137,37 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Contrato */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+              <h2 className="font-bold text-white">Contrato</h2>
+              {contractTpl && (
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${contractSig ? "bg-[#CAFF00] text-[#0A0A0A]" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                  {contractSig ? "✍️ Firmado" : "⏳ Pendiente de firma"}
+                </span>
+              )}
+            </div>
+            {!contractTpl ? (
+              <p className="text-sm text-[#666666]">Aún no has subido la plantilla de contrato. Hazlo desde el panel de la coach.</p>
+            ) : contractSig ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-[#A0A0A0]">
+                  Firmado por <span className="font-bold text-white">{contractSig.signer_name}</span> el {new Date(contractSig.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}.
+                </p>
+                {contractOutdated && (
+                  <p className="text-xs text-[#FF6B6B]">Firmó una versión anterior (v{contractSig.version}); el contrato actual es la v{contractTpl.version}.</p>
+                )}
+                {signedPdfUrl && (
+                  <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 mt-1 inline-flex self-start">
+                    Descargar contrato firmado
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[#666666]">La clienta todavía no ha firmado el contrato.</p>
             )}
           </div>
 

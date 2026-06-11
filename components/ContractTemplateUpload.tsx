@@ -1,0 +1,47 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+/** Subida/reemplazo de la plantilla de contrato (solo coach). PDF único para todas. */
+export default function ContractTemplateUpload({ hasTemplate }: { hasTemplate: boolean }) {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (status === "loading") return;
+    if (!file) { setStatus("error"); setMsg("Adjunta el PDF del contrato."); return; }
+    setStatus("loading"); setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("title", title);
+      fd.append("file", file);
+      const res = await fetch("/api/miembros/contrato/plantilla", { method: "POST", body: fd });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setStatus("error"); setMsg(d.error ?? "No se pudo subir."); return; }
+      setTitle(""); setFile(null); setStatus("idle");
+      (e.target as HTMLFormElement).reset();
+      router.refresh();
+    } catch { setStatus("error"); setMsg("Error de conexión."); }
+  }
+
+  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional, ej. Contrato de servicios 2026)" className={cls} />
+      <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="PDF del contrato"
+        className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#CAFF00] file:px-4 file:py-2 file:font-bold file:text-[#0A0A0A]" />
+      {status === "error" && <p className="text-sm text-[#FF6B6B]">{msg}</p>}
+      <button type="submit" disabled={status === "loading"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
+        {status === "loading" ? "Subiendo…" : hasTemplate ? "Reemplazar contrato" : "Subir contrato"}
+      </button>
+      {hasTemplate && (
+        <p className="text-xs text-[#666666]">Al reemplazarlo, las clientas que ya firmaron deberán firmar la nueva versión.</p>
+      )}
+    </form>
+  );
+}

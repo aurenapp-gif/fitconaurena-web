@@ -83,17 +83,30 @@ export async function sbUpdate(table: string, filter: string, patch: object): Pr
 export async function sbUpload(
   bucket: string,
   path: string,
-  data: ArrayBuffer,
+  data: ArrayBuffer | Uint8Array,
   contentType: string
 ): Promise<void> {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
   // Timeout amplio: los archivos grandes (vídeos de contenido hasta 100 MB) no
   // deben abortar con el timeout corto por defecto (8s).
   const res = await fetchT(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": contentType, "x-upsert": "true" }),
-    body: new Uint8Array(data),
+    body: bytes as BodyInit,
   }, 55000);
   if (!res.ok) throw new Error(`sbUpload ${bucket}/${path}: ${res.status} ${await res.text()}`);
+}
+
+/** Descarga los bytes de un objeto privado de Storage (autenticado con la clave
+ * de servicio). Útil para procesar el archivo en el servidor (ej. fusionar un
+ * PDF). Timeout amplio por si el archivo es grande. */
+export async function sbDownload(bucket: string, path: string): Promise<ArrayBuffer> {
+  const res = await fetchT(`${URL_BASE}/storage/v1/object/${bucket}/${path}`, {
+    headers: headers(),
+    cache: "no-store",
+  }, 30000);
+  if (!res.ok) throw new Error(`sbDownload ${bucket}/${path}: ${res.status} ${await res.text()}`);
+  return res.arrayBuffer();
 }
 
 /** DELETE de filas con filtro PostgREST (ej: `id=eq.${id}`). */

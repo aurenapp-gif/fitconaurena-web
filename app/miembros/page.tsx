@@ -35,15 +35,14 @@ export default async function MiembrosPage() {
   } catch (e) { console.error("[dashboard] profile", e); }
 
   const name = profile?.display_name || email.split("@")[0];
-  const photoUrl = profile?.photo_path ? await sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : undefined;
 
-  // Señales para la checklist de primeros pasos (solo clientas)
-  let checkinDone = false;
-  let chatDone = false;
-  if (!admin) {
-    try { checkinDone = (await sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`)).length > 0; } catch {}
-    try { chatDone = (await sbSelect("messages", `select=id&member_email=eq.${encodeURIComponent(email)}&sender=eq.member&limit=1`)).length > 0; } catch {}
-  }
+  // Foto + señales de la checklist de primeros pasos, en paralelo (independientes).
+  const [photoUrl, checkinDone, chatDone] = await Promise.all([
+    profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    admin ? Promise.resolve(false) : sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`).then((r) => r.length > 0).catch(() => false),
+    admin ? Promise.resolve(false) : sbSelect("messages", `select=id&member_email=eq.${encodeURIComponent(email)}&sender=eq.member&limit=1`).then((r) => r.length > 0).catch(() => false),
+  ]);
+
   const q = profile?.questionnaire ?? {};
   const reqQ = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
   const quesDone = reqQ.every((k) => (q[k] ?? "").toString().trim() !== "");

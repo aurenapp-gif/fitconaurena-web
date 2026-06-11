@@ -9,7 +9,7 @@ const PLAN_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-export type UploadKind = "image" | "plan" | "content" | "audio";
+export type UploadKind = "image" | "plan" | "content" | "audio" | "contract";
 
 const RULES: Record<UploadKind, { maxBytes: number; allow: ((t: string) => boolean) | null }> = {
   // Fotos (perfil, check-ins, comunidad): solo imágenes, hasta 10 MB.
@@ -18,6 +18,9 @@ const RULES: Record<UploadKind, { maxBytes: number; allow: ((t: string) => boole
   audio: { maxBytes: 25 * MB, allow: (t) => t.startsWith("audio/") },
   // Planes de la coach: PDF / Word / imagen, hasta 25 MB.
   plan: { maxBytes: 25 * MB, allow: (t) => t.startsWith("image/") || PLAN_TYPES.includes(t.toLowerCase()) },
+  // Contrato (plantilla a firmar): SOLO PDF, hasta 15 MB. Debe ser PDF para poder
+  // generar luego el PDF firmado (se le añade la página de firma).
+  contract: { maxBytes: 15 * MB, allow: (t) => t.toLowerCase() === "application/pdf" },
   // Contenido (vídeo/audio/pdf/…): cualquier tipo, hasta 100 MB (solo límite de tamaño).
   content: { maxBytes: 100 * MB, allow: null },
 };

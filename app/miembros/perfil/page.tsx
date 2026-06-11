@@ -6,10 +6,12 @@ import PushToggle from "@/components/PushToggle";
 import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
 import HabitsTracker from "@/components/HabitsTracker";
+import ContractSign from "@/components/ContractSign";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import type { Questionnaire } from "@/lib/profile";
+import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -38,34 +40,49 @@ export default async function PerfilPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
 
-  let profile: Profile | null = null;
-  let plans: Plan[] = [];
-  try {
-    const rows = await sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`);
-    profile = rows[0] ?? null;
-  } catch (e) { console.error("[perfil] profile", e); }
-  try {
-    plans = await sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc`);
-  } catch (e) { console.error("[perfil] plans", e); }
+  const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
-  const latest = (t: string) => plans.find((p) => p.type === t);
-  const nut = latest("nutricion");
-  const ent = latest("entrenamiento");
-  const nutUrl = nut ? await sbSignedUrl("planes", nut.file_path, 3600).catch(() => undefined) : undefined;
-  const entUrl = ent ? await sbSignedUrl("planes", ent.file_path, 3600).catch(() => undefined) : undefined;
-  const photoUrl = profile?.photo_path ? await sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : undefined;
+  // 1ª tanda: todo lo independiente en paralelo (una sola ida/vuelta, no en cascada).
+  const [profile, plans, habitRows, contractTpl] = await Promise.all([
+    sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
+      .then((r) => r[0] ?? null)
+      .catch((e) => { console.error("[perfil] profile", e); return null; }),
+    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc`)
+      .catch((e) => { console.error("[perfil] plans", e); return [] as Plan[]; }),
+    admin
+      ? Promise.resolve([] as HabitRow[])
+      : sbSelect<HabitRow>(
+          "habit_logs",
+          `select=day,water,steps,sleep&member_email=eq.${encodeURIComponent(email)}&day=gte.${since}&order=day.asc`
+        ).catch((e) => { console.error("[perfil] habits", e); return [] as HabitRow[]; }),
+    admin
+      ? Promise.resolve(null)
+      : sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
+          .then((r) => r[0] ?? null)
+          .catch((e) => { console.error("[perfil] contract template", e); return null; }),
+  ]);
 
-  // Hábitos (solo clientas): registro de hoy, racha y últimos 7 días.
-  let habitRows: HabitRow[] = [];
-  if (!admin) {
-    const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    try {
-      habitRows = await sbSelect<HabitRow>(
-        "habit_logs",
-        `select=day,water,steps,sleep&member_email=eq.${encodeURIComponent(email)}&day=gte.${since}&order=day.asc`
-      );
-    } catch (e) { console.error("[perfil] habits", e); }
+  const nut = plans.find((p) => p.type === "nutricion");
+  const ent = plans.find((p) => p.type === "entrenamiento");
+
+  // La firma depende de la versión de la plantilla, así que va después.
+  let contractSig: ContractSignature | null = null;
+  if (contractTpl) {
+    contractSig = await sbSelect<ContractSignature>(
+      "contract_signatures",
+      `select=*&member_email=eq.${encodeURIComponent(email)}&version=eq.${contractTpl.version}`
+    ).then((r) => r[0] ?? null).catch((e) => { console.error("[perfil] contract signature", e); return null; });
   }
+
+  // 2ª tanda: todas las URLs firmadas en paralelo.
+  const [nutUrl, entUrl, photoUrl, contractTplUrl, signedPdfUrl] = await Promise.all([
+    nut ? sbSignedUrl("planes", nut.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    ent ? sbSignedUrl("planes", ent.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    contractTpl ? sbSignedUrl(CONTRACT_BUCKET, contractTpl.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+  ]);
+
   const today = todayMadrid();
   const loggedDays = new Set(habitRows.map((r) => r.day));
   const todayRow = habitRows.find((r) => r.day === today);
@@ -137,6 +154,16 @@ export default async function PerfilPage() {
               tabs={[
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
                 { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} /> },
+                { id: "contrato", icon: "📄", label: "Contrato", node: (
+                  <ContractSign
+                    hasTemplate={!!contractTpl}
+                    templateUrl={contractTplUrl}
+                    signed={!!contractSig}
+                    signedAt={contractSig?.signed_at}
+                    signedPdfUrl={signedPdfUrl}
+                    defaultName={profile?.display_name ?? ""}
+                  />
+                ) },
                 { id: "ajustes", icon: "⚙️", label: "Ajustes", node: <div className="flex flex-col gap-6"><PushToggle /><PwaInstall /></div> },
               ]}
             />

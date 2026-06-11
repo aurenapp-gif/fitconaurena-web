@@ -11,7 +11,12 @@ export default function PerfilTabs({ tabs }: { tabs: Tab[] }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="Secciones del perfil" className="grid grid-cols-3 gap-2 mb-6">
+      <div
+        role="tablist"
+        aria-label="Secciones del perfil"
+        className="grid gap-2 mb-6"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      >
         {tabs.map((t) => {
           const on = t.id === active;
           return (

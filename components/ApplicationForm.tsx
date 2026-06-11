@@ -154,10 +154,12 @@ export default function ApplicationForm() {
         </div>
         <h2 className="section-title mb-4">Gracias por tu interés</h2>
         <p className="section-sub max-w-md mx-auto mb-6">
-          Este servicio requiere una <strong className="text-white">inversión mínima de tiempo y
-          dinero</strong> para poder conseguirlo. Somos un servicio comprometido al máximo con
-          el cliente: no solo adaptamos una estrategia única a la situación de cada persona,
-          también te guiamos a diario para que consigas tu objetivo <strong className="text-white">sí o sí</strong>.
+          No es solo una cuestión de <strong className="text-white">tiempo o de inversión
+          económica</strong>: además, trabajamos con un <strong className="text-white">rango de edad
+          superior a los 30 años</strong>, ya que nuestro método está diseñado para esa etapa.
+          Somos un servicio comprometido al máximo con el cliente: no solo adaptamos una estrategia
+          única a la situación de cada persona, también te guiamos a diario para que consigas tu
+          objetivo <strong className="text-white">sí o sí</strong>.
         </p>
         <p className="section-sub max-w-md mx-auto mb-8">
           Mientras tanto, puedes acceder a nuestro <strong className="text-white">contenido

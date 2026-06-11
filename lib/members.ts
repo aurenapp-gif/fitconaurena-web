@@ -74,14 +74,18 @@ export const createSessionToken = (email: string) =>
   createToken({ email, typ: "session", exp: Date.now() + SESSION_TTL });
 export const verifySession = (token?: string) => verify(token, "session");
 
-/** ¿Es el email un administrador (la coach)? Lista en ADMIN_EMAILS. */
-export function isAdmin(email: string | null): boolean {
-  if (!email) return false;
-  const admins = (process.env.ADMIN_EMAILS ?? "")
+/** Lista de emails administradores (la coach). Configurable en ADMIN_EMAILS. */
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  return admins.includes(email.toLowerCase());
+}
+
+/** ¿Es el email un administrador (la coach)? Lista en ADMIN_EMAILS. */
+export function isAdmin(email: string | null): boolean {
+  if (!email) return false;
+  return adminEmails().includes(email.toLowerCase());
 }
 
 /** Lista las clientas (suscriptoras del grupo "Miembros"). */
