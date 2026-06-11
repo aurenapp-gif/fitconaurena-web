@@ -23,15 +23,22 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [msg, setMsg] = useState("");
 
-  // Prepara el lienzo (resolución real del dispositivo para que la firma no salga pixelada).
-  useEffect(() => {
-    if (signed) return;
+  // Ajusta la resolución real del lienzo a su tamaño en pantalla. CLAVE: la
+  // pestaña "Contrato" está oculta al montar (display:none), así que al inicio
+  // mide 0×0 y la firma no se capturaría. Por eso lo medimos cuando se hace
+  // visible (ResizeObserver) y también justo antes de empezar a dibujar.
+  function sizeCanvas() {
     const c = canvasRef.current;
     if (!c) return;
+    const w = c.clientWidth;
+    const h = c.clientHeight;
+    if (!w || !h) return; // aún oculta: no se puede medir
     const ratio = window.devicePixelRatio || 1;
-    const rect = c.getBoundingClientRect();
-    c.width = Math.round(rect.width * ratio);
-    c.height = Math.round(rect.height * ratio);
+    const targetW = Math.round(w * ratio);
+    const targetH = Math.round(h * ratio);
+    if (c.width === targetW && c.height === targetH) return; // ya está bien
+    c.width = targetW;
+    c.height = targetH;
     const ctx = c.getContext("2d");
     if (ctx) {
       ctx.scale(ratio, ratio);
@@ -40,6 +47,19 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
       ctx.lineJoin = "round";
       ctx.strokeStyle = "#0A0A0A";
     }
+    hasDrawn.current = false;
+  }
+
+  useEffect(() => {
+    if (signed) return;
+    const c = canvasRef.current;
+    if (!c) return;
+    sizeCanvas();
+    // Remide cuando la pestaña pasa de oculta a visible (o cambia el ancho).
+    const ro = new ResizeObserver(() => sizeCanvas());
+    ro.observe(c);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signed, hasTemplate]);
 
   function point(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -49,6 +69,7 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
   }
   function start(e: React.PointerEvent<HTMLCanvasElement>) {
     e.preventDefault();
+    sizeCanvas(); // garantiza que el lienzo tiene tamaño real antes de dibujar
     drawing.current = true;
     canvasRef.current!.setPointerCapture(e.pointerId);
     const ctx = canvasRef.current!.getContext("2d")!;
