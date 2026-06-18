@@ -73,8 +73,8 @@ export default function NavProgress() {
         style={{
           height: "100%",
           width: `${width}%`,
-          background: "#CAFF00",
-          boxShadow: "0 0 8px rgba(202,255,0,0.7)",
+          background: "#1CA0E3",
+          boxShadow: "0 0 8px rgba(28,160,227,0.7)",
           transition: "width 200ms ease",
         }}
       />

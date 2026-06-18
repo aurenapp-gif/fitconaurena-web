@@ -93,7 +93,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="font-bold text-white">Progreso de peso</h2>
               {lost != null && (
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${lost > 0 ? "bg-[#CAFF00] text-[#0A0A0A]" : lost < 0 ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${lost > 0 ? "bg-[#1CA0E3] text-white" : lost < 0 ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
                   {lost > 0 ? `▼ ${lost.toLocaleString("es-ES")} kg bajados` : lost < 0 ? `▲ ${Math.abs(lost).toLocaleString("es-ES")} kg` : "Sin cambio"}
                 </span>
               )}
@@ -108,8 +108,8 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   <div className="text-2xl font-extrabold text-white leading-none">{lastWeight?.toLocaleString("es-ES")}</div>
                   <div className="text-[11px] text-[#A0A0A0] mt-1.5">peso actual</div>
                 </div>
-                <div className="text-center px-2 py-3 rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5">
-                  <div className="text-2xl font-extrabold text-[#CAFF00] leading-none">{lost != null ? `${lost > 0 ? "−" : lost < 0 ? "+" : ""}${Math.abs(lost).toLocaleString("es-ES")}` : "—"}</div>
+                <div className="text-center px-2 py-3 rounded-xl border border-[#1CA0E3]/40 bg-[#1CA0E3]/5">
+                  <div className="text-2xl font-extrabold text-[#1CA0E3] leading-none">{lost != null ? `${lost > 0 ? "−" : lost < 0 ? "+" : ""}${Math.abs(lost).toLocaleString("es-ES")}` : "—"}</div>
                   <div className="text-[11px] text-[#A0A0A0] mt-1.5">kg en total</div>
                 </div>
               </div>
@@ -133,7 +133,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                       {p.type === "nutricion" ? "🥗 Nutrición" : "🏋️ Entrenamiento"}{p.title ? ` · ${p.title}` : ""}
                       <span className="text-[#666666] text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
                     </span>
-                    {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00] text-sm">Ver</a>}
+                    {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
                   </div>
                 ))}
               </div>
@@ -145,7 +145,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="font-bold text-white">Contrato</h2>
               {contractTpl && (
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${contractSig ? "bg-[#CAFF00] text-[#0A0A0A]" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${contractSig ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
                   {contractSig ? "✍️ Firmado" : "⏳ Pendiente de firma"}
                 </span>
               )}

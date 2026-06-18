@@ -81,12 +81,12 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
                   key={i}
                   href={`/miembros/agenda?ym=${ym}&day=${day}`}
                   className={`min-h-[64px] rounded-lg border p-1.5 flex flex-col transition-colors ${
-                    isSel ? "border-[#CAFF00] bg-[#CAFF00]/10" : "border-[#252525] bg-[#0F0F0F] hover:border-[#3a3a3a]"
+                    isSel ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#0F0F0F] hover:border-[#3a3a3a]"
                   }`}
                 >
-                  <span className={`text-xs ${day === today ? "font-black text-[#CAFF00]" : "text-[#A0A0A0]"}`}>{day}</span>
+                  <span className={`text-xs ${day === today ? "font-black text-[#1CA0E3]" : "text-[#A0A0A0]"}`}>{day}</span>
                   {count > 0 && (
-                    <span className="mt-auto self-start text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                    <span className="mt-auto self-start text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#1CA0E3] text-white">
                       {count} 🔄
                     </span>
                   )}
@@ -105,7 +105,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
                 <div className="flex flex-col gap-2">
                   {selList.map((p) => (
                     <Link key={p.email} href={`/miembros/clientas/${encodeURIComponent(p.email)}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5 hover:border-[#CAFF00]/40">
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5 hover:border-[#1CA0E3]/40">
                       <span className="text-sm text-white">🔄 {p.display_name || p.email.split("@")[0]}</span>
                       <span className="text-xs text-[#666666]">{p.email}</span>
                     </Link>

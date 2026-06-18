@@ -190,7 +190,7 @@ export default async function CheckinsPage() {
                     <div className="flex items-center gap-3">
                       {admin && <span className="text-sm font-bold text-white">{it.member_email}</span>}
                       {it.weight != null && (
-                        <span className="text-sm font-bold text-[#CAFF00]">{it.weight} kg</span>
+                        <span className="text-sm font-bold text-[#1CA0E3]">{it.weight} kg</span>
                       )}
                     </div>
                     <span className="text-xs text-[#666666]">{fmt(it.created_at)}</span>
@@ -207,8 +207,8 @@ export default async function CheckinsPage() {
                   )}
                   {it.photos.length > 0 && <PhotoLightbox photos={it.photos} />}
                   {it.coach_reply ? (
-                    <div className="mt-3 rounded-lg border border-[#CAFF00]/30 bg-[#CAFF00]/5 px-4 py-3">
-                      <p className="text-xs font-bold text-[#CAFF00] mb-1">Respuesta de tu coach</p>
+                    <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-4 py-3">
+                      <p className="text-xs font-bold text-[#1CA0E3] mb-1">Respuesta de tu coach</p>
                       <p className="text-sm text-white whitespace-pre-wrap">{it.coach_reply}</p>
                     </div>
                   ) : (

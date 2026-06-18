@@ -136,7 +136,7 @@ export default function AudioRecorder({
       <button
         type="button" onClick={start} disabled={disabled}
         aria-label="Grabar nota de voz"
-        className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-3.5 py-3 text-sm hover:border-[#CAFF00] disabled:opacity-60"
+        className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-3.5 py-3 text-sm hover:border-[#1CA0E3] disabled:opacity-60"
       >
         🎤
       </button>

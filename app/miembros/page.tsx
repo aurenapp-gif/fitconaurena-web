@@ -60,7 +60,7 @@ export default async function MiembrosPage() {
       <Navbar />
       <main className="relative pt-16 overflow-hidden min-h-screen">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }} />
         <div className="container-wide relative z-10 py-16">
           {/* Saludo personalizado */}
           <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
@@ -86,7 +86,7 @@ export default async function MiembrosPage() {
 
           {/* Checklist de primeros pasos (desaparece al completarse) */}
           {showChecklist && (
-            <div className="card-dark p-6 !transform-none border-[#CAFF00]/30 mb-5">
+            <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30 mb-5">
               <h3 className="font-bold text-white mb-1">Tus primeros pasos</h3>
               <p className="text-sm text-[#A0A0A0] mb-4">
                 Completa estos pasos para empezar con buen pie. {steps.filter((s) => s.done).length}/{steps.length} hechos.
@@ -95,15 +95,15 @@ export default async function MiembrosPage() {
                 {steps.map((s) => (
                   <div key={s.label} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${s.done ? "border-[#252525] bg-[#0F0F0F]" : "border-[#252525] bg-[#0A0A0A]"}`}>
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${s.done ? "bg-[#CAFF00]" : "border-2 border-[#444]"}`}>
+                      <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${s.done ? "bg-[#1CA0E3]" : "border-2 border-[#444]"}`}>
                         {s.done && (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
                         )}
                       </span>
                       <span className={`text-sm ${s.done ? "text-[#666666] line-through" : "text-white"}`}>{s.label}</span>
                     </div>
                     {!s.done && (
-                      <Link href={s.href} className="text-[#CAFF00] text-sm font-semibold shrink-0">Hacerlo →</Link>
+                      <Link href={s.href} className="text-[#1CA0E3] text-sm font-semibold shrink-0">Hacerlo →</Link>
                     )}
                   </div>
                 ))}

@@ -24,13 +24,13 @@ export default function AplicarPage() {
         {/* Glow */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }}
         />
 
         <div className="container-narrow relative z-10 py-16 md:py-24">
           {/* Filtro / titular */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide mb-6 border border-[#CAFF00]/40 bg-[#CAFF00]/10 text-[#CAFF00] uppercase">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide mb-6 border border-[#1CA0E3]/40 bg-[#1CA0E3]/10 text-[#1CA0E3] uppercase">
               Solo para mujeres de 25-40 años
             </div>
             <p className="text-[#A0A0A0] mb-6 text-sm md:text-base">
@@ -40,7 +40,7 @@ export default function AplicarPage() {
               className="font-black text-white leading-[1.08] tracking-tight mb-5"
               style={{ fontSize: "clamp(2rem, 5vw, 3.4rem)" }}
             >
-              Te ayudo a perder <span className="text-[#CAFF00]">+9 kg</span> en tiempo
+              Te ayudo a perder <span className="text-[#1CA0E3]">+9 kg</span> en tiempo
               récord comiendo lo que te gusta
             </h1>
             <p className="section-sub max-w-lg mx-auto">
@@ -49,7 +49,7 @@ export default function AplicarPage() {
           </div>
 
           {/* Franja de marca: método + garantía */}
-          <div className="rounded-2xl bg-[#CAFF00] text-[#0A0A0A] text-center px-6 py-6 md:py-7 mb-12 max-w-xl mx-auto shadow-[0_8px_40px_rgba(202,255,0,0.25)]">
+          <div className="rounded-2xl bg-[#1CA0E3] text-white text-center px-6 py-6 md:py-7 mb-12 max-w-xl mx-auto shadow-[0_8px_40px_rgba(28,160,227,0.25)]">
             <p className="font-black leading-tight mb-3" style={{ fontSize: "clamp(1.15rem, 3vw, 1.7rem)" }}>
               Con el método Fit con Aurena
             </p>
@@ -63,7 +63,7 @@ export default function AplicarPage() {
 
           {/* VSL (vídeo de ventas), tras el titular/franja */}
           <div className="max-w-2xl mx-auto mb-12">
-            <p className="text-center font-black tracking-widest uppercase mb-4 text-[#CAFF00]"
+            <p className="text-center font-black tracking-widest uppercase mb-4 text-[#1CA0E3]"
                style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
               Paso 1: Ver el vídeo
             </p>
@@ -71,7 +71,7 @@ export default function AplicarPage() {
               <YouTubeFacade id={vslId} title="Vídeo de presentación" />
             ) : (
               <div className="aspect-video w-full rounded-2xl border border-[#252525] bg-gradient-to-br from-[#161616] to-[#0c0c0c] flex flex-col items-center justify-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1CA0E3] text-white">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
                 </span>
                 <p className="text-[#666666] text-xs mt-3 uppercase tracking-widest">Vídeo muy pronto</p>
@@ -85,7 +85,7 @@ export default function AplicarPage() {
           </div>
 
           {/* Formulario de calificación */}
-          <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00]"
+          <p className="text-center font-black tracking-wide uppercase mb-4 text-[#1CA0E3]"
              style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
             Paso 2: Agendar tu llamada gratuita para comenzar tu cambio
           </p>
@@ -101,7 +101,7 @@ export default function AplicarPage() {
           <SuccessCarousel images={casos} />
 
           {/* "Esto es para ti si…" (debajo de las fotos) */}
-          <div className="rounded-2xl bg-[#CAFF00] text-[#0A0A0A] px-6 py-7 md:px-10 md:py-9 mt-14 max-w-xl mx-auto shadow-[0_8px_40px_rgba(202,255,0,0.25)]">
+          <div className="rounded-2xl bg-[#1CA0E3] text-white px-6 py-7 md:px-10 md:py-9 mt-14 max-w-xl mx-auto shadow-[0_8px_40px_rgba(28,160,227,0.25)]">
             <p className="font-black text-center mb-5" style={{ fontSize: "clamp(1.2rem, 3vw, 1.7rem)" }}>
               Esto es para ti si…
             </p>

@@ -71,7 +71,7 @@ export default async function ContratosPage() {
                       <p className="font-bold text-white truncate">{name}</p>
                       <p className="text-xs text-[#666666] truncate">{email}</p>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#CAFF00] text-[#0A0A0A] shrink-0">
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#1CA0E3] text-white shrink-0">
                       {items.length} firmado{items.length === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export default async function ContratosPage() {
                           <span className="text-[#666666] text-xs"> · v{s.version}</span>
                         </span>
                         {s.url ? (
-                          <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00] text-sm font-semibold shrink-0">Descargar</a>
+                          <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
                         ) : (
                           <span className="text-[#666666] text-xs shrink-0">No disponible</span>
                         )}

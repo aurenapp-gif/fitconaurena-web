@@ -27,12 +27,12 @@ export default function RenewalSetter({ member, current }: { member: string; cur
       <div>
         <label className="block text-xs text-[#A0A0A0] mb-1">Próxima renovación del plan</label>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white outline-none focus:border-[#CAFF00]" />
+          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white outline-none focus:border-[#1CA0E3]" />
       </div>
       <button onClick={save} disabled={status === "loading"} className="btn-brand text-sm px-5 py-2.5 disabled:opacity-60">
         {status === "loading" ? "…" : "Guardar"}
       </button>
-      {status === "saved" && <span className="text-sm text-[#CAFF00]">✓</span>}
+      {status === "saved" && <span className="text-sm text-[#1CA0E3]">✓</span>}
       {status === "error" && <span className="text-sm text-[#FF6B6B]">Error</span>}
     </div>
   );

@@ -47,19 +47,19 @@ export default function LeadMagnet() {
       {/* Background glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-        style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }}
       />
 
       <div className="container-content relative z-10 pt-12 pb-6">
         {/* Prueba social, arriba del todo (fuera de la tarjeta) */}
         <p className="text-center font-black text-white mb-6" style={{ fontSize: "clamp(1.05rem, 2.6vw, 1.5rem)" }}>
-          <span className="text-[#CAFF00]">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
+          <span className="text-[#1CA0E3]">+1000 mujeres</span> han conseguido su cambio con el método Fit con Aurena
         </p>
 
         <div className="card-dark p-8 md:p-12 text-center !transform-none">
           <span className="section-tag">Contenido gratuito</span>
           <h2 className="section-title mb-4">
-            Accede a <span className="text-[#CAFF00]">contenido gratuito</span>
+            Accede a <span className="text-[#1CA0E3]">contenido gratuito</span>
           </h2>
           <p className="section-sub mb-8 max-w-lg mx-auto">
             Todo lo que debes saber para poder llevar tu físico y mentalidad al
@@ -69,10 +69,10 @@ export default function LeadMagnet() {
           {status === "sent" ? (
             <div
               role="status"
-              className="max-w-md mx-auto rounded-xl border border-[#CAFF00]/40 bg-[#CAFF00]/5 px-6 py-5"
+              className="max-w-md mx-auto rounded-xl border border-[#1CA0E3]/40 bg-[#1CA0E3]/5 px-6 py-5"
             >
               <p className="flex items-center justify-center gap-2 font-bold text-white mb-1">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CAFF00" strokeWidth="2.2" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1CA0E3" strokeWidth="2.2" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="14" rx="2" />
                   <path d="M3 7l9 6 9-6" />
                 </svg>
@@ -105,7 +105,7 @@ export default function LeadMagnet() {
                   placeholder="tu@email.com"
                   aria-label="Tu email"
                   autoComplete="email"
-                  className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] focus-visible:ring-2 focus-visible:ring-[#CAFF00]/40 transition-colors"
+                  className="flex-1 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] focus-visible:ring-2 focus-visible:ring-[#1CA0E3]/40 transition-colors"
                 />
                 <button
                   type="submit"

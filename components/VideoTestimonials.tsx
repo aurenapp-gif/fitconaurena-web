@@ -9,7 +9,7 @@ export default function VideoTestimonials({ ids, vertical }: { ids: string[]; ve
         className="text-center font-black text-white tracking-tight mb-2"
         style={{ fontSize: "clamp(1.4rem, 3.5vw, 2.2rem)" }}
       >
-        Lo que dicen <span className="text-[#CAFF00]">ellas</span>
+        Lo que dicen <span className="text-[#1CA0E3]">ellas</span>
       </h2>
       <p className="text-center text-[#A0A0A0] text-sm md:text-base mb-8">
         Testimonios reales de clientas del programa.

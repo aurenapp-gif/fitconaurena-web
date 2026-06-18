@@ -20,8 +20,8 @@ export default function PwaInstall() {
   }, []);
 
   const Card = ({ active, emoji, title, steps }: { active: boolean; emoji: string; title: string; steps: string[] }) => (
-    <div className={`rounded-xl border p-4 ${active ? "border-[#CAFF00]/40 bg-[#CAFF00]/5" : "border-[#252525]"}`}>
-      <p className="font-bold text-white mb-2">{emoji} {title}{active && <span className="text-[10px] text-[#CAFF00] ml-2">tu dispositivo</span>}</p>
+    <div className={`rounded-xl border p-4 ${active ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#252525]"}`}>
+      <p className="font-bold text-white mb-2">{emoji} {title}{active && <span className="text-[10px] text-[#1CA0E3] ml-2">tu dispositivo</span>}</p>
       <ol className="list-decimal list-inside text-sm text-[#A0A0A0] space-y-1">
         {steps.map((s, i) => <li key={i}>{s}</li>)}
       </ol>

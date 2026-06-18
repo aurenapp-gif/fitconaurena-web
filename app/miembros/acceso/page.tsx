@@ -18,7 +18,7 @@ export default function AccesoPage({
       <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }}
         />
         <div className="container-narrow relative z-10 py-24 text-center">
           <span className="section-tag">Área privada</span>

@@ -66,13 +66,13 @@ export default function TechniqueReply({ id }: { id: string }) {
   }
 
   const label = status === "uploading" ? "Subiendo…" : status === "saving" ? "Guardando…" : "Enviar corrección";
-  const inputCls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
+  const inputCls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2 border-t border-[#252525] pt-3">
       <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Escribe tu corrección…" aria-label="Corrección" rows={3} maxLength={2000} className={inputCls} />
       <label className="text-xs text-[#A0A0A0]">Vídeo de respuesta (opcional):</label>
-      <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo de respuesta" className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#CAFF00] file:px-4 file:py-2 file:font-bold file:text-[#0A0A0A]" />
+      <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo de respuesta" className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-[#A0A0A0]">O graba una nota de voz:</span>
         <AudioRecorder onSend={handleAudio} disabled={busy} sendLabel="Enviar audio" />

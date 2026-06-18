@@ -26,7 +26,7 @@ export default function GraciasPage({
       <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: "radial-gradient(circle, #CAFF00 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }}
         />
 
         <div className="container-narrow relative z-10 py-24 text-center">
@@ -52,8 +52,8 @@ export default function GraciasPage({
             </>
           ) : (
             <>
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#CAFF00]">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3" aria-hidden="true">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#1CA0E3]">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" aria-hidden="true">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>

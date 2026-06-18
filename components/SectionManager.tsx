@@ -41,7 +41,7 @@ export default function SectionManager({ sections }: { sections: Section[] }) {
   }
 
   return (
-    <div className="card-dark p-6 !transform-none border-[#CAFF00]/30 mb-6">
+    <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30 mb-6">
       <h3 className="font-bold text-white mb-1">Secciones (admin)</h3>
       <p className="text-sm text-[#A0A0A0] mb-4">Organiza el contenido por fases. La primera es la que verán como &quot;empieza por aquí&quot;.</p>
 
@@ -53,7 +53,7 @@ export default function SectionManager({ sections }: { sections: Section[] }) {
             <input
               defaultValue={s.name}
               onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== s.name) call("PATCH", { id: s.id, name: v }); }}
-              className="flex-1 min-w-0 bg-transparent text-sm text-white outline-none focus:text-[#CAFF00]"
+              className="flex-1 min-w-0 bg-transparent text-sm text-white outline-none focus:text-[#1CA0E3]"
               aria-label={`Nombre de la sección ${s.name}`}
             />
             <button type="button" disabled={busy || i === 0} onClick={() => call("PATCH", { id: s.id, dir: "up" })} className="text-[#A0A0A0] disabled:opacity-30 px-1" aria-label="Subir">▲</button>
@@ -69,7 +69,7 @@ export default function SectionManager({ sections }: { sections: Section[] }) {
           onChange={(e) => setNewName(e.target.value)}
           placeholder="Nueva sección (ej. Mentalidad)"
           maxLength={60}
-          className="flex-1 min-w-[180px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
+          className="flex-1 min-w-[180px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
         />
         <button type="submit" disabled={busy} className="btn-brand text-sm px-5 py-2.5 disabled:opacity-60">Añadir sección</button>
       </form>

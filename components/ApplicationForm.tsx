@@ -100,8 +100,8 @@ export default function ApplicationForm() {
     if (qualified) {
       return (
         <div className="max-w-xl mx-auto text-center py-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#CAFF00]">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3" aria-hidden="true">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#1CA0E3]">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" aria-hidden="true">
               <path d="M20 6L9 17l-5-5" />
             </svg>
           </div>
@@ -148,7 +148,7 @@ export default function ApplicationForm() {
     return (
       <div className="max-w-xl mx-auto text-center py-4">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-[#252525] bg-[#161616]">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#CAFF00" strokeWidth="2.5" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1CA0E3" strokeWidth="2.5" aria-hidden="true">
             <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z" />
           </svg>
         </div>
@@ -204,7 +204,7 @@ export default function ApplicationForm() {
       </div>
       <div className="h-1.5 w-full rounded-full bg-[#1c1c1c] mb-8 overflow-hidden">
         <div
-          className="h-full rounded-full bg-[#CAFF00] transition-all duration-300"
+          className="h-full rounded-full bg-[#1CA0E3] transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -228,16 +228,16 @@ export default function ApplicationForm() {
                       onClick={() => pick(q.id, o.value)}
                       className={`flex items-center gap-3 rounded-xl border px-4 py-4 text-left transition-colors ${
                         selected
-                          ? "border-[#CAFF00] bg-[#CAFF00]/10"
+                          ? "border-[#1CA0E3] bg-[#1CA0E3]/10"
                           : "border-[#252525] bg-[#0A0A0A] hover:border-[#3a3a3a]"
                       }`}
                     >
                       <span
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selected ? "border-[#CAFF00]" : "border-[#444]"
+                          selected ? "border-[#1CA0E3]" : "border-[#444]"
                         }`}
                       >
-                        {selected && <span className="w-2.5 h-2.5 rounded-full bg-[#CAFF00]" />}
+                        {selected && <span className="w-2.5 h-2.5 rounded-full bg-[#1CA0E3]" />}
                       </span>
                       <span className={`text-sm ${selected ? "text-white" : "text-[#A0A0A0]"}`}>
                         {o.label}
@@ -260,7 +260,7 @@ export default function ApplicationForm() {
               onChange={(e) => setMotivacion(e.target.value)}
               rows={5}
               placeholder="Cuéntanos un poco sobre ti y tu objetivo…"
-              className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] transition-colors resize-none"
+              className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors resize-none"
             />
             <button
               type="button"
@@ -293,17 +293,17 @@ export default function ApplicationForm() {
               <input
                 type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)}
                 placeholder="Tu nombre" aria-label="Tu nombre" autoComplete="name"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] transition-colors"
+                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
               />
               <input
                 type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com" aria-label="Tu email" autoComplete="email"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] transition-colors"
+                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
               />
               <input
                 type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)}
                 placeholder="Tu WhatsApp / teléfono" aria-label="Tu teléfono o WhatsApp" autoComplete="tel"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] transition-colors"
+                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
               />
             </div>
             <button

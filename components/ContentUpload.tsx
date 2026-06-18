@@ -51,22 +51,22 @@ export default function ContentUpload({ sections = [] }: { sections?: Section[] 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-[#CAFF00]/30 mb-8">
+    <form onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-[#1CA0E3]/30 mb-8">
       <h3 className="font-bold text-white mb-4">Subir contenido (admin)</h3>
       <div className="flex flex-col gap-3">
         <input
           type="text" value={title} onChange={(e) => setTitle(e.target.value)}
           placeholder="Título" aria-label="Título"
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
+          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
         />
         <input
           type="text" value={description} onChange={(e) => setDescription(e.target.value)}
           placeholder="Descripción (opcional)" aria-label="Descripción"
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
+          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
         />
         <select
           value={sectionId} onChange={(e) => setSectionId(e.target.value)} aria-label="Sección"
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white outline-none focus:border-[#CAFF00]"
+          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white outline-none focus:border-[#1CA0E3]"
         >
           <option value="">Sin sección</option>
           {sections.map((s) => (
@@ -76,7 +76,7 @@ export default function ContentUpload({ sections = [] }: { sections?: Section[] 
         <input
           type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           aria-label="Archivo"
-          className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#CAFF00] file:px-4 file:py-2 file:font-bold file:text-[#0A0A0A]"
+          className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white"
         />
         {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{message}</p>}
         <button

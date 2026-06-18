@@ -46,12 +46,12 @@ function ContentCard({ it, admin }: { it: Item; admin: boolean }) {
         <video controls preload="metadata" playsInline className="w-full rounded-lg border border-[#252525] bg-black mt-auto">
           <source src={it.url} />
           Tu navegador no puede reproducir este vídeo.{" "}
-          <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00]">Descárgalo aquí</a>.
+          <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3]">Descárgalo aquí</a>.
         </video>
       ) : it.kind === "audio" ? (
         <audio controls preload="metadata" className="w-full mt-auto">
           <source src={it.url} />
-          <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#CAFF00]">Descargar audio</a>
+          <a href={it.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3]">Descargar audio</a>
         </audio>
       ) : (
         <a href={it.url} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 self-start mt-auto">
@@ -137,7 +137,7 @@ export default async function ContenidoPage() {
                   <section key={s.id}>
                     <div className="flex items-center gap-3 mb-4 flex-wrap">
                       {first && (
-                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#1CA0E3] text-white">
                           Empieza por aquí
                         </span>
                       )}

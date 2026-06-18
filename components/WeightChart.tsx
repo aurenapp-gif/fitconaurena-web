@@ -40,10 +40,10 @@ export default function WeightChart({
             <text x={4} y={y(v) + 4} fill="#666666" fontSize="11">{v.toFixed(1)}</text>
           </g>
         ))}
-        <path d={area} fill="#CAFF00" fillOpacity="0.08" />
-        <path d={line} fill="none" stroke="#CAFF00" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={area} fill="#1CA0E3" fillOpacity="0.08" />
+        <path d={line} fill="none" stroke="#1CA0E3" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
         {points.map((p, i) => (
-          <circle key={i} cx={x(i)} cy={y(p.weight)} r="3.5" fill="#CAFF00" />
+          <circle key={i} cx={x(i)} cy={y(p.weight)} r="3.5" fill="#1CA0E3" />
         ))}
       </svg>
       <div className="flex justify-between text-[10px] text-[#666666] px-1">

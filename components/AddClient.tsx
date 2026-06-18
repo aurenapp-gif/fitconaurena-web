@@ -38,10 +38,10 @@ export default function AddClient() {
     }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
+  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
 
   return (
-    <form onSubmit={submit} className="card-dark p-5 !transform-none border-[#CAFF00]/30 mb-6">
+    <form onSubmit={submit} className="card-dark p-5 !transform-none border-[#1CA0E3]/30 mb-6">
       <h3 className="font-bold text-white mb-3">Añadir clienta</h3>
       <div className="flex gap-3 flex-wrap">
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email de la clienta" className={`${cls} flex-1 min-w-[200px]`} />
@@ -50,7 +50,7 @@ export default function AddClient() {
           {status === "loading" ? "Dando de alta…" : "Dar de alta + enviar acceso"}
         </button>
       </div>
-      {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-[#FF6B6B]" : "text-[#CAFF00]"}`}>{msg}</p>}
+      {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
       <p className="text-xs text-[#666666] mt-2">Se le da de alta y recibe un email de bienvenida con su enlace de acceso.</p>
     </form>
   );

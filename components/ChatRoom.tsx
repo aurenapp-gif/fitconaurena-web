@@ -137,7 +137,7 @@ export default function ChatRoom({
             <div key={m.id} className={`max-w-[80%] ${isMine(m) ? "self-end" : "self-start"}`}>
               <div
                 className={`rounded-2xl px-4 py-2.5 text-sm ${
-                  isMine(m) ? "bg-[#CAFF00] text-[#0A0A0A]" : "bg-[#1c1c1c] text-white"
+                  isMine(m) ? "bg-[#1CA0E3] text-white" : "bg-[#1c1c1c] text-white"
                 }`}
               >
                 {m.audio_url ? (
@@ -148,7 +148,7 @@ export default function ChatRoom({
               </div>
               <p className={`text-[10px] text-[#666666] mt-1 ${isMine(m) ? "text-right" : ""}`}>
                 {new Date(m.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                {m.id === lastSeenId && <span className="text-[#CAFF00]"> · Visto ✓✓</span>}
+                {m.id === lastSeenId && <span className="text-[#1CA0E3]"> · Visto ✓✓</span>}
               </p>
             </div>
           ))
@@ -161,7 +161,7 @@ export default function ChatRoom({
           onChange={(e) => setText(e.target.value)}
           placeholder="Escribe un mensaje…"
           aria-label="Mensaje"
-          className="flex-1 min-w-[140px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]"
+          className="flex-1 min-w-[140px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
         />
         <AudioRecorder onSend={sendAudio} disabled={sending} />
         <button type="submit" disabled={sending} className="btn-brand text-sm px-5 py-3 disabled:opacity-60">

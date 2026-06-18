@@ -121,9 +121,9 @@ export default async function AdminPage() {
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className={`text-center px-3 py-4 rounded-xl border ${s.urgent ? "border-[#CAFF00]/40 bg-[#CAFF00]/5" : "border-[#252525] bg-[#141414]"}`}
+                  className={`text-center px-3 py-4 rounded-xl border ${s.urgent ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#252525] bg-[#141414]"}`}
                 >
-                  <div className={`text-3xl font-extrabold leading-none ${s.urgent ? "text-[#CAFF00]" : "text-white"}`}>{s.value}</div>
+                  <div className={`text-3xl font-extrabold leading-none ${s.urgent ? "text-[#1CA0E3]" : "text-white"}`}>{s.value}</div>
                   <div className="text-xs text-[#A0A0A0] mt-1.5">{s.label}</div>
                 </div>
               ))}
@@ -172,7 +172,7 @@ export default async function AdminPage() {
                       v{contractTpl.version} · {signedCurrent} firmada{signedCurrent === 1 ? "" : "s"}
                     </span>
                   )}
-                  <Link href="/miembros/contratos" className="text-[#CAFF00] text-sm font-semibold">Ver firmados →</Link>
+                  <Link href="/miembros/contratos" className="text-[#1CA0E3] text-sm font-semibold">Ver firmados →</Link>
                 </div>
               </div>
               <p className="text-sm text-[#A0A0A0] mb-4">
@@ -207,7 +207,7 @@ export default async function AdminPage() {
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <span className="text-[10px] text-[#666666]">{fmt(last.created_at)}</span>
                         {unread > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CAFF00] text-[#0A0A0A]">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">
                             {unread} nuevo{unread > 1 ? "s" : ""}
                           </span>
                         )}
