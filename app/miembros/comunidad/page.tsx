@@ -21,7 +21,10 @@ export default async function ComunidadPage() {
               <h1 className="section-title">Comunidad</h1>
               <p className="text-sm text-[#666666] mt-1">Comparte tus wins y avances con el resto.</p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
+            <div className="flex items-center gap-2">
+              <Link href="/miembros/foro" className="btn-brand text-sm px-5 py-2.5">Preguntas y respuestas →</Link>
+              <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
+            </div>
           </div>
           <CommunityFeed />
         </div>
