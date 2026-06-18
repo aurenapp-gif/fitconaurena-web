@@ -41,13 +41,13 @@ export default function ContractTemplateUpload({ hasTemplate }: { hasTemplate: b
   }
 
   const busy = status === "loading" || status === "deleting";
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
+  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional, ej. Contrato de servicios 2026)" className={cls} />
       <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="PDF del contrato"
-        className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#CAFF00] file:px-4 file:py-2 file:font-bold file:text-[#0A0A0A]" />
+        className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
       {status === "error" && <p className="text-sm text-[#FF6B6B]">{msg}</p>}
       <div className="flex items-center gap-3 flex-wrap">
         <button type="submit" disabled={busy} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">

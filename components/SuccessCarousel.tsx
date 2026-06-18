@@ -66,7 +66,7 @@ export default function SuccessCarousel({
     <section className={className}>
       {header ?? (
         <>
-          <p className="text-center font-black tracking-wide uppercase mb-4 text-[#CAFF00] max-w-2xl mx-auto"
+          <p className="text-center font-black tracking-wide uppercase mb-4 text-[#1CA0E3] max-w-2xl mx-auto"
              style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)" }}>
             Paso 3: Comprueba cómo mujeres como tú han conseguido el cambio que tanto deseas con el método Fit con Aurena
           </p>
@@ -74,7 +74,7 @@ export default function SuccessCarousel({
             className="text-center font-black text-white tracking-tight mb-2"
             style={{ fontSize: "clamp(1.4rem, 3.5vw, 2.2rem)" }}
           >
-            Resultados <span className="text-[#CAFF00]">reales</span>
+            Resultados <span className="text-[#1CA0E3]">reales</span>
           </h2>
           <p className="text-center text-[#A0A0A0] text-sm md:text-base mb-8">
             Transformaciones de mujeres como tú.

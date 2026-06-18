@@ -62,7 +62,7 @@ export default async function LeadsPage() {
             <div className="card-dark p-6 !transform-none">
               <p className="text-white font-bold mb-2">Configura la tabla del CRM</p>
               <p className="text-sm text-[#A0A0A0] mb-3">
-                Para activar el CRM, crea la tabla <code className="text-[#CAFF00]">leads</code> en Supabase
+                Para activar el CRM, crea la tabla <code className="text-[#1CA0E3]">leads</code> en Supabase
                 (SQL Editor) con este comando y vuelve a entrar:
               </p>
               <pre className="text-[11px] text-[#A0A0A0] bg-[#0A0A0A] border border-[#252525] rounded-xl p-3 overflow-x-auto whitespace-pre">{`create table if not exists public.leads (

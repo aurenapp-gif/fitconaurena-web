@@ -29,7 +29,7 @@ export default function PhotoLightbox({ photos }: { photos: Photo[] }) {
         {photos.map((p, i) => (
           <button key={i} type="button" onClick={() => setIdx(i)} className="text-center" aria-label={`Ver ${p.label}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.thumb} alt={p.label} loading="lazy" decoding="async" className="max-h-44 rounded-lg border border-[#252525] hover:border-[#CAFF00]/50 transition-colors" />
+            <img src={p.thumb} alt={p.label} loading="lazy" decoding="async" className="max-h-44 rounded-lg border border-[#252525] hover:border-[#1CA0E3]/50 transition-colors" />
             <span className="block text-[10px] text-[#666666] mt-1">{p.label}</span>
           </button>
         ))}

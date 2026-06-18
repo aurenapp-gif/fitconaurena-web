@@ -36,7 +36,7 @@ export default function MemberMenu() {
           <Link
             href="/miembros/acceso"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2.5 text-sm text-white hover:bg-[#CAFF00]/10 hover:text-[#CAFF00] transition-colors"
+            className="block rounded-lg px-3 py-2.5 text-sm text-white hover:bg-[#1CA0E3]/10 hover:text-[#1CA0E3] transition-colors"
           >
             Acceso para miembros
           </Link>

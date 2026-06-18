@@ -67,7 +67,7 @@ export default async function TecnicaPage() {
             <div>
               <span className="section-tag">Área de miembros</span>
               <h1 className="section-title">Revisión de técnica</h1>
-              {admin && pending > 0 && <p className="text-sm text-[#CAFF00] mt-1">{pending} sin corregir</p>}
+              {admin && pending > 0 && <p className="text-sm text-[#1CA0E3] mt-1">{pending} sin corregir</p>}
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
@@ -84,7 +84,7 @@ export default async function TecnicaPage() {
                   <div key={it.id} className="card-dark p-5 !transform-none flex flex-col">
                     <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                       <h3 className="font-bold text-white">{it.exercise || "Vídeo de técnica"}</h3>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${replied ? "bg-[#CAFF00] text-[#0A0A0A]" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${replied ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
                         {replied ? "Corregido" : "Pendiente"}
                       </span>
                     </div>
@@ -102,8 +102,8 @@ export default async function TecnicaPage() {
 
                     {/* Corrección de la coach */}
                     {(it.coach_reply || it.replyUrl) && (
-                      <div className="mt-3 rounded-lg border border-[#CAFF00]/30 bg-[#CAFF00]/5 px-4 py-3">
-                        <p className="text-xs font-bold text-[#CAFF00] mb-1">Corrección de tu coach</p>
+                      <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-4 py-3">
+                        <p className="text-xs font-bold text-[#1CA0E3] mb-1">Corrección de tu coach</p>
                         {it.coach_reply && <p className="text-sm text-white whitespace-pre-wrap mb-2">{it.coach_reply}</p>}
                         {it.replyUrl && (
                           isAudioReply(it.coach_reply_path) ? (

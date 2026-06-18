@@ -51,7 +51,7 @@ export default function HabitsTracker({
   }
 
   const inputCls =
-    "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00]";
+    "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
 
   return (
     <div className="flex flex-col gap-5">
@@ -59,7 +59,7 @@ export default function HabitsTracker({
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
           <h3 className="font-bold text-white">Hábitos de hoy</h3>
           {streak >= 2 && (
-            <span className="text-xs font-bold text-[#CAFF00] bg-[#CAFF00]/10 border border-[#CAFF00]/30 rounded-full px-3 py-1">
+            <span className="text-xs font-bold text-[#1CA0E3] bg-[#1CA0E3]/10 border border-[#1CA0E3]/30 rounded-full px-3 py-1">
               🔥 {streak} días seguidos
             </span>
           )}
@@ -91,7 +91,7 @@ export default function HabitsTracker({
           <button type="button" onClick={save} disabled={status === "saving"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
             {status === "saving" ? "Guardando…" : "Guardar hábitos"}
           </button>
-          {status === "saved" && <span className="text-sm text-[#CAFF00]">Guardado ✓</span>}
+          {status === "saved" && <span className="text-sm text-[#1CA0E3]">Guardado ✓</span>}
           {status === "error" && <span className="text-sm text-[#FF6B6B]">{errMsg || "No se pudo guardar."}</span>}
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function HabitsTracker({
         <div className="flex justify-between gap-2">
           {last7.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${d.done ? "bg-[#CAFF00] text-[#0A0A0A] font-bold" : "bg-[#141414] border border-[#252525] text-[#666666]"}`}>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${d.done ? "bg-[#1CA0E3] text-white font-bold" : "bg-[#141414] border border-[#252525] text-[#666666]"}`}>
                 {d.done ? "✓" : ""}
               </div>
               <span className="text-[10px] text-[#666666]">{d.label}</span>

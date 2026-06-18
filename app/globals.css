@@ -21,17 +21,17 @@ body {
 }
 
 ::selection {
-  background-color: rgba(202, 255, 0, 0.25);
+  background-color: rgba(28, 160, 227, 0.25);
   color: #ffffff;
 }
 
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #0A0A0A; }
 ::-webkit-scrollbar-thumb { background: #252525; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #CAFF00; }
+::-webkit-scrollbar-thumb:hover { background: #1CA0E3; }
 
 :focus-visible {
-  outline: 2px solid #CAFF00;
+  outline: 2px solid #1CA0E3;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -52,13 +52,13 @@ body {
 
   .btn-brand {
     @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 cursor-pointer;
-    background-color: #CAFF00;
-    color: #0A0A0A;
+    background-color: #1CA0E3;
+    color: #ffffff;
   }
   .btn-brand:hover {
-    background-color: #DEFF66;
+    background-color: #48B5EA;
     transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(202, 255, 0, 0.3);
+    box-shadow: 0 8px 30px rgba(28, 160, 227, 0.3);
   }
   .btn-brand:active { transform: translateY(0); }
 
@@ -69,13 +69,13 @@ body {
     border: 1px solid #252525;
   }
   .btn-outline:hover {
-    border-color: #CAFF00;
-    color: #CAFF00;
+    border-color: #1CA0E3;
+    color: #1CA0E3;
   }
 
   .section-tag {
     @apply inline-block text-xs font-bold tracking-widest uppercase mb-4;
-    color: #CAFF00;
+    color: #1CA0E3;
   }
 
   .section-title {
@@ -95,7 +95,7 @@ body {
     border: 1px solid #252525;
   }
   .card-dark:hover {
-    border-color: rgba(202, 255, 0, 0.3);
+    border-color: rgba(28, 160, 227, 0.3);
     transform: translateY(-2px);
   }
 }

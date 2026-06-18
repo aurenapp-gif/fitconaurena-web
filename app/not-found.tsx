@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
       <p className="font-black text-lg mb-6 text-white">
-        fit<span className="text-[#CAFF00]">con</span>aurena
+        fit<span className="text-[#1CA0E3]">con</span>aurena
       </p>
       <h1 className="section-title mb-3">Página no encontrada</h1>
       <p className="section-sub max-w-md mx-auto mb-8">

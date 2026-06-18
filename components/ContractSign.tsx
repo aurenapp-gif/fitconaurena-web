@@ -118,8 +118,8 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
     return (
       <div className="card-dark p-6 !transform-none">
         <div className="flex items-center gap-3 mb-3">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#CAFF00] shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#1CA0E3] shrink-0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
           </span>
           <div>
             <h2 className="font-bold text-white">Contrato firmado</h2>
@@ -164,7 +164,7 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Nombre y apellidos"
-        className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#CAFF00] mb-4"
+        className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] mb-4"
       />
 
       <label className="block text-xs text-[#A0A0A0] mb-1.5">Tu firma</label>
@@ -183,7 +183,7 @@ export default function ContractSign({ hasTemplate, templateUrl, signed, signedA
       </button>
 
       <label className="flex items-start gap-3 mb-4 cursor-pointer">
-        <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#CAFF00]" />
+        <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#1CA0E3]" />
         <span className="text-sm text-[#A0A0A0]">He leído y acepto el contrato, y firmo de forma electrónica.</span>
       </label>
 

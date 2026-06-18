@@ -10,10 +10,10 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: "#CAFF00",
-          dark: "#A8D900",
-          light: "#DEFF66",
-          glow: "rgba(202,255,0,0.15)",
+          DEFAULT: "#1CA0E3",
+          dark: "#1488C9",
+          light: "#48B5EA",
+          glow: "rgba(28,160,227,0.15)",
         },
         dark: {
           DEFAULT: "#0A0A0A",
@@ -37,8 +37,8 @@ const config: Config = {
         wide: "1280px",
       },
       boxShadow: {
-        "brand-glow": "0 0 40px rgba(202,255,0,0.2)",
-        "brand-glow-lg": "0 0 80px rgba(202,255,0,0.3)",
+        "brand-glow": "0 0 40px rgba(28,160,227,0.2)",
+        "brand-glow-lg": "0 0 80px rgba(28,160,227,0.3)",
         card: "0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3)",
       },
       animation: {
@@ -56,8 +56,8 @@ const config: Config = {
           to: { opacity: "1" },
         },
         pulseBrand: {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(202,255,0,0.2)" },
-          "50%": { boxShadow: "0 0 50px rgba(202,255,0,0.5)" },
+          "0%, 100%": { boxShadow: "0 0 20px rgba(28,160,227,0.2)" },
+          "50%": { boxShadow: "0 0 50px rgba(28,160,227,0.5)" },
         },
       },
     },

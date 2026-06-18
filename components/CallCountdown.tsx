@@ -73,12 +73,12 @@ export default function CallCountdown() {
   const secs = s % 60;
 
   return (
-    <div className="card-dark p-6 !transform-none border-[#CAFF00]/30">
+    <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30">
       <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
       <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 20:00 (hora de Madrid).</p>
 
       {live ? (
-        <p className="mt-5 font-black text-[#CAFF00] text-xl">¡En directo ahora! 🔴</p>
+        <p className="mt-5 font-black text-[#1CA0E3] text-xl">¡En directo ahora! 🔴</p>
       ) : (
         <div className="mt-5 flex gap-5">
           <Box value={days} label="días" />

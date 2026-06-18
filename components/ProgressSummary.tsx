@@ -21,7 +21,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center px-3 py-4 rounded-xl bg-[#141414] border border-[#252525]">
-      <div className="text-2xl font-extrabold text-[#CAFF00] leading-none">{value}</div>
+      <div className="text-2xl font-extrabold text-[#1CA0E3] leading-none">{value}</div>
       <div className="text-xs text-[#A0A0A0] mt-1.5">{label}</div>
     </div>
   );
@@ -36,7 +36,7 @@ export default function ProgressSummary({
   const deltaTxt =
     weightDelta == null ? "—" : `${weightDelta > 0 ? "+" : ""}${weightDelta} kg`;
   const deltaColor =
-    weightDelta == null ? "text-[#A0A0A0]" : weightDelta < 0 ? "text-[#CAFF00]" : "text-white";
+    weightDelta == null ? "text-[#A0A0A0]" : weightDelta < 0 ? "text-[#1CA0E3]" : "text-white";
 
   // Barra de progreso hacia el objetivo de peso.
   let goal: null | { pct: number; reached: boolean; remaining: number } = null;
@@ -57,7 +57,7 @@ export default function ProgressSummary({
       <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
         <h3 className="font-bold text-white">Tu progreso</h3>
         {streak >= 2 && (
-          <span className="text-xs font-bold text-[#CAFF00] bg-[#CAFF00]/10 border border-[#CAFF00]/30 rounded-full px-3 py-1">
+          <span className="text-xs font-bold text-[#1CA0E3] bg-[#1CA0E3]/10 border border-[#1CA0E3]/30 rounded-full px-3 py-1">
             🔥 {streak} semanas seguidas
           </span>
         )}
@@ -69,10 +69,10 @@ export default function ProgressSummary({
             <span className="text-xs text-[#A0A0A0]">
               {goal.reached ? "¡Objetivo alcanzado! 🏆" : `Te quedan ${goal.remaining} kg para tu meta de ${goalWeight} kg`}
             </span>
-            <span className="text-xs font-bold text-[#CAFF00]">{Math.round(goal.pct)}%</span>
+            <span className="text-xs font-bold text-[#1CA0E3]">{Math.round(goal.pct)}%</span>
           </div>
           <div className="h-2.5 w-full rounded-full bg-[#1c1c1c] overflow-hidden">
-            <div className="h-full rounded-full bg-[#CAFF00] transition-all duration-500" style={{ width: `${goal.pct}%` }} />
+            <div className="h-full rounded-full bg-[#1CA0E3] transition-all duration-500" style={{ width: `${goal.pct}%` }} />
           </div>
         </div>
       )}
@@ -91,7 +91,7 @@ export default function ProgressSummary({
       {waistDelta != null && (
         <p className="text-xs text-[#A0A0A0] mt-2">
           Cintura: <span className="text-white font-semibold">{firstWaist} → {lastWaist} cm</span>{" "}
-          <span className={waistDelta < 0 ? "text-[#CAFF00] font-bold" : "text-[#A0A0A0]"}>
+          <span className={waistDelta < 0 ? "text-[#1CA0E3] font-bold" : "text-[#A0A0A0]"}>
             ({waistDelta > 0 ? "+" : ""}{waistDelta} cm)
           </span>
         </p>
@@ -108,8 +108,8 @@ export default function ProgressSummary({
             </figure>
             <figure className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={afterPhoto} alt="Ahora" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#CAFF00]/40" />
-              <figcaption className="text-[10px] text-[#CAFF00] mt-1">Ahora{afterDate ? ` · ${afterDate}` : ""}</figcaption>
+              <img src={afterPhoto} alt="Ahora" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#1CA0E3]/40" />
+              <figcaption className="text-[10px] text-[#1CA0E3] mt-1">Ahora{afterDate ? ` · ${afterDate}` : ""}</figcaption>
             </figure>
           </div>
         </div>
