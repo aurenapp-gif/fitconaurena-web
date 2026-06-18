@@ -129,6 +129,9 @@ export default async function MiembrosPage() {
             <Card title="Comunidad" desc="Comparte tus wins y recetas, y dale me gusta a las demás.">
               <Link href="/miembros/comunidad" className="btn-brand text-sm px-6 py-3">Ir a la comunidad</Link>
             </Card>
+            <Card title="Preguntas y respuestas" desc="Busca tu duda por temáticas: quizá ya está respondida. Y si no, pregunta a la comunidad.">
+              <Link href="/miembros/foro" className="btn-brand text-sm px-6 py-3">Abrir preguntas</Link>
+            </Card>
             <Card title="Seguimiento / check-ins" desc="Sube tu peso, fotos y notas, y sigue tu progreso con tu gráfica.">
               <Link href="/miembros/checkins" className="btn-brand text-sm px-6 py-3">Ir a mis check-ins</Link>
             </Card>
