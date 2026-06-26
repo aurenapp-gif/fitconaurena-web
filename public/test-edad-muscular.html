@@ -608,14 +608,6 @@ function showResults(){
     source:'Peterson MD et al., Ageing Res Rev, 2010'
   });
 
-  if(proteinScore < 4){
-    roadmap.push({
-      title:'Aumenta tu ingesta de proteína a 1.2-1.6 g/kg/día',
-      text:`Con tu peso (${weight}kg) esto equivale aproximadamente a ${Math.round(weight*1.2)}-${Math.round(weight*1.6)}g de proteína al día, repartidos en 3-4 tomas de 25-40g. Esto compensa la "resistencia anabólica" del músculo que aumenta con la edad.`,
-      source:'Phillips SM, Sports Med, 2017; Volpi E et al., 2004'
-    });
-  }
-
   if(chairScore < 4 || walkScore < 4){
     roadmap.push({
       title:'Trabaja potencia de piernas con ejercicios explosivos controlados',
@@ -629,14 +621,6 @@ function showResults(){
       title:'Añade trabajo específico de agarre y antebrazo',
       text:'Colgarte de una barra (dead hangs), farmer\'s walks (caminar cargando peso) y ejercicios de prensión 2 veces/semana. La fuerza de agarre es uno de los predictores más robustos de mortalidad por todas las causas en estudios poblacionales.',
       source:'Dodds RM et al., Age and Ageing, 2014; Leong DP et al., Lancet, 2015 (estudio PURE)'
-    });
-  }
-
-  if(sarcfRisk > 0){
-    roadmap.push({
-      title:'Señales de alerta funcional detectadas: prioriza evaluación',
-      text:'Has marcado síntomas compatibles con el cuestionario de cribado SARC-F (dificultad subiendo escaleras, cargando peso, caminando, o caídas recientes). Estas señales se asocian a mayor riesgo de sarcopenia. Considera una valoración con un profesional de salud o fisioterapeuta especializado en ejercicio.',
-      source:'Malmstrom TK & Morley JE, J Am Med Dir Assoc, 2013'
     });
   }
 
