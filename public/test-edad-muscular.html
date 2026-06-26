@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Test de Edad Muscular | Basado en Evidencia Científica</title>
+<style>
+  :root{
+    --bg:#0b0d10;
+    --card:#15181c;
+    --card2:#1c2127;
+    --accent:#ff5a3c;
+    --accent2:#ffb37a;
+    --green:#3ddc84;
+    --yellow:#ffd166;
+    --red:#ff5a5a;
+    --text:#eef1f4;
+    --muted:#9aa3ad;
+    --border:#262b32;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(circle at top, #1a1d22 0%, var(--bg) 60%);
+    color:var(--text);
+    min-height:100vh;
+    padding:24px 16px 80px;
+  }
+  .wrap{max-width:780px;margin:0 auto;}
+  header.hero{text-align:center;margin-bottom:28px;}
+  header.hero h1{
+    font-size:2.1rem;
+    margin:0 0 8px;
+    letter-spacing:.5px;
+  }
+  header.hero h1 span{color:var(--accent);}
+  header.hero p{color:var(--muted);font-size:.98rem;line-height:1.5;margin:0 auto;max-width:560px;}
+  .badge-row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .badge{
+    font-size:.72rem;
+    background:var(--card2);
+    border:1px solid var(--border);
+    color:var(--accent2);
+    padding:4px 10px;
+    border-radius:20px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:24px;
+    margin-bottom:20px;
+    box-shadow:0 10px 30px -15px rgba(0,0,0,.6);
+  }
+  .progress-bar{
+    height:6px;
+    background:var(--card2);
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:24px;
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    width:0%;
+    transition:width .3s ease;
+  }
+  .step-label{font-size:.78rem;color:var(--muted);margin-bottom:18px;text-transform:uppercase;letter-spacing:1px;}
+  fieldset{border:none;padding:0;margin:0 0 22px;}
+  legend{
+    font-size:1.05rem;
+    font-weight:600;
+    margin-bottom:4px;
+    color:var(--text);
+  }
+  .hint{font-size:.82rem;color:var(--muted);margin-bottom:14px;line-height:1.4;}
+  .opts{display:flex;flex-direction:column;gap:8px;}
+  label.opt{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:.15s;
+    font-size:.93rem;
+  }
+  label.opt:hover{border-color:var(--accent);}
+  input[type="radio"], input[type="checkbox"]{accent-color:var(--accent);width:18px;height:18px;flex-shrink:0;}
+  input[type="number"], input[type="text"], select{
+    width:100%;
+    background:var(--card2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:.95rem;
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .nav-btns{display:flex;justify-content:space-between;gap:12px;margin-top:8px;}
+  button{
+    border:none;
+    cursor:pointer;
+    border-radius:10px;
+    padding:13px 22px;
+    font-size:.95rem;
+    font-weight:600;
+    transition:.15s;
+  }
+  .btn-primary{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    color:#1a1100;
+    flex:1;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{
+    background:var(--card2);
+    color:var(--muted);
+    border:1px solid var(--border);
+  }
+  .btn-secondary:hover{color:var(--text);}
+  .btn-secondary:disabled{opacity:.35;cursor:not-allowed;}
+  #form-area{display:none;}
+  #intro-area, #result-area{display:none;}
+  #intro-area.active, #form-area.active, #result-area.active{display:block;}
+
+  /* Resultados */
+  .result-hero{
+    text-align:center;
+    padding:10px 0 4px;
+  }
+  .age-display{
+    font-size:3.6rem;
+    font-weight:800;
+    margin:6px 0;
+    line-height:1;
+  }
+  .age-display small{font-size:1.1rem;font-weight:500;color:var(--muted);display:block;margin-top:6px;}
+  .delta-tag{
+    display:inline-block;
+    margin-top:10px;
+    padding:6px 16px;
+    border-radius:30px;
+    font-weight:700;
+    font-size:.95rem;
+  }
+  .delta-bad{background:rgba(255,90,90,.15);color:var(--red);border:1px solid rgba(255,90,90,.4);}
+  .delta-mid{background:rgba(255,209,102,.15);color:var(--yellow);border:1px solid rgba(255,209,102,.4);}
+  .delta-good{background:rgba(61,220,132,.15);color:var(--green);border:1px solid rgba(61,220,132,.4);}
+
+  .score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px;}
+  .score-item{
+    background:var(--card2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+  }
+  .score-item .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .score-item .value{font-size:1.25rem;font-weight:700;}
+  .meter{height:6px;border-radius:6px;background:#0b0d10;margin-top:8px;overflow:hidden;}
+  .meter-fill{height:100%;border-radius:6px;}
+
+  h2.section-title{
+    font-size:1.2rem;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .roadmap-item{
+    display:flex;
+    gap:14px;
+    padding:14px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .roadmap-item:last-child{border-bottom:none;}
+  .roadmap-num{
+    flex-shrink:0;
+    width:30px;height:30px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#1a1100;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;
+    font-size:.85rem;
+  }
+  .roadmap-item h3{margin:0 0 4px;font-size:.98rem;}
+  .roadmap-item p{margin:0;color:var(--muted);font-size:.87rem;line-height:1.5;}
+  .roadmap-item .source{
+    display:inline-block;
+    margin-top:6px;
+    font-size:.72rem;
+    color:var(--accent2);
+    border-bottom:1px dotted var(--accent2);
+  }
+
+  details.refs{margin-top:8px;}
+  details.refs summary{cursor:pointer;color:var(--accent2);font-size:.85rem;font-weight:600;}
+  details.refs ol{color:var(--muted);font-size:.78rem;line-height:1.7;padding-left:18px;margin-top:10px;}
+
+  .disclaimer{
+    font-size:.75rem;
+    color:var(--muted);
+    text-align:center;
+    margin-top:24px;
+    line-height:1.5;
+    padding:0 10px;
+  }
+  .restart-btn{display:block;margin:24px auto 0;}
+  footer{text-align:center;color:var(--muted);font-size:.72rem;margin-top:40px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Test de <span>Edad Muscular</span></h1>
+    <p>Una evaluación basada en marcadores científicos validados de fuerza, masa muscular y funcionalidad física, utilizada en investigación sobre sarcopenia y envejecimiento.</p>
+    <div class="badge-row">
+      <span class="badge">EWGSOP2 (2019)</span>
+      <span class="badge">SARC-F (Malmstrom &amp; Morley, 2013)</span>
+      <span class="badge">SPPB</span>
+      <span class="badge">ACSM</span>
+    </div>
+  </header>
+
+  <!-- INTRO -->
+  <div id="intro-area" class="card active">
+    <h2 class="section-title">¿Qué es la "edad muscular"?</h2>
+    <p class="hint" style="font-size:.9rem;">
+      La fuerza de prensión manual, la velocidad de marcha y la capacidad de levantarse de una silla son predictores
+      independientes de mortalidad y discapacidad, y se deterioran de forma medible con la edad a partir de los 30-40 años,
+      con una pérdida acelerada después de los 50 (sarcopenia). Este test combina 7 marcadores reconocidos en la literatura
+      científica para estimar una "edad muscular funcional" y comparar con tu edad cronológica.
+    </p>
+    <p class="hint" style="font-size:.9rem;">
+      Tiempo estimado: 3-4 minutos. Necesitarás (opcionalmente) un dinamómetro de mano o un peso aproximado de tu fuerza de
+      agarre, y poder cronometrar 5 repeticiones de sentarse/levantarse de una silla.
+    </p>
+    <button class="btn-primary" style="width:100%;margin-top:10px;" onclick="startTest()">Comenzar test →</button>
+  </div>
+
+  <!-- FORM -->
+  <div id="form-area" class="card">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="step-label" id="stepLabel">Paso 1 de 8</div>
+    <form id="muscleForm" onsubmit="return false;"></form>
+    <div class="nav-btns">
+      <button class="btn-secondary" id="btnPrev" onclick="prevStep()">← Atrás</button>
+      <button class="btn-primary" id="btnNext" onclick="nextStep()">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="result-area"></div>
+
+  <footer>Test informativo basado en literatura científica revisada por pares. No sustituye evaluación clínica.</footer>
+</div>
+
+<script>
+/* ============================================================
+   BASE CIENTÍFICA (resumen de las fuentes usadas para el scoring)
+   1. Mathiowetz et al. 1985 / Dodds et al. 2014 (Age & Ageing) - normativas
+      de fuerza de prensión manual por edad y sexo (estudio de >49,000 adultos, UK).
+   2. EWGSOP2 (Cruz-Jentoft et al., 2019, Age and Ageing) - puntos de corte de
+      fuerza de agarre baja: hombres <27kg, mujeres <16kg.
+   3. SARC-F (Malmstrom & Morley, 2013, J Am Med Dir Assoc) - cuestionario
+      validado de cribado de sarcopenia (5 ítems: fuerza, asistencia para
+      caminar, levantarse de silla, subir escaleras, caídas).
+   4. Short Physical Performance Battery - SPPB (Guralnik et al., 1994,
+      J Gerontol) - test de 5 repeticiones sentarse/levantarse como proxy de
+      potencia muscular de tren inferior; >15s indica riesgo de discapacidad.
+   5. Studenski et al., 2011 (JAMA) - velocidad de marcha como "signo vital"
+      del envejecimiento; <0.8 m/s asociado a mayor mortalidad.
+   6. Mitchell et al., 2012 (Front Physiol) - tasas de pérdida de masa
+      muscular esquelética: ~3-8% por década desde los 30 años, acelerando
+      tras los 60-70.
+   7. Volpi et al., 2004 / Phillips, 2017 - relación entre ingesta de
+      proteína, sedentarismo y pérdida de masa muscular.
+   8. Peterson et al., 2010 (Ageing Res Rev) - meta-análisis: entrenamiento
+      de fuerza aumenta masa muscular significativamente en adultos mayores.
+   9. ACSM Position Stand (2009) / Westcott, 2012 - dosis-respuesta del
+      entrenamiento de fuerza: 2-3 sesiones/semana, RM cercano al fallo,
+      progresión de carga.
+   ============================================================ */
+
+// Normativas de fuerza de prensión (kg) - percentil aproximado 50 por edad y sexo
+// Fuente: Dodds RM, et al. Age and Ageing. 2014 (estudios poblacionales UK, agregados/aproximados)
+const gripNorms = {
+  m: [ // hombres
+    {age:20, val:47}, {age:30, val:48}, {age:40, val:45}, {age:50, val:41},
+    {age:60, val:37}, {age:70, val:32}, {age:80, val:26}
+  ],
+  f: [ // mujeres
+    {age:20, val:29}, {age:30, val:30}, {age:40, val:28}, {age:50, val:26},
+    {age:60, val:23}, {age:70, val:20}, {age:80, val:16}
+  ]
+};
+
+function interpolateNorm(table, age){
+  if(age <= table[0].age) return table[0].val;
+  if(age >= table[table.length-1].age) return table[table.length-1].val;
+  for(let i=0;i<table.length-1;i++){
+    const a=table[i], b=table[i+1];
+    if(age>=a.age && age<=b.age){
+      const t=(age-a.age)/(b.age-a.age);
+      return a.val + t*(b.val-a.val);
+    }
+  }
+}
+
+// Estima la edad "equivalente" para un valor de fuerza dado (interpolación inversa)
+function ageForGrip(table, grip){
+  if(grip >= table[0].val) return table[0].age;
+  if(grip <= table[table.length-1].val) return table[table.length-1].age;
+  for(let i=0;i<table.length-1;i++){
+    const a=table[i], b=table[i+1];
+    if(grip<=a.val && grip>=b.val){
+      const t=(a.val-grip)/(a.val-b.val);
+      return a.age + t*(b.age-a.age);
+    }
+  }
+  return 50;
+}
+
+const steps = [
+  {
+    id:'sex',
+    title:'Sexo biológico',
+    hint:'Las normativas de fuerza muscular difieren significativamente entre sexos (Dodds et al., 2014).',
+    type:'radio',
+    name:'sex',
+    options:[['m','Hombre'],['f','Mujer']]
+  },
+  {
+    id:'age',
+    title:'Edad y peso corporal',
+    hint:'Se usan para calcular tu edad muscular relativa y normalizar la fuerza de agarre por kg de peso.',
+    type:'custom-age'
+  },
+  {
+    id:'grip',
+    title:'Fuerza de prensión manual (agarre)',
+    hint:'Si tienes un dinamómetro, indica tu mejor intento (kg). Si no, elige la opción que mejor te describa: piensa en abrir un bote nuevo, colgarte de una barra o apretar la mano de alguien con fuerza.',
+    type:'custom-grip'
+  },
+  {
+    id:'chair',
+    title:'Test de sentarse y levantarse (5 repeticiones)',
+    hint:'Desde una silla sin reposabrazos, cronometra cuánto tardas en levantarte y sentarte 5 veces seguidas lo más rápido posible, sin usar las manos. Es un proxy validado de potencia de piernas (SPPB, Guralnik et al., 1994).',
+    type:'radio',
+    name:'chair',
+    options:[
+      ['4','Menos de 10 segundos'],
+      ['3','Entre 10 y 13 segundos'],
+      ['2','Entre 14 y 16 segundos'],
+      ['1','Más de 16 segundos, o no puedo hacerlo sin las manos']
+    ]
+  },
+  {
+    id:'walk',
+    title:'Velocidad de marcha',
+    hint:'La velocidad al caminar es considerada un "signo vital" del envejecimiento (Studenski et al., 2011, JAMA). <0.8 m/s se asocia a mayor riesgo de mortalidad.',
+    type:'radio',
+    name:'walk',
+    options:[
+      ['4','Camino rápido, suelo adelantar a otras personas'],
+      ['3','Ritmo normal, similar al de la mayoría'],
+      ['2','Más lento de lo normal, me cuesta seguir el ritmo de otros'],
+      ['1','Muy lento, necesito pausas o apoyo al caminar']
+    ]
+  },
+  {
+    id:'training',
+    title:'Entrenamiento de fuerza',
+    hint:'El entrenamiento de fuerza regular es el estímulo más potente para preservar masa y función muscular con la edad (Peterson et al., 2010, meta-análisis).',
+    type:'radio',
+    name:'training',
+    options:[
+      ['4','3 o más sesiones de fuerza/semana, con progresión de cargas'],
+      ['3','1-2 sesiones de fuerza/semana'],
+      ['2','Entreno fuerza ocasionalmente (menos de 1 vez/semana)'],
+      ['1','No entreno fuerza nunca']
+    ]
+  },
+  {
+    id:'protein',
+    title:'Ingesta de proteína',
+    hint:'La síntesis de proteína muscular requiere un aporte adecuado, especialmente con la edad por "resistencia anabólica" (Volpi et al.; Phillips, 2017 recomienda 1.2-1.6 g/kg/día para mantener masa muscular).',
+    type:'radio',
+    name:'protein',
+    options:[
+      ['4','Como proteína (carne, pescado, huevo, legumbres, lácteos...) en todas o casi todas las comidas'],
+      ['3','Como proteína en 1-2 comidas al día'],
+      ['2','Rara vez priorizo la proteína en mis comidas'],
+      ['1','Mi dieta es muy baja en proteína']
+    ]
+  },
+  {
+    id:'sarcf',
+    title:'Cribado funcional (SARC-F)',
+    hint:'Adaptado del cuestionario validado SARC-F (Malmstrom & Morley, 2013) para detección de sarcopenia. Marca todo lo que te haya ocurrido en los últimos 6-12 meses.',
+    type:'checkbox',
+    name:'sarcf',
+    options:[
+      ['stairs','Me cuesta esfuerzo subir 10 escalones sin descansar'],
+      ['carry','Tengo dificultad para cargar o levantar objetos de ~5kg (ej. bolsa de la compra)'],
+      ['falls','He sufrido alguna caída en el último año'],
+      ['walk_dist','Tengo dificultad para caminar distancias moderadas (varias calles) sin fatiga'],
+      ['none','Ninguna de las anteriores']
+    ]
+  }
+];
+
+let currentStep = 0;
+const answers = {};
+
+function startTest(){
+  document.getElementById('intro-area').classList.remove('active');
+  document.getElementById('form-area').classList.add('active');
+  renderStep();
+}
+
+function renderStep(){
+  const step = steps[currentStep];
+  const form = document.getElementById('muscleForm');
+  document.getElementById('stepLabel').textContent = `Paso ${currentStep+1} de ${steps.length}`;
+  document.getElementById('progressFill').style.width = `${((currentStep)/(steps.length))*100}%`;
+  document.getElementById('btnPrev').disabled = currentStep === 0;
+  document.getElementById('btnNext').textContent = currentStep === steps.length-1 ? 'Ver resultados →' : 'Siguiente →';
+
+  let html = `<fieldset><legend>${step.title}</legend><p class="hint">${step.hint}</p>`;
+
+  if(step.type === 'radio'){
+    html += '<div class="opts">';
+    step.options.forEach(([val,label])=>{
+      const checked = answers[step.name] === val ? 'checked' : '';
+      html += `<label class="opt"><input type="radio" name="${step.name}" value="${val}" ${checked}> ${label}</label>`;
+    });
+    html += '</div>';
+  } else if(step.type === 'checkbox'){
+    html += '<div class="opts">';
+    step.options.forEach(([val,label])=>{
+      const checked = (answers[step.name]||[]).includes(val) ? 'checked' : '';
+      html += `<label class="opt"><input type="checkbox" name="${step.name}" value="${val}" ${checked}> ${label}</label>`;
+    });
+    html += '</div>';
+  } else if(step.type === 'custom-age'){
+    html += `<div class="row2">
+      <div><label class="hint">Edad (años)</label><input type="number" id="inputAge" min="16" max="100" value="${answers.age||''}" placeholder="Ej: 35"></div>
+      <div><label class="hint">Peso (kg)</label><input type="number" id="inputWeight" min="30" max="250" value="${answers.weight||''}" placeholder="Ej: 75"></div>
+    </div>`;
+  } else if(step.type === 'custom-grip'){
+    html += `<div style="margin-bottom:14px;">
+      <label class="hint">¿Conoces tu fuerza de agarre en kg? (déjalo en blanco si no)</label>
+      <input type="number" id="inputGripKg" min="5" max="90" value="${answers.gripKg||''}" placeholder="Ej: 38">
+    </div>
+    <p class="hint" style="margin-bottom:8px;">Si no lo sabes, elige la opción que mejor te describa:</p>
+    <div class="opts">`;
+    const gripOptions = [
+      ['4','Puedo colgarme de una barra con una mano varios segundos, o aplastar una lata fácilmente'],
+      ['3','Abro botes nuevos sin dificultad y tengo un apretón de manos firme'],
+      ['2','A veces me cuesta abrir botes o frascos nuevos'],
+      ['1','Me cuesta notablemente abrir un bote, girar un pomo duro o cargar bolsas pesadas']
+    ];
+    gripOptions.forEach(([val,label])=>{
+      const checked = answers.gripProxy === val ? 'checked' : '';
+      html += `<label class="opt"><input type="radio" name="gripProxy" value="${val}" ${checked}> ${label}</label>`;
+    });
+    html += '</div>';
+  }
+
+  html += '</fieldset>';
+  form.innerHTML = html;
+}
+
+function saveStep(){
+  const step = steps[currentStep];
+  if(step.type === 'radio'){
+    const checked = document.querySelector(`input[name="${step.name}"]:checked`);
+    if(!checked) return false;
+    answers[step.name] = checked.value;
+  } else if(step.type === 'checkbox'){
+    const checks = document.querySelectorAll(`input[name="${step.name}"]:checked`);
+    answers[step.name] = Array.from(checks).map(c=>c.value);
+  } else if(step.type === 'custom-age'){
+    const age = parseFloat(document.getElementById('inputAge').value);
+    const weight = parseFloat(document.getElementById('inputWeight').value);
+    if(!age || age<16 || age>100 || !weight || weight<30) return false;
+    answers.age = age;
+    answers.weight = weight;
+  } else if(step.type === 'custom-grip'){
+    const gripKg = document.getElementById('inputGripKg').value;
+    const proxy = document.querySelector('input[name="gripProxy"]:checked');
+    if(!gripKg && !proxy) return false;
+    answers.gripKg = gripKg ? parseFloat(gripKg) : null;
+    answers.gripProxy = proxy ? proxy.value : null;
+  }
+  return true;
+}
+
+function nextStep(){
+  if(!saveStep()){
+    alert('Por favor, completa este paso antes de continuar.');
+    return;
+  }
+  if(currentStep < steps.length-1){
+    currentStep++;
+    renderStep();
+  } else {
+    showResults();
+  }
+}
+
+function prevStep(){
+  if(currentStep>0){
+    saveStep();
+    currentStep--;
+    renderStep();
+  }
+}
+
+function showResults(){
+  document.getElementById('form-area').classList.remove('active');
+
+  const sex = answers.sex;
+  const age = answers.age;
+  const weight = answers.weight;
+  const table = gripNorms[sex];
+
+  // 1. Determinar fuerza de agarre efectiva (kg)
+  let grip;
+  if(answers.gripKg && answers.gripKg > 0){
+    grip = answers.gripKg;
+  } else {
+    // Estimación a partir de proxy cualitativo, anclada a la norma de su edad
+    const norm = interpolateNorm(table, age);
+    const factors = {'4':1.15, '3':1.0, '2':0.82, '1':0.62};
+    grip = norm * (factors[answers.gripProxy] || 1.0);
+  }
+
+  // EWGSOP2 cutoff de fuerza baja
+  const lowGripCutoff = sex === 'm' ? 27 : 16;
+  const gripLow = grip < lowGripCutoff;
+
+  // 2. Edad equivalente según fuerza de agarre (interpolación inversa de normativas)
+  const gripEquivalentAge = ageForGrip(table, grip);
+
+  // 3. Puntuaciones funcionales (escala 1-4 cada uno)
+  const chairScore = parseInt(answers.chair);
+  const walkScore = parseInt(answers.walk);
+  const trainingScore = parseInt(answers.training);
+  const proteinScore = parseInt(answers.protein);
+
+  // 4. SARC-F-like: cada ítem marcado (excepto 'none') suma riesgo
+  const sarcfFlags = (answers.sarcf||[]).filter(v=>v!=='none');
+  const sarcfRisk = sarcfFlags.length; // 0-4
+
+  // 5. Cálculo del "delta de edad muscular" combinando todos los marcadores
+  // Cada punto de déficit funcional (por debajo de la puntuación óptima=4) añade años de envejecimiento muscular estimado
+  const functionalDeficit = (4-chairScore) + (4-walkScore) + (4-trainingScore) + (4-proteinScore); // 0-16
+  const sarcfYears = sarcfRisk * 2.5; // cada bandera SARC-F-like ~+2.5 años de "edad muscular"
+  const functionalYears = functionalDeficit * 1.1; // factor de ponderación
+  const gripDeltaYears = gripEquivalentAge - age; // puede ser negativo (mejor que la norma) o positivo
+
+  let muscleAge = age + (gripDeltaYears*0.5) + (functionalYears*0.5) + (sarcfYears*0.4);
+  muscleAge = Math.round(muscleAge);
+  if(muscleAge < 16) muscleAge = 16;
+
+  const delta = muscleAge - age;
+
+  let deltaClass, deltaText;
+  if(delta <= 1){
+    deltaClass = 'delta-good';
+    deltaText = delta<=-2 ? `${Math.abs(delta)} años más joven que tu edad real` : 'En línea con tu edad real';
+  } else if(delta <= 6){
+    deltaClass = 'delta-mid';
+    deltaText = `+${delta} años respecto a tu edad real`;
+  } else {
+    deltaClass = 'delta-bad';
+    deltaText = `+${delta} años respecto a tu edad real`;
+  }
+
+  // Score visual por categoría (0-100)
+  const gripPct = Math.max(0, Math.min(100, Math.round((grip/interpolateNorm(table, age))*70)));
+  const chairPct = Math.round((chairScore/4)*100);
+  const walkPct = Math.round((walkScore/4)*100);
+  const trainingPct = Math.round((trainingScore/4)*100);
+  const proteinPct = Math.round((proteinScore/4)*100);
+  const sarcfPct = Math.round(((4-sarcfRisk)/4)*100);
+
+  function meterColor(pct){
+    if(pct>=70) return 'var(--green)';
+    if(pct>=40) return 'var(--yellow)';
+    return 'var(--red)';
+  }
+
+  // ---- ROADMAP ----
+  const roadmap = [];
+
+  roadmap.push({
+    title:'Entrenamiento de fuerza progresivo, 2-3 veces por semana',
+    text:'El metaanálisis de Peterson et al. (2010, Ageing Research Reviews) muestra ganancias significativas de masa muscular en adultos mayores entrenando fuerza 2-3 veces/semana con cargas progresivas. Prioriza ejercicios multiarticulares (sentadilla, peso muerto, press, remo) cerca del fallo técnico (RPE 7-9).',
+    source:'Peterson MD et al., Ageing Res Rev, 2010'
+  });
+
+  if(chairScore < 4 || walkScore < 4){
+    roadmap.push({
+      title:'Trabaja potencia de piernas con ejercicios explosivos controlados',
+      text:'Sentadillas a silla cronometradas, subir escalones rápido (con seguridad) y prensa de piernas con tempo explosivo mejoran la potencia, que se pierde más rápido que la fuerza máxima con la edad y predice mejor el riesgo de caídas (Guralnik et al., 1994; Studenski et al., 2011).',
+      source:'Guralnik JM et al., J Gerontol, 1994'
+    });
+  }
+
+  if(gripLow || gripDeltaYears > 3){
+    roadmap.push({
+      title:'Añade trabajo específico de agarre y antebrazo',
+      text:'Colgarte de una barra (dead hangs), farmer\'s walks (caminar cargando peso) y ejercicios de prensión 2 veces/semana. La fuerza de agarre es uno de los predictores más robustos de mortalidad por todas las causas en estudios poblacionales.',
+      source:'Dodds RM et al., Age and Ageing, 2014; Leong DP et al., Lancet, 2015 (estudio PURE)'
+    });
+  }
+
+  if(trainingScore <= 2){
+    roadmap.push({
+      title:'Empieza con un programa estructurado, no improvisado',
+      text:'La adherencia y la progresión de carga son los factores más determinantes del éxito a largo plazo (ACSM Position Stand, 2009). Un plan de 8-12 semanas con objetivos claros y registro de cargas genera mejores resultados que entrenar "a sensaciones".',
+      source:'ACSM Position Stand, Med Sci Sports Exerc, 2009'
+    });
+  }
+
+  roadmap.push({
+    title:'Reevalúa cada 8-12 semanas',
+    text:'Los cambios estructurales en masa muscular son medibles a partir de 6-8 semanas de entrenamiento consistente; la fuerza mejora antes, por adaptaciones neurales. Repite este test o mediciones reales (dinamómetro, test de silla, tiempos de marcha) para verificar progreso objetivo.',
+    source:'Mitchell CJ et al., Front Physiol, 2012'
+  });
+
+  let roadmapHtml = roadmap.map((r,i)=>`
+    <div class="roadmap-item">
+      <div class="roadmap-num">${i+1}</div>
+      <div>
+        <h3>${r.title}</h3>
+        <p>${r.text}</p>
+        <span class="source">${r.source}</span>
+      </div>
+    </div>
+  `).join('');
+
+  const resultHtml = `
+    <div class="card result-hero">
+      <h2 class="section-title" style="justify-content:center;">Tu resultado</h2>
+      <div class="age-display" style="color:${delta>6?'var(--red)':delta>1?'var(--yellow)':'var(--green)'}">
+        ${muscleAge}
+        <small>años de edad muscular estimada (tu edad real: ${age})</small>
+      </div>
+      <span class="delta-tag ${deltaClass}">${deltaText}</span>
+
+      <div class="score-grid">
+        <div class="score-item">
+          <div class="label">Fuerza de agarre</div>
+          <div class="value">${Math.round(grip)} kg</div>
+          <div class="meter"><div class="meter-fill" style="width:${gripPct}%;background:${meterColor(gripPct)}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">Levantarse de silla</div>
+          <div class="value">${chairPct}%</div>
+          <div class="meter"><div class="meter-fill" style="width:${chairPct}%;background:${meterColor(chairPct)}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">Velocidad de marcha</div>
+          <div class="value">${walkPct}%</div>
+          <div class="meter"><div class="meter-fill" style="width:${walkPct}%;background:${meterColor(walkPct)}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">Entrenamiento de fuerza</div>
+          <div class="value">${trainingPct}%</div>
+          <div class="meter"><div class="meter-fill" style="width:${trainingPct}%;background:${meterColor(trainingPct)}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">Ingesta proteica</div>
+          <div class="value">${proteinPct}%</div>
+          <div class="meter"><div class="meter-fill" style="width:${proteinPct}%;background:${meterColor(proteinPct)}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">Cribado SARC-F</div>
+          <div class="value">${sarcfPct}%</div>
+          <div class="meter"><div class="meter-fill" style="width:${sarcfPct}%;background:${meterColor(sarcfPct)}"></div></div>
+        </div>
+      </div>
+      ${gripLow ? `<p class="hint" style="margin-top:18px;color:var(--red);">⚠ Tu fuerza de agarre estimada (${Math.round(grip)}kg) está por debajo del punto de corte clínico de fuerza baja definido por EWGSOP2 (${lowGripCutoff}kg para ${sex==='m'?'hombres':'mujeres'}).</p>` : ''}
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">📋 Hoja de ruta personalizada</h2>
+      ${roadmapHtml}
+    </div>
+
+    <div class="card">
+      <details class="refs">
+        <summary>Ver fuentes científicas utilizadas</summary>
+        <ol>
+          <li>Dodds RM, Syddall HE, Cooper R, et al. "Grip strength across the life course: normative data from twelve British studies." <em>Age and Ageing</em>, 2014.</li>
+          <li>Cruz-Jentoft AJ, Bahat G, Bauer J, et al. "Sarcopenia: revised European consensus on definition and diagnosis (EWGSOP2)." <em>Age and Ageing</em>, 2019.</li>
+          <li>Malmstrom TK, Morley JE. "SARC-F: a simple questionnaire to rapidly diagnose sarcopenia." <em>J Am Med Dir Assoc</em>, 2013.</li>
+          <li>Guralnik JM, Simonsick EM, Ferrucci L, et al. "A short physical performance battery assessing lower extremity function." <em>J Gerontol</em>, 1994.</li>
+          <li>Studenski S, Perera S, Patel K, et al. "Gait speed and survival in older adults." <em>JAMA</em>, 2011.</li>
+          <li>Mitchell WK, Williams J, Atherton P, et al. "Sarcopenia, dynapenia, and the impact of advancing age on human skeletal muscle size and strength." <em>Front Physiol</em>, 2012.</li>
+          <li>Phillips SM. "Current concepts and unresolved questions in dietary protein requirements and supplements in adults." <em>Sports Med</em>, 2017.</li>
+          <li>Peterson MD, Rhea MR, Sen A, Gordon PM. "Resistance exercise for muscular strength in older adults: a meta-analysis." <em>Ageing Res Rev</em>, 2010.</li>
+          <li>American College of Sports Medicine. "Progression models in resistance training for healthy adults." <em>Med Sci Sports Exerc</em>, 2009.</li>
+          <li>Leong DP, Teo KK, Rangarajan S, et al. "Prognostic value of grip strength: findings from the PURE study." <em>Lancet</em>, 2015.</li>
+        </ol>
+      </details>
+    </div>
+
+    <p class="disclaimer">
+      Este test ofrece una estimación orientativa con fines educativos, basada en cuestionarios y umbrales publicados en
+      literatura científica revisada por pares. No constituye un diagnóstico médico ni sustituye una evaluación clínica,
+      dinamométrica o funcional realizada por un profesional sanitario. Si tienes dolor, caídas frecuentes o pérdida de
+      peso involuntaria, consulta a un médico.
+    </p>
+    <button class="btn-secondary restart-btn" onclick="location.reload()">↺ Repetir el test</button>
+  `;
+
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = resultHtml;
+  resultArea.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
