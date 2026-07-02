@@ -18,9 +18,12 @@ export default async function ClientasPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
 
-  const members = (await getMembers()).filter((m) => !isAdmin(m.email));
-  let profiles: Prof[] = [];
-  try { profiles = await sbSelect<Prof>("profiles", "select=email,display_name,renewal_date"); } catch (e) { console.error(e); }
+  // Miembros (MailerLite) y perfiles (Supabase) en paralelo: son independientes.
+  const [members, profiles] = await Promise.all([
+    getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email))),
+    sbSelect<Prof>("profiles", "select=email,display_name,renewal_date")
+      .catch((e) => { console.error(e); return [] as Prof[]; }),
+  ]);
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
 
   return (

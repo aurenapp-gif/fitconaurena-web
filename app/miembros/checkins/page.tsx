@@ -94,27 +94,21 @@ export default async function CheckinsPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
 
-  let rows: CheckIn[] = [];
-  try {
-    const q = admin
-      ? "select=*&order=created_at.desc&limit=50"
-      : `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`;
-    rows = await sbSelect<CheckIn>("check_ins", q);
-  } catch (e) {
-    console.error("[checkins] error", e);
-  }
-
-  // Objetivo de peso (del cuestionario) para la barra de progreso de la clienta.
-  let goalWeight: number | null = null;
-  if (!admin) {
-    try {
-      const p = (await sbSelect<{ questionnaire: Record<string, string> | null }>(
-        "profiles", `select=questionnaire&email=eq.${encodeURIComponent(email)}`
-      ))[0];
-      const g = Number(p?.questionnaire?.peso_objetivo);
-      goalWeight = Number.isFinite(g) ? g : null;
-    } catch (e) { console.error("[checkins] goal", e); }
-  }
+  // Check-ins y objetivo de peso (cuestionario) en paralelo: son independientes.
+  const q = admin
+    ? "select=*&order=created_at.desc&limit=50"
+    : `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`;
+  const [rows, goalWeight] = await Promise.all([
+    sbSelect<CheckIn>("check_ins", q).catch((e) => { console.error("[checkins] error", e); return [] as CheckIn[]; }),
+    admin
+      ? Promise.resolve(null)
+      : sbSelect<{ questionnaire: Record<string, string> | null }>(
+          "profiles", `select=questionnaire&email=eq.${encodeURIComponent(email)}`
+        ).then((r) => {
+          const g = Number(r[0]?.questionnaire?.peso_objetivo);
+          return Number.isFinite(g) ? g : null;
+        }).catch((e) => { console.error("[checkins] goal", e); return null; }),
+  ]);
 
   const items = await withPhoto(admin ? rows : [...rows].reverse());
   // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
