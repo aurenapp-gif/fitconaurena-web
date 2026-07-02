@@ -16,11 +16,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const endpoint = typeof body.endpoint === "string" ? body.endpoint : "";
-  const p256dh = typeof body.keys?.p256dh === "string" ? body.keys.p256dh : "";
-  const auth = typeof body.keys?.auth === "string" ? body.keys.auth : "";
+  const endpoint = typeof body.endpoint === "string" ? body.endpoint.slice(0, 1000) : "";
+  const p256dh = typeof body.keys?.p256dh === "string" ? body.keys.p256dh.slice(0, 300) : "";
+  const auth = typeof body.keys?.auth === "string" ? body.keys.auth.slice(0, 300) : "";
   if (!endpoint || !p256dh || !auth) {
     return NextResponse.json({ error: "Datos de suscripción incompletos." }, { status: 400 });
+  }
+  // El endpoint debe ser una URL https real (la del servicio de push del navegador).
+  try {
+    if (new URL(endpoint).protocol !== "https:") throw new Error("no https");
+  } catch {
+    return NextResponse.json({ error: "Suscripción no válida." }, { status: 400 });
   }
 
   try {
