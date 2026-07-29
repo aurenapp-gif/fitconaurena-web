@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-type Profile = { display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; content_seen: boolean | null };
+type Profile = { display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null };
 
 function Card({ title, desc, children }: { title: string; desc: string; children?: React.ReactNode }) {
   return (
@@ -31,26 +31,23 @@ export default async function MiembrosPage() {
 
   let profile: Profile | null = null;
   try {
-    profile = (await sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,content_seen&email=eq.${encodeURIComponent(email)}`))[0] ?? null;
+    profile = (await sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire&email=eq.${encodeURIComponent(email)}`))[0] ?? null;
   } catch (e) { console.error("[dashboard] profile", e); }
 
   const name = profile?.display_name || email.split("@")[0];
 
-  // Foto + señales de la checklist de primeros pasos, en paralelo (independientes).
-  const [photoUrl, checkinDone, chatDone] = await Promise.all([
+  // Foto + señal de la checklist de primeros pasos, en paralelo (independientes).
+  const [photoUrl, checkinDone] = await Promise.all([
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     admin ? Promise.resolve(false) : sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`).then((r) => r.length > 0).catch(() => false),
-    admin ? Promise.resolve(false) : sbSelect("messages", `select=id&member_email=eq.${encodeURIComponent(email)}&sender=eq.member&limit=1`).then((r) => r.length > 0).catch(() => false),
   ]);
 
   const q = profile?.questionnaire ?? {};
   const reqQ = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
   const quesDone = reqQ.every((k) => (q[k] ?? "").toString().trim() !== "");
   const steps = [
-    { label: "Mira los vídeos de tu primera fase", done: !!profile?.content_seen, href: "/miembros/contenido" },
     { label: "Sube tu foto de perfil", done: !!profile?.photo_path, href: "/miembros/perfil" },
     { label: "Completa tu cuestionario", done: quesDone, href: "/miembros/perfil" },
-    { label: "Salúdame por el chat", done: chatDone, href: "/miembros/chat" },
     { label: "Haz tu primer check-in", done: checkinDone, href: "/miembros/checkins" },
   ];
   const showChecklist = !admin && !steps.every((s) => s.done);
@@ -117,20 +114,8 @@ export default async function MiembrosPage() {
             <Card title="Mi perfil" desc="Tu cuestionario, tu foto y tus planes de nutrición y entrenamiento.">
               <Link href="/miembros/perfil" className="btn-brand text-sm px-6 py-3">Abrir mi perfil</Link>
             </Card>
-            <Card title="Contenido y recursos" desc="Tus guías, vídeos y material del programa, alojado en la plataforma.">
-              <Link href="/miembros/contenido" className="btn-brand text-sm px-6 py-3">Abrir contenido</Link>
-            </Card>
-            <Card title="Chat con tu coach" desc="Tu canal privado 1:1 con Aurena. Escríbele cuando lo necesites.">
-              <Link href="/miembros/chat" className="btn-brand text-sm px-6 py-3">Abrir chat</Link>
-            </Card>
             <Card title="Revisión de técnica" desc="Sube un vídeo corto de tu ejercicio y tu coach te corrige la técnica.">
               <Link href="/miembros/tecnica" className="btn-brand text-sm px-6 py-3">Subir vídeo de técnica</Link>
-            </Card>
-            <Card title="Comunidad" desc="Comparte tus wins y recetas, y dale me gusta a las demás.">
-              <Link href="/miembros/comunidad" className="btn-brand text-sm px-6 py-3">Ir a la comunidad</Link>
-            </Card>
-            <Card title="Preguntas y respuestas" desc="Busca tu duda por temáticas: quizá ya está respondida. Y si no, pregunta a la comunidad.">
-              <Link href="/miembros/foro" className="btn-brand text-sm px-6 py-3">Abrir preguntas</Link>
             </Card>
             <Card title="Seguimiento / check-ins" desc="Sube tu peso, fotos y notas, y sigue tu progreso con tu gráfica.">
               <Link href="/miembros/checkins" className="btn-brand text-sm px-6 py-3">Ir a mis check-ins</Link>

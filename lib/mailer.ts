@@ -8,7 +8,7 @@
  */
 
 import { fetchWithTimeout } from "@/lib/http";
-import { SITE_URL, ADMIN_PANEL_URL, MEMBER_AREA_URL } from "@/lib/config";
+import { SITE_URL, MEMBER_AREA_URL } from "@/lib/config";
 
 const FROM = process.env.RESEND_FROM ?? "Fit con Aurena <onboarding@resend.dev>";
 
@@ -115,24 +115,6 @@ export async function sendApplicationNotification(args: {
   await send({ to: args.to, subject, html, text, replyTo: args.email });
 }
 
-/** Avisa a la coach (admin) de que una clienta ha escrito en el chat. */
-export async function sendNewMessageNotice(
-  to: string[],
-  fromMember: string,
-  preview: string
-): Promise<void> {
-  const subject = `💬 Nuevo mensaje de ${fromMember}`;
-  const short = preview.length > 140 ? preview.slice(0, 140) + "…" : preview;
-  const text = `${fromMember} te ha escrito en el chat:\n\n"${short}"\n\nEntra al panel: ${ADMIN_PANEL_URL}`;
-  const html = `
-  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
-    <h2 style="margin:0 0 8px;">Nuevo mensaje de ${fromMember}</h2>
-    <p style="background:#f6f6f6;border-radius:8px;padding:14px;font-size:14px;line-height:1.5;">"${short}"</p>
-    <a href="${ADMIN_PANEL_URL}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Responder en el panel</a>
-  </div>`;
-  await send({ to, subject, html, text });
-}
-
 /** Avisa a la coach de que una clienta ha firmado el contrato. */
 export async function sendContractSignedNotice(to: string[], member: string, name: string): Promise<void> {
   const url = `${SITE_URL}/miembros/clientas/${encodeURIComponent(member)}`;
@@ -184,7 +166,7 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
   const subject = "¡Bienvenida a Fit con Aurena! 💚 Tu área privada";
   const text =
     `¡Bienvenida!\n\nYa tienes acceso a tu área privada de Fit con Aurena: tu perfil, tu plan, ` +
-    `tus check-ins, la comunidad y tu chat directo conmigo.\n\nEntra aquí: ${loginUrl}\n\nNos vemos dentro 💪`;
+    `tus check-ins y la revisión de técnica.\n\nEntra aquí: ${loginUrl}\n\nNos vemos dentro 💪`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
@@ -192,7 +174,7 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
       <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">¡Bienvenida! 💚</h1>
       <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
         Ya tienes acceso a tu <strong style="color:#fff;">área privada</strong>: tu perfil, tu plan de
-        nutrición y entrenamiento, tus check-ins, la comunidad y tu chat directo conmigo.
+        nutrición y entrenamiento, tus check-ins y la revisión de técnica.
       </p>
       <a href="${loginUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Entrar a mi área
