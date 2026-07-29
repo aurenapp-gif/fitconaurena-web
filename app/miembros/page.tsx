@@ -108,7 +108,11 @@ export default async function MiembrosPage() {
             </div>
           )}
 
-          <div className="mb-5"><CallCountdown /></div>
+          {/* La URL de la sala se lee en el servidor y solo llega a quien tiene
+              sesión válida (esta página está tras requireMember). */}
+          <div className="mb-5">
+            <CallCountdown callUrl={process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? ""} />
+          </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
             <Card title="Mi perfil" desc="Tu cuestionario, tu foto y tus planes de nutrición y entrenamiento.">

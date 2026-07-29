@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-// URL de la videollamada (configurable). Por defecto vacía → sin botón.
-const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? "";
+// La URL de la sala llega como prop desde el servidor (solo para miembros con
+// sesión), así no se incrusta en el bundle del cliente ni queda pública.
 
 function madridWallToUTC(y: number, m: number, d: number, h: number, min: number): number {
   const asUTC = Date.UTC(y, m - 1, d, h, min);
@@ -43,7 +43,7 @@ function Box({ value, label }: { value: number; label: string }) {
   );
 }
 
-export default function CallCountdown() {
+export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -88,9 +88,9 @@ export default function CallCountdown() {
         </div>
       )}
 
-      {CALL_URL && (
+      {callUrl && (
         <a
-          href={CALL_URL}
+          href={callUrl}
           target="_blank"
           rel="noopener noreferrer"
           className={`btn-brand text-base px-8 py-3.5 mt-6 inline-flex ${live ? "animate-pulse" : ""}`}

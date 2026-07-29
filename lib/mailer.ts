@@ -224,7 +224,9 @@ export async function sendPlanUpdateEmail(
   await send({ to, subject: opts.subject, html, text });
 }
 
-const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
+// Sala de la videollamada. Preferimos CALL_URL (solo servidor); se mantiene
+// NEXT_PUBLIC_CALL_URL por compatibilidad con la configuración anterior.
+const CALL_URL = process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
 
 /** Recordatorio de la videollamada grupal (jueves 17:30). */
 export async function sendCallReminder(to: string): Promise<void> {
