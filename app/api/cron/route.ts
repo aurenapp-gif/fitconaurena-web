@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
         await sendCallReminder(m.email);
         sendPushToEmail(m.email, {
           title: "Hoy toca videollamada 📞",
-          body: "No olvides tu sesión de seguimiento con Aurena.",
+          body: "Nos vemos a las 17:30 (Madrid) en tu sesión con Aurena.",
           url: "/miembros/agenda",
         }).catch((e) => console.error("[cron] push call", e));
         await sbUpsert("profiles", { email: m.email, last_call_reminder: today, updated_at: new Date().toISOString() });

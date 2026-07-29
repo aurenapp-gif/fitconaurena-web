@@ -28,13 +28,13 @@ export async function sendVerificationEmail(to: string, confirmUrl: string): Pro
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 28px;letter-spacing:-0.5px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 28px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:26px;font-weight:800;margin:0 0 16px;line-height:1.2;">Confirma tu email</h1>
       <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
         Estás a un clic de acceder a tu <strong style="color:#fff;">contenido gratuito</strong>.
         Pulsa el botón para confirmar que este correo es tuyo y entrar al instante.
       </p>
-      <a href="${confirmUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
+      <a href="${confirmUrl}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Acceder al contenido
       </a>
       <p style="color:#666;font-size:13px;line-height:1.6;margin:30px 0 0;">
@@ -124,7 +124,7 @@ export async function sendContractSignedNotice(to: string[], member: string, nam
   <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
     <h2 style="margin:0 0 8px;">Contrato firmado ✍️</h2>
     <p style="font-size:14px;line-height:1.5;"><strong>${name}</strong> (${member}) ha firmado el contrato.</p>
-    <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver y descargar firmado</a>
+    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver y descargar firmado</a>
   </div>`;
   await send({ to, subject, html, text });
 }
@@ -139,7 +139,7 @@ export async function sendTechniqueUploadNotice(to: string[], fromMember: string
   <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
     <h2 style="margin:0 0 8px;">Nuevo vídeo de técnica 🎥</h2>
     <p style="font-size:14px;line-height:1.5;"><strong>${fromMember}</strong> ha subido un vídeo${ex} para que se lo corrijas.</p>
-    <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Revisar el vídeo</a>
+    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Revisar el vídeo</a>
   </div>`;
   await send({ to, subject, html, text });
 }
@@ -152,10 +152,10 @@ export async function sendTechniqueReplyEmail(to: string): Promise<void> {
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Corrección de técnica lista 🎯</h1>
       <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Tu coach ha revisado tu vídeo y te ha dejado su corrección. Entra para verla.</p>
-      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi corrección</a>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi corrección</a>
     </div>
   </div>`;
   await send({ to, subject, html, text });
@@ -170,13 +170,13 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 28px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 28px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">¡Bienvenida! 💚</h1>
       <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
         Ya tienes acceso a tu <strong style="color:#fff;">área privada</strong>: tu perfil, tu plan de
         nutrición y entrenamiento, tus check-ins y la revisión de técnica.
       </p>
-      <a href="${loginUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
+      <a href="${loginUrl}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Entrar a mi área
       </a>
       <p style="color:#666;font-size:13px;line-height:1.6;margin:30px 0 0;">
@@ -195,10 +195,10 @@ export async function sendCheckinReplyEmail(to: string): Promise<void> {
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Tu coach te ha respondido 💬</h1>
       <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Aurena ha comentado tu último check-in. Entra para verlo.</p>
-      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi check-in</a>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi check-in</a>
     </div>
   </div>`;
   await send({ to, subject, html, text });
@@ -215,10 +215,10 @@ export async function sendPlanUpdateEmail(
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">${opts.heading}</h1>
       <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">${opts.message}</p>
-      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">${cta}</a>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">${cta}</a>
     </div>
   </div>`;
   await send({ to, subject: opts.subject, html, text });
@@ -226,17 +226,17 @@ export async function sendPlanUpdateEmail(
 
 const CALL_URL = process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
 
-/** Recordatorio de la videollamada grupal (jueves 20:00). */
+/** Recordatorio de la videollamada grupal (jueves 17:30). */
 export async function sendCallReminder(to: string): Promise<void> {
-  const subject = "📹 Hoy videollamada grupal a las 20:00";
-  const text = `¡Hoy es jueves! Nos vemos en la videollamada grupal a las 20:00 (hora de Madrid).\n\nEntra a la sala: ${CALL_URL}`;
+  const subject = "📹 Hoy videollamada grupal a las 17:30";
+  const text = `¡Hoy es jueves! Nos vemos en la videollamada grupal a las 17:30 (hora de Madrid).\n\nEntra a la sala: ${CALL_URL}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Hoy videollamada grupal 📹</h1>
-      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Te esperamos hoy a las <strong style="color:#fff;">20:00 (Madrid)</strong>.</p>
-      <a href="${CALL_URL}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Acceder a la sala</a>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Te esperamos hoy a las <strong style="color:#fff;">17:30 (Madrid)</strong>.</p>
+      <a href="${CALL_URL}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Acceder a la sala</a>
     </div>
   </div>`;
   await send({ to, subject, html, text });
@@ -250,10 +250,10 @@ export async function sendCheckinReminder(to: string): Promise<void> {
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Toca tu revisión 📸</h1>
       <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Han pasado unos 15 días. Sube tu <strong style="color:#fff;">peso y tus 3 fotos</strong> (frente, perfil, espaldas) para seguir tu progreso.</p>
-      <a href="${url}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Hacer mi revisión</a>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Hacer mi revisión</a>
     </div>
   </div>`;
   await send({ to, subject, html, text });
@@ -269,18 +269,18 @@ export async function sendMagicLink(to: string, loginUrl: string, code: string):
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 28px;letter-spacing:-0.5px;">fit<span style="color:#CAFF00;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 28px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">Tu acceso al área de miembros</h1>
       <p style="color:#A0A0A0;line-height:1.65;margin:0 0 20px;font-size:15px;">
         Desde el navegador, pulsa el botón:
       </p>
-      <a href="${loginUrl}" style="display:inline-block;background:#CAFF00;color:#0A0A0A;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
+      <a href="${loginUrl}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Entrar al área de miembros
       </a>
       <p style="color:#A0A0A0;line-height:1.6;margin:28px 0 6px;font-size:15px;">
         Si usas la <strong style="color:#fff;">app instalada</strong>, escribe este código:
       </p>
-      <p style="font-size:34px;font-weight:900;letter-spacing:8px;color:#CAFF00;margin:0;">${code}</p>
+      <p style="font-size:34px;font-weight:900;letter-spacing:8px;color:#1CA0E3;margin:0;">${code}</p>
       <p style="color:#666;font-size:13px;line-height:1.6;margin:24px 0 0;">
         Caduca en 15 minutos. Si no lo has solicitado, ignora este mensaje.
       </p>
