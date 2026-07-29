@@ -12,14 +12,6 @@ import { type ContractTemplate, type ContractSignature } from "@/lib/contract";
 export const metadata: Metadata = { title: "Panel admin", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Msg = {
-  id: string;
-  member_email: string;
-  sender: "member" | "coach";
-  body: string;
-  read_by_coach: boolean;
-  created_at: string;
-};
 type CheckIn = { id: string; member_email: string; weight: number | null; created_at: string; coach_reply: string | null };
 
 type Prof = { email: string; display_name: string | null; renewal_date: string | null };
@@ -39,9 +31,7 @@ export default async function AdminPage() {
   const since = isoDaysAgo(15);
 
   // Todas las lecturas independientes del panel, en paralelo (antes iban en cascada).
-  const [msgs, checkins, members, profiles, recentList, pending, contractTpl] = await Promise.all([
-    sbSelect<Msg>("messages", "select=id,member_email,sender,body,read_by_coach,created_at&order=created_at.desc&limit=300")
-      .catch((e) => { console.error("[admin] msgs", e); return [] as Msg[]; }),
+  const [checkins, members, profiles, recentList, pending, contractTpl] = await Promise.all([
     sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10")
       .catch((e) => { console.error("[admin] checkins", e); return [] as CheckIn[]; }),
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email)))
@@ -55,17 +45,6 @@ export default async function AdminPage() {
     sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
       .then((r) => r[0] ?? null).catch((e) => { console.error("[admin] contract", e); return null; }),
   ]);
-
-  // Agrupar conversaciones por clienta.
-  const convs = new Map<string, { last: Msg; unread: number }>();
-  for (const m of msgs) {
-    const c = convs.get(m.member_email);
-    const unreadInc = m.sender === "member" && !m.read_by_coach ? 1 : 0;
-    if (!c) convs.set(m.member_email, { last: m, unread: unreadInc });
-    else c.unread += unreadInc; // `last` ya es el más reciente (orden desc)
-  }
-  const conversations = Array.from(convs.entries());
-  const unreadConvs = conversations.filter(([, v]) => v.unread > 0);
 
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
   const nameOf = (e: string) => byEmail.get(e)?.display_name || members.find((m) => m.email === e)?.name || e;
@@ -90,7 +69,6 @@ export default async function AdminPage() {
   const noCheckin = members.filter((m) => !recentSet.has(m.email));
 
   const stats = [
-    { value: unreadConvs.length, label: "sin responder", urgent: unreadConvs.length > 0 },
     { value: pendingCount, label: "check-ins pendientes", urgent: pendingCount > 0 },
     { value: renewals.length, label: "renovaciones ≤5d", urgent: renewals.length > 0 },
     { value: noCheckin.length, label: "sin check-in 15d", urgent: false },
@@ -117,7 +95,7 @@ export default async function AdminPage() {
           {/* Panel "Hoy": resumen accionable de la coach */}
           <section className="mb-8">
             <h2 className="font-bold text-white mb-3">Hoy</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-3 mb-4">
               {stats.map((s) => (
                 <div
                   key={s.label}
@@ -149,9 +127,9 @@ export default async function AdminPage() {
                     <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Sin check-in (15 días)</p>
                     <div className="flex flex-col gap-1.5">
                       {noCheckin.map((m) => (
-                        <Link key={m.email} href={`/miembros/admin/chat/${encodeURIComponent(m.email)}`} className="flex items-center justify-between gap-2 hover:opacity-80">
+                        <Link key={m.email} href={`/miembros/clientas/${encodeURIComponent(m.email)}`} className="flex items-center justify-between gap-2 hover:opacity-80">
                           <span className="text-sm text-white truncate">{nameOf(m.email)}</span>
-                          <span className="text-[10px] text-[#666666] shrink-0">enviar recordatorio →</span>
+                          <span className="text-[10px] text-[#666666] shrink-0">ver ficha →</span>
                         </Link>
                       ))}
                     </div>
@@ -184,40 +162,7 @@ export default async function AdminPage() {
             </div>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Chats */}
-            <section>
-              <h2 className="font-bold text-white mb-3">Chats</h2>
-              {conversations.length === 0 ? (
-                <p className="text-sm text-[#A0A0A0]">Aún no hay conversaciones.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {conversations.map(([member, { last, unread }]) => (
-                    <Link
-                      key={member}
-                      href={`/miembros/admin/chat/${encodeURIComponent(member)}`}
-                      className="card-dark p-4 !transform-none flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{member}</p>
-                        <p className="text-xs text-[#A0A0A0] truncate">
-                          {last.sender === "coach" ? "Tú: " : ""}{last.body}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[10px] text-[#666666]">{fmt(last.created_at)}</span>
-                        {unread > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">
-                            {unread} nuevo{unread > 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-
+          <div className="grid gap-6">
             {/* Check-ins recientes */}
             <section>
               <h2 className="font-bold text-white mb-3">Check-ins recientes</h2>
