@@ -12,7 +12,7 @@ function madridWallToUTC(y: number, m: number, d: number, h: number, min: number
   return asUTC - offset;
 }
 
-// Próximo jueves a las 20:00 (hora de Madrid). Sigue contando como "esta
+// Próximo jueves a las 17:30 (hora de Madrid). Sigue contando como "esta
 // semana" hasta 2h después de empezar.
 function nextCall(now: number): number {
   for (let i = 0; i < 14; i++) {
@@ -26,7 +26,7 @@ function nextCall(now: number): number {
     }).formatToParts(base);
     const get = (t: string) => parts.find((x) => x.type === t)!.value;
     if (get("weekday") !== "Thu") continue;
-    const t = madridWallToUTC(+get("year"), +get("month"), +get("day"), 20, 0);
+    const t = madridWallToUTC(+get("year"), +get("month"), +get("day"), 17, 30);
     if (t > now - 2 * 3600000) return t;
   }
   return now;
@@ -57,7 +57,7 @@ export default function CallCountdown() {
     return (
       <div className="card-dark p-6 !transform-none">
         <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
-        <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 20:00 (hora de Madrid).</p>
+        <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 17:30 (hora de Madrid).</p>
       </div>
     );
   }
@@ -75,7 +75,7 @@ export default function CallCountdown() {
   return (
     <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30">
       <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
-      <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 20:00 (hora de Madrid).</p>
+      <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 17:30 (hora de Madrid).</p>
 
       {live ? (
         <p className="mt-5 font-black text-[#1CA0E3] text-xl">¡En directo ahora! 🔴</p>
