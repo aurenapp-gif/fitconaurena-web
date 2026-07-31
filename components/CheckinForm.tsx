@@ -83,9 +83,13 @@ export default function CheckinForm() {
       <div className="flex flex-col gap-3">
         <input
           type="number" step="0.1" inputMode="decimal" value={weight}
-          onChange={(e) => setWeight(e.target.value)} placeholder="Peso (kg)" aria-label="Peso en kg"
+          onChange={(e) => setWeight(e.target.value)} placeholder="Peso (kg) — opcional" aria-label="Peso en kg (opcional)"
           className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
         />
+        <p className="text-xs text-[#A0A0A0] -mt-1">
+          ¿Prefieres no pesarte? <strong className="text-white">Déjalo en blanco</strong> y envía tu check-in igualmente
+          con tus fotos, tus medidas o una nota. Tu progreso se sigue viendo.
+        </p>
 
         <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4">
           <p className="text-sm font-semibold text-white mb-1">📸 Sube 3 fotos: frente, perfil y espaldas</p>
@@ -140,7 +144,7 @@ export default function CheckinForm() {
 
         <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
           <p className="text-xs text-[#A0A0A0]">
-            ⚖️ Pésate <strong className="text-white">en ayunas</strong>, después de la primera orina de la mañana.
+            ⚖️ Si te pesas, hazlo <strong className="text-white">en ayunas</strong>, después de la primera orina de la mañana.
           </p>
         </div>
 

@@ -10,8 +10,8 @@ export type Field = {
 export const PROFILE_FIELDS: Field[] = [
   { id: "edad", label: "Edad", type: "number" },
   { id: "altura", label: "Altura (cm)", type: "number" },
-  { id: "peso_actual", label: "Peso actual (kg)", type: "number" },
-  { id: "peso_objetivo", label: "Peso objetivo (kg)", type: "number" },
+  { id: "peso_actual", label: "Peso actual (kg) — opcional", type: "number" },
+  { id: "peso_objetivo", label: "Peso objetivo (kg) — opcional", type: "number" },
   { id: "objetivo", label: "Objetivo principal", type: "select", options: ["Perder grasa", "Tonificar", "Ganar músculo", "Salud y hábitos"] },
   { id: "nivel_actividad", label: "Nivel de actividad diaria", type: "select", options: ["Sedentaria", "Ligera", "Activa", "Muy activa"] },
   { id: "pasos_dia", label: "Pasos diarios de media", type: "number" },
@@ -29,8 +29,12 @@ export const PROFILE_FIELDS: Field[] = [
 export type Questionnaire = Record<string, string>;
 
 /** Campos mínimos para poder ENVIAR el cuestionario (y arrancar el ciclo de
- * avisos del plan). Usado en cliente (habilitar el botón) y servidor (validar). */
-export const REQUIRED_QUESTIONNAIRE = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
+ * avisos del plan). Usado en cliente (habilitar el botón) y servidor (validar).
+ *
+ * Los pesos NO son obligatorios a propósito: hay clientas que prefieren no
+ * pesarse, y deben poder enviar su cuestionario igualmente (pueden seguir su
+ * progreso con medidas y fotos). */
+export const REQUIRED_QUESTIONNAIRE = ["edad", "altura", "objetivo"];
 
 /** ¿Están todos los campos obligatorios rellenos? */
 export function questionnaireComplete(q: Questionnaire): boolean {
