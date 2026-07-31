@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import CallCountdown from "@/components/CallCountdown";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import type { Questionnaire } from "@/lib/profile";
+import { questionnaireComplete, type Questionnaire } from "@/lib/profile";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = {
@@ -42,9 +42,8 @@ export default async function MiembrosPage() {
     admin ? Promise.resolve(false) : sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`).then((r) => r.length > 0).catch(() => false),
   ]);
 
-  const q = profile?.questionnaire ?? {};
-  const reqQ = ["edad", "altura", "peso_actual", "peso_objetivo", "objetivo"];
-  const quesDone = reqQ.every((k) => (q[k] ?? "").toString().trim() !== "");
+  // Misma fuente de verdad que el formulario y la API (no duplicar la lista).
+  const quesDone = questionnaireComplete(profile?.questionnaire ?? {});
   const steps = [
     { label: "Sube tu foto de perfil", done: !!profile?.photo_path, href: "/miembros/perfil" },
     { label: "Completa tu cuestionario", done: quesDone, href: "/miembros/perfil" },
