@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Clienta", robots: { index: false, fo
 export const dynamic = "force-dynamic";
 
 type Prof = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null };
-type Plan = { id: string; type: string; title: string | null; file_path: string; created_at: string };
+type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
 
 function fmtDate(d: string) {
@@ -129,15 +129,18 @@ export default async function ClientaPage({ params }: { params: { email: string 
               <div className="mt-5 flex flex-col gap-2">
                 <p className="text-xs text-[#A0A0A0]">Planes subidos:</p>
                 {plansWithUrl.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
-                    <span className="text-sm text-white min-w-0">
-                      {p.type === "nutricion" ? "🥗 Nutrición" : "🏋️ Entrenamiento"}{p.title ? ` · ${p.title}` : ""}
-                      <span className="text-[#666666] text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
-                    </span>
-                    <span className="flex items-center gap-3 shrink-0">
-                      {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
-                      <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
-                    </span>
+                  <div key={p.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-white min-w-0">
+                        {p.type === "nutricion" ? "🥗 Nutrición" : "🏋️ Entrenamiento"}{p.title ? ` · ${p.title}` : ""}
+                        <span className="text-[#666666] text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
+                      </span>
+                      <span className="flex items-center gap-3 shrink-0">
+                        {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
+                        <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
+                      </span>
+                    </div>
+                    {p.note && <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">💬 {p.note}</p>}
                   </div>
                 ))}
               </div>

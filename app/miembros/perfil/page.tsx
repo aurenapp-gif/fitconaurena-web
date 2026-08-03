@@ -18,8 +18,19 @@ export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, 
 export const dynamic = "force-dynamic";
 
 type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null };
-type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; file_path: string; created_at: string };
+type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
+
+/** Comentario que la coach deja junto al plan (indicaciones, cambios…). */
+function PlanNote({ note }: { note?: string | null }) {
+  if (!note) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
+      <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{note}</p>
+    </div>
+  );
+}
 
 function todayMadrid(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
@@ -108,7 +119,11 @@ export default async function PerfilPage() {
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-1">🥗 Nutrición</p>
           {nutUrl ? (
-            <FileViewer url={nutUrl} label="Plan de nutrición" />
+            <>
+              {nut?.title && <p className="text-sm text-[#A0A0A0] mb-1">{nut.title}</p>}
+              <FileViewer url={nutUrl} label="Plan de nutrición" />
+              <PlanNote note={nut?.note} />
+            </>
           ) : (
             <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de nutrición.</p>
           )}
@@ -116,7 +131,11 @@ export default async function PerfilPage() {
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-1">🏋️ Entrenamiento</p>
           {entUrl ? (
-            <FileViewer url={entUrl} label="Plan de entrenamiento" />
+            <>
+              {ent?.title && <p className="text-sm text-[#A0A0A0] mb-1">{ent.title}</p>}
+              <FileViewer url={entUrl} label="Plan de entrenamiento" />
+              <PlanNote note={ent?.note} />
+            </>
           ) : (
             <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de entrenamiento.</p>
           )}

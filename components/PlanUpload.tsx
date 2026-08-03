@@ -7,6 +7,7 @@ export default function PlanUpload({ member }: { member: string }) {
   const router = useRouter();
   const [type, setType] = useState("nutricion");
   const [title, setTitle] = useState("");
+  const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [msg, setMsg] = useState("");
@@ -21,10 +22,11 @@ export default function PlanUpload({ member }: { member: string }) {
       fd.append("member", member);
       fd.append("type", type);
       fd.append("title", title);
+      fd.append("note", note);
       fd.append("file", file);
       const res = await fetch("/api/miembros/clientas/plan", { method: "POST", body: fd });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setStatus("error"); setMsg(d.error ?? "No se pudo subir."); return; }
-      setTitle(""); setFile(null); setStatus("idle");
+      setTitle(""); setNote(""); setFile(null); setStatus("idle");
       (e.target as HTMLFormElement).reset();
       router.refresh();
     } catch { setStatus("error"); setMsg("Error de conexión."); }
@@ -41,6 +43,15 @@ export default function PlanUpload({ member }: { member: string }) {
         </select>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional)" className={`${cls} flex-1`} />
       </div>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        rows={3}
+        maxLength={1000}
+        placeholder="Comentario para la clienta (opcional): indicaciones, cambios respecto al mes anterior…"
+        aria-label="Comentario para la clienta"
+        className={cls}
+      />
       <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Archivo del plan"
         className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
       {status === "error" && <p className="text-sm text-[#FF6B6B]">{msg}</p>}
