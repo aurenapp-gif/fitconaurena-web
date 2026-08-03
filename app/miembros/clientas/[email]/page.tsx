@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import PlanUpload from "@/components/PlanUpload";
+import PlanDelete from "@/components/PlanDelete";
 import RenewalSetter from "@/components/RenewalSetter";
 import RemoveClient from "@/components/RemoveClient";
 import WeightChart from "@/components/WeightChart";
@@ -129,11 +130,14 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 <p className="text-xs text-[#A0A0A0]">Planes subidos:</p>
                 {plansWithUrl.map((p) => (
                   <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
-                    <span className="text-sm text-white">
+                    <span className="text-sm text-white min-w-0">
                       {p.type === "nutricion" ? "🥗 Nutrición" : "🏋️ Entrenamiento"}{p.title ? ` · ${p.title}` : ""}
                       <span className="text-[#666666] text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
                     </span>
-                    {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
+                    <span className="flex items-center gap-3 shrink-0">
+                      {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
+                      <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
+                    </span>
                   </div>
                 ))}
               </div>
