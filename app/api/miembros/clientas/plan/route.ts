@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
   const member = normalizeEmail(String(form.get("member") ?? ""));
   const type = String(form.get("type") ?? "");
   const title = String(form.get("title") ?? "").trim().slice(0, 120);
+  const note = String(form.get("note") ?? "").trim().slice(0, 1000);
   const file = form.get("file");
 
   if (!isValidEmail(member)) return NextResponse.json({ error: "Clienta no válida." }, { status: 400 });
@@ -41,7 +42,16 @@ export async function POST(req: NextRequest) {
   try {
     const path = safePath(`${type}-${file.name || "plan"}`);
     await sbUpload("planes", path, await file.arrayBuffer(), file.type || "application/octet-stream");
-    await sbInsert("plans", { member_email: member, type, title: title || null, file_path: path });
+    const row = { member_email: member, type, title: title || null, file_path: path };
+    try {
+      await sbInsert("plans", { ...row, note: note || null });
+    } catch (e) {
+      // Si la columna `note` todavía no existe (falta ejecutar la migración
+      // supabase/plan-comentario.sql), no bloqueamos la subida: el plan se
+      // guarda igual, solo sin el comentario.
+      console.error("[clientas/plan] insert con note falló; reintento sin comentario", e);
+      await sbInsert("plans", row);
+    }
     // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes. Además
     // detiene la secuencia de avisos de espera (plan_notice_stage=24).
     await sbUpsert("profiles", {
