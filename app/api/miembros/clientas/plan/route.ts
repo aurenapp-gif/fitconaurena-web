@@ -102,30 +102,3 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
-
-/** Borra un plan subido: primero la fila (deja de verlo la clienta al instante)
- * y después el archivo del bucket. No toca la fecha de renovación ni reactiva
- * los avisos de "estamos preparando tu plan": borrar un archivo mal subido no
- * debe disparar emails automáticos a la clienta. */
-export async function DELETE(req: NextRequest) {
-  const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  if (await isAccessRevoked(me)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
-
-  const id = new URL(req.url).searchParams.get("id") ?? "";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return NextResponse.json({ error: "Plan no válido." }, { status: 400 });
-  }
-
-  try {
-    const rows = await sbSelect<{ file_path: string | null }>("plans", `select=file_path&id=eq.${id}&limit=1`);
-    if (rows.length === 0) return NextResponse.json({ error: "Ese plan ya no existe." }, { status: 404 });
-    await sbDelete("plans", `id=eq.${id}`);
-    if (rows[0].file_path) await sbDeleteObject("planes", rows[0].file_path);
-  } catch (err) {
-    console.error("[clientas/plan] delete", err);
-    return NextResponse.json({ error: "No se pudo borrar el plan." }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
-}
