@@ -8,7 +8,11 @@ import { sendPushToEmail } from "@/lib/push";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MEASURES = ["waist", "hips", "chest", "arm", "thigh"] as const;
+const MEASURES = ["waist", "hips", "chest", "arm", "thigh", "glute", "back"] as const;
+// Medidas añadidas después: si su columna todavía no existe en la base de datos
+// (falta ejecutar supabase/medidas.sql), el check-in se reintenta sin ellas para
+// no bloquear el envío, que es lo importante.
+const NEW_MEASURES = ["glute", "back"] as const;
 
 async function uploadPhoto(form: FormData, field: string): Promise<string | null> {
   const f = form.get(field);
@@ -87,15 +91,28 @@ export async function POST(req: NextRequest) {
       uploadPhoto(form, "photo_side"),
       uploadPhoto(form, "photo_back"),
     ]);
-    await sbInsert("check_ins", {
+    const row = {
       member_email: email,
       weight,
       note: note || null,
       photo_front,
       photo_side,
       photo_back,
-      ...measures,
-    });
+    };
+    try {
+      await sbInsert("check_ins", { ...row, ...measures });
+    } catch (e) {
+      // Reintento sin las medidas nuevas por si aún no existen sus columnas.
+      // Nunca perdemos el check-in por una medida opcional.
+      const safe = { ...measures };
+      let dropped = false;
+      for (const m of NEW_MEASURES) {
+        if (m in safe) { delete safe[m]; dropped = true; }
+      }
+      if (!dropped) throw e;
+      console.error("[api/miembros/checkin] reintento sin medidas nuevas", e);
+      await sbInsert("check_ins", { ...row, ...safe });
+    }
   } catch (err) {
     console.error("[api/miembros/checkin] error", err);
     return NextResponse.json({ error: "No se pudo guardar el check-in." }, { status: 500 });

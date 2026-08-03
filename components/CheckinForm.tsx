@@ -10,12 +10,15 @@ const PHOTOS = [
   { field: "photo_back", label: "Espaldas" },
 ] as const;
 
+// Orden de arriba abajo del cuerpo, para que sea fácil ir midiendo en orden.
 const MEASURES = [
+  { field: "chest", label: "Pecho" },
+  { field: "back", label: "Espalda" },
+  { field: "arm", label: "Brazo" },
   { field: "waist", label: "Cintura" },
   { field: "hips", label: "Cadera" },
-  { field: "chest", label: "Pecho" },
-  { field: "arm", label: "Brazo" },
-  { field: "thigh", label: "Pierna" },
+  { field: "glute", label: "Glúteo" },
+  { field: "thigh", label: "Cuádriceps" },
 ] as const;
 
 export default function CheckinForm() {

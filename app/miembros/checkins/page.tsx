@@ -30,14 +30,19 @@ type CheckIn = {
   chest: number | null;
   arm: number | null;
   thigh: number | null;
+  glute?: number | null;
+  back?: number | null;
 };
 
+// Mismo orden que el formulario (de arriba abajo del cuerpo).
 const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
+  { key: "chest", label: "Pecho" },
+  { key: "back", label: "Espalda" },
+  { key: "arm", label: "Brazo" },
   { key: "waist", label: "Cintura" },
   { key: "hips", label: "Cadera" },
-  { key: "chest", label: "Pecho" },
-  { key: "arm", label: "Brazo" },
-  { key: "thigh", label: "Pierna" },
+  { key: "glute", label: "Glúteo" },
+  { key: "thigh", label: "Cuádriceps" },
 ];
 
 function fmt(d: string) {
