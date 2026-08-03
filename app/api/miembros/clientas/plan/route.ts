@@ -5,6 +5,7 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbUpload, sbUpsert, sbSelect, sbDelete, sbDeleteObject, safePath } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
 import { sendPlanUpdateEmail } from "@/lib/mailer";
+import { sendPushToEmail } from "@/lib/push";
 import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
@@ -35,33 +36,19 @@ export async function POST(req: NextRequest) {
   const invalid = validateUpload(file, "plan");
   if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
-  // ¿Avisar de "plan disponible"? Solo una vez por ciclo: si ya se avisó en los
-  // últimos 20 días (p. ej. al subir nutrición y luego entrenamiento el mismo
-  // día), no se reenvía. El mes siguiente, al renovar, vuelve a avisarse.
-  let notifyReady = true;
-  try {
-    const prof = await sbSelect<{ plan_ready_notified_at: string | null }>(
-      "profiles",
-      `select=plan_ready_notified_at&email=eq.${encodeURIComponent(member)}`
-    );
-    const last = prof[0]?.plan_ready_notified_at;
-    if (last && Date.now() - new Date(last).getTime() < 20 * 86400000) notifyReady = false;
-  } catch (e) {
-    console.error("[clientas/plan] check notified", e);
-  }
+  const kind = type === "nutricion" ? "nutrición" : "entrenamiento";
 
   try {
     const path = safePath(`${type}-${file.name || "plan"}`);
     await sbUpload("planes", path, await file.arrayBuffer(), file.type || "application/octet-stream");
     await sbInsert("plans", { member_email: member, type, title: title || null, file_path: path });
     // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes. Además
-    // detiene la secuencia de avisos de espera (plan_notice_stage=24). Solo
-    // anclamos plan_ready_notified_at cuando vamos a avisar (primer plan del ciclo).
+    // detiene la secuencia de avisos de espera (plan_notice_stage=24).
     await sbUpsert("profiles", {
       email: member,
       renewal_date: plusOneMonthISO(),
       plan_notice_stage: 24,
-      ...(notifyReady ? { plan_ready_notified_at: new Date().toISOString() } : {}),
+      plan_ready_notified_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
   } catch (err) {
@@ -69,16 +56,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo subir el plan." }, { status: 500 });
   }
 
-  // Aviso a la clienta de que su plan ya está disponible (email, no bloqueante).
-  // Solo el primer plan del ciclo (evita duplicado nutrición+entrenamiento).
-  if (notifyReady) {
-    sendPlanUpdateEmail(member, {
-      subject: "¡Tu plan ya está disponible! 🎉",
-      heading: "¡Tu plan ya está listo! 🎉",
-      message: "Tu coach ha subido tu plan personalizado. Entra a tu área para verlo y empezar.",
-      cta: "Ver mi plan",
-    }).catch((e) => console.error("[clientas/plan] email", e));
-  }
+  // Aviso a la clienta en cuanto se sube el plan (no bloqueante: si falla el
+  // envío, el plan ya está subido igualmente). Se avisa SIEMPRE, indicando de
+  // qué plan se trata: si se suben nutrición y entrenamiento, llegan los dos
+  // avisos y ella sabe exactamente qué hay nuevo.
+  sendPlanUpdateEmail(member, {
+    subject: `¡Tu plan de ${kind} ya está disponible! 🎉`,
+    heading: "¡Tu plan ya está listo! 🎉",
+    message: `Tu coach acaba de subir tu plan de ${kind}. Entra a tu área para verlo y empezar.`,
+    cta: "Ver mi plan",
+  }).catch((e) => console.error("[clientas/plan] email", e));
+
+  sendPushToEmail(member, {
+    title: "¡Tu plan ya está listo! 🎉",
+    body: `Tu plan de ${kind} ya está en tu área privada.`,
+    url: "/miembros/perfil",
+  }).catch((e) => console.error("[clientas/plan] push", e));
 
   return NextResponse.json({ ok: true });
 }
