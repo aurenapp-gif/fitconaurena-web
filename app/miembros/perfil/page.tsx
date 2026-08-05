@@ -21,6 +21,35 @@ type Profile = { email: string; display_name: string | null; photo_path: string 
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
 
+/** Todos los planes de un tipo, del más reciente al más antiguo. El primero se
+ * marca como "Actual"; los anteriores quedan accesibles debajo (historial). */
+function PlanList({ items, label, empty }: { items: (Plan & { url?: string })[]; label: string; empty: string }) {
+  if (items.length === 0) return <p className="text-sm text-[#666666]">{empty}</p>;
+  return (
+    <div className="flex flex-col gap-4">
+      {items.map((p, i) => (
+        <div key={p.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            {i === 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">Actual</span>
+            )}
+            <span className="text-xs text-[#666666]">
+              {new Date(p.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+            </span>
+          </div>
+          {p.title && <p className="text-sm text-[#A0A0A0] mb-1">{p.title}</p>}
+          {p.url ? (
+            <FileViewer url={p.url} label={label} buttonText={i === 0 ? "Ver plan" : "Ver"} />
+          ) : (
+            <p className="text-sm text-[#666666]">No disponible ahora mismo. Vuelve a entrar en un momento.</p>
+          )}
+          <PlanNote note={p.note} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Comentario que la coach deja junto al plan (indicaciones, cambios…). */
 function PlanNote({ note }: { note?: string | null }) {
   if (!note) return null;
@@ -59,7 +88,7 @@ export default async function PerfilPage() {
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
-    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc`)
+    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=40`)
       .catch((e) => { console.error("[perfil] plans", e); return [] as Plan[]; }),
     admin
       ? Promise.resolve([] as HabitRow[])
@@ -74,8 +103,8 @@ export default async function PerfilPage() {
           .catch((e) => { console.error("[perfil] contract template", e); return null; }),
   ]);
 
-  const nut = plans.find((p) => p.type === "nutricion");
-  const ent = plans.find((p) => p.type === "entrenamiento");
+  // Todos los planes de cada tipo (no solo el último): la coach puede subir
+  // varios (fases, revisiones) y la clienta debe poder abrirlos todos.
 
   // La firma depende de la versión de la plantilla, así que va después.
   let contractSig: ContractSignature | null = null;
@@ -86,14 +115,17 @@ export default async function PerfilPage() {
     ).then((r) => r[0] ?? null).catch((e) => { console.error("[perfil] contract signature", e); return null; });
   }
 
-  // 2ª tanda: todas las URLs firmadas en paralelo.
-  const [nutUrl, entUrl, photoUrl, contractTplUrl, signedPdfUrl] = await Promise.all([
-    nut ? sbSignedUrl("planes", nut.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
-    ent ? sbSignedUrl("planes", ent.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+  // 2ª tanda: todas las URLs firmadas en paralelo (una por plan).
+  const [planUrls, photoUrl, contractTplUrl, signedPdfUrl] = await Promise.all([
+    Promise.all(plans.map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     contractTpl ? sbSignedUrl(CONTRACT_BUCKET, contractTpl.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
   ]);
+
+  const plansWithUrl = plans.map((p, i) => ({ ...p, url: planUrls[i] }));
+  const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
+  const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");
 
   const today = todayMadrid();
   const loggedDays = new Set(habitRows.map((r) => r.day));
@@ -117,28 +149,12 @@ export default async function PerfilPage() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-1">🥗 Nutrición</p>
-          {nutUrl ? (
-            <>
-              {nut?.title && <p className="text-sm text-[#A0A0A0] mb-1">{nut.title}</p>}
-              <FileViewer url={nutUrl} label="Plan de nutrición" />
-              <PlanNote note={nut?.note} />
-            </>
-          ) : (
-            <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de nutrición.</p>
-          )}
+          <p className="font-bold text-white mb-3">🥗 Nutrición</p>
+          <PlanList items={nutPlans} label="Plan de nutrición" empty="Tu coach aún no ha subido tu plan de nutrición." />
         </div>
         <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-1">🏋️ Entrenamiento</p>
-          {entUrl ? (
-            <>
-              {ent?.title && <p className="text-sm text-[#A0A0A0] mb-1">{ent.title}</p>}
-              <FileViewer url={entUrl} label="Plan de entrenamiento" />
-              <PlanNote note={ent?.note} />
-            </>
-          ) : (
-            <p className="text-sm text-[#666666]">Tu coach aún no ha subido tu plan de entrenamiento.</p>
-          )}
+          <p className="font-bold text-white mb-3">🏋️ Entrenamiento</p>
+          <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." />
         </div>
       </div>
     </div>
