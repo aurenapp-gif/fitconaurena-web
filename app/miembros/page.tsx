@@ -117,6 +117,11 @@ export default async function MiembrosPage() {
             <Card title="Mi perfil" desc="Tu cuestionario, tu foto y tus planes de nutrición y entrenamiento.">
               <Link href="/miembros/perfil" className="btn-brand text-sm px-6 py-3">Abrir mi perfil</Link>
             </Card>
+            <Card title="Comunicados" desc={admin ? "Publica un aviso y les llega al instante por email y notificación." : "Avisos importantes de tu coach, siempre a mano."}>
+              <Link href="/miembros/comunicados" className="btn-brand text-sm px-6 py-3">
+                {admin ? "Publicar comunicado" : "Ver comunicados"}
+              </Link>
+            </Card>
             <Card title="Revisión de técnica" desc="Sube un vídeo corto de tu ejercicio y tu coach te corrige la técnica.">
               <Link href="/miembros/tecnica" className="btn-brand text-sm px-6 py-3">Subir vídeo de técnica</Link>
             </Card>
