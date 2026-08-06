@@ -33,6 +33,15 @@ export async function sbSelect<T = unknown>(table: string, query = ""): Promise<
   return res.json();
 }
 
+/** ¿El fallo es porque la tabla todavía no existe en la base de datos?
+ * (falta ejecutar la migración de supabase/). PostgREST responde 404 con el
+ * código PGRST205; Postgres, con "relation ... does not exist". Sirve para
+ * distinguir "falta configurar" de un error real y avisar en consecuencia. */
+export function isMissingTable(e: unknown): boolean {
+  const s = e instanceof Error ? e.message : String(e);
+  return /PGRST205|Could not find the table|relation .* does not exist/i.test(s);
+}
+
 /** INSERT y devuelve la fila creada. */
 export async function sbInsert<T = unknown>(table: string, row: object): Promise<T> {
   const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {

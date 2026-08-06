@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
-import { sbInsert, sbDelete } from "@/lib/supabase";
+import { sbInsert, sbDelete, isMissingTable } from "@/lib/supabase";
 import { sendAnnouncementEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 
@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
     await sbInsert("announcements", { title: title || null, body, created_by: me });
   } catch (err) {
     console.error("[comunicados] insert", err);
+    // Distinguimos "falta la tabla" para poder explicar en pantalla cómo
+    // arreglarlo, en vez de dar un error genérico que no dice nada.
+    if (isMissingTable(err)) {
+      return NextResponse.json(
+        { error: "Falta crear la tabla de comunicados en la base de datos.", setup: true },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: "No se pudo publicar el comunicado." }, { status: 500 });
   }
 
