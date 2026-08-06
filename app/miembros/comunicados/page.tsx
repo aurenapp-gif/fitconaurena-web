@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import AnnouncementForm from "@/components/AnnouncementForm";
 import AnnouncementDelete from "@/components/AnnouncementDelete";
+import SetupSql from "@/components/SetupSql";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { sbSelect } from "@/lib/supabase";
+import { sbSelect, isMissingTable } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Comunicados", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -20,6 +21,17 @@ type Announcement = {
 // "Nuevo" durante los 3 primeros días, para que se distinga de un vistazo.
 const NEW_MS = 3 * 86400000;
 
+const SETUP_SQL = `create table if not exists public.announcements (
+  id         uuid primary key default gen_random_uuid(),
+  title      text,
+  body       text not null,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists announcements_created_at_idx
+  on public.announcements (created_at desc);`;
+
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
 }
@@ -28,12 +40,19 @@ export default async function ComunicadosPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
 
-  // Si la tabla aún no existe (falta ejecutar supabase/comunicados.sql), la
-  // página se muestra vacía en vez de romper.
-  const items = await sbSelect<Announcement>(
-    "announcements",
-    "select=id,title,body,created_at&order=created_at.desc&limit=100"
-  ).catch((e) => { console.error("[comunicados]", e); return [] as Announcement[]; });
+  // Si la tabla aún no existe (falta ejecutar supabase/comunicados.sql) la
+  // página no rompe: se muestra vacía y, a la coach, con el SQL que falta.
+  let items: Announcement[] = [];
+  let needsSetup = false;
+  try {
+    items = await sbSelect<Announcement>(
+      "announcements",
+      "select=id,title,body,created_at&order=created_at.desc&limit=100"
+    );
+  } catch (e) {
+    console.error("[comunicados]", e);
+    needsSetup = isMissingTable(e);
+  }
 
   const now = Date.now();
 
@@ -54,6 +73,12 @@ export default async function ComunicadosPage() {
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
+
+          {admin && needsSetup && (
+            <div className="mb-6">
+              <SetupSql title="Falta un paso para poder publicar" sql={SETUP_SQL} />
+            </div>
+          )}
 
           {admin && (
             <div className="card-dark p-6 !transform-none mb-6 border-[#1CA0E3]/30">

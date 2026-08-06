@@ -26,7 +26,18 @@ export default function AnnouncementForm() {
         body: JSON.stringify({ title, body }),
       });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) { setStatus("error"); setMsg(d.error ?? "No se pudo publicar."); return; }
+      if (!res.ok) {
+        setStatus("error");
+        if (d.setup) {
+          // Falta la tabla: refrescamos para que aparezca arriba el aviso con
+          // el SQL que hay que ejecutar en Supabase.
+          setMsg("Falta crear la tabla en Supabase. Arriba tienes el SQL a ejecutar (un solo paso).");
+          router.refresh();
+        } else {
+          setMsg(d.error ?? "No se pudo publicar.");
+        }
+        return;
+      }
       setTitle(""); setBody(""); setStatus("idle");
       setMsg(typeof d.notified === "number" ? `Publicado. Avisadas ${d.notified} clientas.` : "Publicado.");
       router.refresh();
