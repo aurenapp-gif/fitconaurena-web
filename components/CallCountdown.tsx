@@ -5,11 +5,35 @@ import { useEffect, useState } from "react";
 // La URL de la sala llega como prop desde el servidor (solo para miembros con
 // sesión), así no se incrusta en el bundle del cliente ni queda pública.
 
+/** Desfase de Madrid respecto a UTC (en ms) en un instante dado.
+ *
+ * Se obtiene leyendo la hora de pared de Madrid con `formatToParts` y
+ * comparándola con la de UTC. Es importante NO parsear una fecha con
+ * `new Date(cadena)`: eso la interpreta en la zona horaria del móvil de quien
+ * mira, y la cuenta atrás salía desplazada (en España marcaba las 19:30 en vez
+ * de las 17:30). Así el resultado es el mismo se mire desde donde se mire. */
+function madridOffset(at: number): number {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(at));
+  const g = (t: string) => +p.find((x) => x.type === t)!.value;
+  return Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second")) - at;
+}
+
 function madridWallToUTC(y: number, m: number, d: number, h: number, min: number): number {
-  const asUTC = Date.UTC(y, m - 1, d, h, min);
-  const madridStr = new Date(asUTC).toLocaleString("en-US", { timeZone: "Europe/Madrid" });
-  const offset = new Date(madridStr).getTime() - asUTC;
-  return asUTC - offset;
+  const wall = Date.UTC(y, m - 1, d, h, min);
+  // Dos pasadas: la primera estima el desfase y la segunda lo corrige si el
+  // cambio de hora (marzo/octubre) cae justo entre medias.
+  let ts = wall - madridOffset(wall);
+  ts = wall - madridOffset(ts);
+  return ts;
 }
 
 // Próximo jueves a las 17:30 (hora de Madrid). Sigue contando como "esta
