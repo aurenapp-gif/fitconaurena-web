@@ -224,6 +224,34 @@ export async function sendPlanUpdateEmail(
   await send({ to, subject: opts.subject, html, text });
 }
 
+/** Escapa el texto que se incrusta en el HTML del email, para que un `<` o un
+ * `&` sueltos no rompan el maquetado del correo. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Comunicado de la coach a una clienta. */
+export async function sendAnnouncementEmail(to: string, opts: { title: string; body: string }): Promise<void> {
+  const url = `${SITE_URL}/miembros/comunicados`;
+  const subject = `📣 ${opts.title}`;
+  const text = `${opts.title}\n\n${opts.body}\n\nVer en tu área: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+      <p style="color:#1CA0E3;font-size:12px;font-weight:700;letter-spacing:1px;margin:0 0 8px;">COMUNICADO</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">${escapeHtml(opts.title)}</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;white-space:pre-wrap;">${escapeHtml(opts.body)}</p>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver comunicados</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 // Sala de la videollamada. Preferimos CALL_URL (solo servidor); se mantiene
 // NEXT_PUBLIC_CALL_URL por compatibilidad con la configuración anterior.
 const CALL_URL = process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
