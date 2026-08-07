@@ -6,7 +6,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
       <body style={{ background: "#0A0A0A", color: "#fff", fontFamily: "Inter, system-ui, sans-serif", margin: 0 }}>
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
           <p style={{ fontWeight: 900, fontSize: 20, marginBottom: 24 }}>
-            fit<span style={{ color: "#1CA0E3" }}>con</span>aurena
+            Programa <span style={{ color: "#1CA0E3" }}>FITCON</span>
           </p>
           <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 12px" }}>Algo ha ido mal</h1>
           <p style={{ color: "#A0A0A0", maxWidth: 420, lineHeight: 1.6, margin: "0 0 28px" }}>
