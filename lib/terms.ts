@@ -5,7 +5,7 @@
  * día se cambia el texto, hay que subir la versión: así queda constancia de qué
  * redacción exacta aceptó cada clienta, que es lo que da valor probatorio.
  */
-export const TERMS_VERSION = "2026-08-2";
+export const TERMS_VERSION = "2026-08-3";
 
 export const PRIVACY_TEXT = [
   "Tus datos (nombre, email, foto, cuestionario, check-ins, medidas y fotos de progreso) se tratan con la única finalidad de prestarte el servicio de asesoramiento y hacer tu seguimiento.",
@@ -31,7 +31,8 @@ export const TERMS_TEXT = [
  */
 export const IMAGE_TEXT = [
   "Las llamadas grupales, los materiales y las comunicaciones con tu coach son confidenciales: no pueden grabarse, reproducirse ni difundirse, ni total ni parcialmente, en redes sociales ni en ningún otro medio. En las llamadas participan otras clientas y su privacidad también debe protegerse.",
-  "No está permitido difundir, por ningún canal, contenido difamatorio, injurioso o calumnioso, ni afirmaciones falsas o engañosas sobre tu coach, su equipo o su empresa que puedan dañar su reputación.",
+  "Te comprometes a no crear, publicar ni difundir —en vídeo, audio, imagen o texto, y en cualquier red social o plataforma (TikTok, Instagram, YouTube, X, foros, grupos de mensajería o cualquier otra)— contenido difamatorio, injurioso o calumnioso sobre tu coach, su equipo, su empresa o el servicio, ni afirmaciones falsas, engañosas o sacadas de contexto que puedan dañar su reputación o su actividad profesional.",
+  "Si en algún momento no estás conforme con el servicio, te comprometes a comunicárselo primero a tu coach por el canal directo, para darle la oportunidad de resolverlo antes de difundirlo públicamente.",
   "El nombre, la marca, la imagen, la voz y los contenidos de tu coach están protegidos: no pueden utilizarse con fines comerciales o promocionales, ni incorporarse a publicaciones propias, sin su autorización previa y por escrito.",
   "El incumplimiento de estos puntos puede conllevar la baja inmediata del programa, sin perjuicio de las acciones legales que correspondan.",
 ];
