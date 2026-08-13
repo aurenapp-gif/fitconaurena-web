@@ -7,7 +7,7 @@ export const COMPANY = {
   name: "Vento Cogitativo Unipessoal Lda.",
   address: "Avenida Gomes Pereira, 105",
   city: "Lisboa",
-  postalCode: "", // 👉 pendiente: código postal (ej. "1500-329")
+  postalCode: "1500-328",
   country: "Portugal",
   nipc: "519216121",
   email: "aurenapp@gmail.com",
