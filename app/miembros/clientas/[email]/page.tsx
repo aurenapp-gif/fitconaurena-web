@@ -81,6 +81,36 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const logins = activity.filter((a) => a.action === "acceso");
   const lastAccess = logins[0]?.created_at ?? null;
 
+  // DÍAS DE USO VERIFICADOS. Cada check-in, cada día de hábitos y cada vídeo
+  // exigió entrar en la plataforma y hacer algo, así que sirven para acreditar
+  // uso real incluso antes de que existiera el registro de accesos.
+  const dayOf = (iso: string) => iso.slice(0, 10);
+  const activeDays = new Set<string>([
+    ...checkins.map((c) => dayOf(c.created_at)),
+    ...habitDays.map((h) => h.day),
+    ...techniques.map((t) => dayOf(t.created_at)),
+    ...activity.map((a) => dayOf(a.created_at)),
+  ]);
+  const activeSorted = Array.from(activeDays).sort();
+  const firstUse = activeSorted[0] ?? null;
+  const lastUse = activeSorted[activeSorted.length - 1] ?? null;
+
+  // PORCENTAJE DEL SERVICIO CONSUMIDO en el ciclo pagado en curso: es el
+  // criterio que se aplica para calcular la parte proporcional ya prestada.
+  // El ciclo va del mes anterior a la fecha de renovación hasta esa fecha.
+  let pct: number | null = null;
+  let cycleFrom: Date | null = null;
+  let cycleTo: Date | null = null;
+  if (profile?.renewal_date) {
+    cycleTo = new Date(profile.renewal_date + "T00:00:00Z");
+    cycleFrom = new Date(cycleTo);
+    cycleFrom.setUTCMonth(cycleFrom.getUTCMonth() - 1);
+    const total = cycleTo.getTime() - cycleFrom.getTime();
+    const done = Date.now() - cycleFrom.getTime();
+    if (total > 0) pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  }
+  const fmtDay = (d: Date) => d.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
+
   // Hitos verificables, en orden cronológico: es lo que se aporta en una disputa.
   const milestones: { label: string; at: string | null }[] = [
     { label: "Alta en la plataforma", at: profile?.created_at ?? null },
@@ -94,13 +124,16 @@ export default async function ClientaPage({ params }: { params: { email: string 
   ].filter((m) => m.at);
   milestones.sort((a, b) => new Date(a.at as string).getTime() - new Date(b.at as string).getTime());
 
+  // Solo lo que consta desde SIEMPRE. Los accesos y aperturas van aparte,
+  // porque su registro empezó más tarde y un 0 aquí se leería, erróneamente,
+  // como "no lo ha usado".
   const usage = [
-    { v: logins.length, l: "accesos" },
-    { v: opened.length, l: "documentos abiertos" },
+    { v: activeDays.size, l: "días de uso" },
     { v: checkins.length, l: "check-ins" },
     { v: new Set(habitDays.map((h) => h.day)).size, l: "días de hábitos" },
     { v: techniques.length, l: "vídeos de técnica" },
     { v: plans.length, l: "planes recibidos" },
+    { v: contractSig ? 1 : 0, l: "contrato firmado" },
   ];
 
   const q = profile?.questionnaire ?? {};
@@ -244,13 +277,56 @@ export default async function ClientaPage({ params }: { params: { email: string 
               Registro de la actividad de la clienta. Útil para acreditar que el servicio se ha prestado y utilizado.
             </p>
 
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-5">
+            {/* Porcentaje del ciclo pagado ya consumido */}
+            {pct != null && cycleFrom && cycleTo && (
+              <div className="rounded-xl border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 p-4 mb-5">
+                <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-[#1CA0E3]">Servicio consumido</p>
+                    <p className="text-xs text-[#A0A0A0] mt-0.5">
+                      Ciclo del {fmtDay(cycleFrom)} al {fmtDay(cycleTo)}
+                    </p>
+                  </div>
+                  <span className="text-3xl font-extrabold leading-none text-white">{pct}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-[#0A0A0A] overflow-hidden">
+                  <div className="h-full bg-[#1CA0E3]" style={{ width: `${pct}%` }} />
+                </div>
+                <p className="text-[11px] text-[#666666] mt-2">
+                  Proporción de tiempo transcurrido del periodo contratado en curso. Es el criterio que se aplica
+                  para calcular la parte del servicio ya prestada.
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
               {usage.map((u) => (
                 <div key={u.l} className="text-center px-2 py-3 rounded-xl border border-[#252525] bg-[#141414]">
                   <div className="text-2xl font-extrabold leading-none text-white">{u.v}</div>
                   <div className="text-[10px] text-[#A0A0A0] mt-1.5 leading-tight">{u.l}</div>
                 </div>
               ))}
+            </div>
+
+            {firstUse && lastUse && (
+              <p className="text-sm text-[#A0A0A0] mb-5">
+                Usó la plataforma en <strong className="text-white">{activeDays.size} días distintos</strong>,
+                entre el {fmtDay(new Date(firstUse + "T00:00:00Z"))} y el {fmtDay(new Date(lastUse + "T00:00:00Z"))}.
+                Cada uno de esos días requirió entrar en su área privada.
+              </p>
+            )}
+
+            {/* Accesos y aperturas: registro reciente, con su contexto */}
+            <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 mb-5">
+              <p className="text-xs text-[#A0A0A0]">
+                <strong className="text-white">{logins.length} accesos</strong> y{" "}
+                <strong className="text-white">{opened.length} documentos abiertos</strong> registrados.
+                <span className="text-[#666666]">
+                  {" "}Este contador arrancó el 13 de agosto de 2026: los accesos y aperturas anteriores
+                  no se guardaban, así que un número bajo aquí no indica falta de uso. Para el periodo previo,
+                  la evidencia son los días de uso y los hitos.
+                </span>
+              </p>
             </div>
 
             {milestones.length > 0 && (
@@ -270,8 +346,8 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Actividad reciente</p>
             {activity.length === 0 ? (
               <p className="text-sm text-[#666666]">
-                Sin actividad registrada todavía. El registro empieza a acumularse desde que se activó esta función:
-                los accesos y aperturas anteriores no constan aquí, pero sí los hitos de arriba.
+                Todavía no hay entradas: el registro detallado acaba de activarse. Se irá llenando con cada
+                acceso y cada documento que abra a partir de ahora.
               </p>
             ) : (
               <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
