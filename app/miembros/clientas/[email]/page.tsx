@@ -17,13 +17,32 @@ import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Prof = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null };
+type Prof = {
+  email: string; display_name: string | null; photo_path: string | null;
+  questionnaire: Questionnaire | null; renewal_date: string | null;
+  created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
+  questionnaire_completed_at?: string | null;
+};
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
+type Activity = { action: string; detail: string | null; created_at: string };
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
 }
+/** Fecha y hora completas: es el formato que sirve como evidencia. */
+function fmtFull(d: string) {
+  return new Date(d).toLocaleString("es-ES", {
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+    timeZone: "Europe/Madrid",
+  });
+}
+const ACTION_LABEL: Record<string, string> = {
+  acceso: "Entró en la plataforma",
+  plan_abierto: "Abrió un documento",
+  plan_descargado: "Descargó un documento",
+  contrato_abierto: "Abrió el contrato",
+};
 
 export default async function ClientaPage({ params }: { params: { email: string } }) {
   const me = verifySession(cookies().get(SESSION_COOKIE)?.value);
@@ -46,6 +65,43 @@ export default async function ClientaPage({ params }: { params: { email: string 
     sbSelect<ContractSignature>("contract_signatures", `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`)
       .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
   ]);
+
+  // Evidencia de uso del servicio. Cada consulta cae por su cuenta si su tabla
+  // aún no existe, para que la ficha se siga viendo entera.
+  const [activity, habitDays, techniques] = await Promise.all([
+    sbSelect<Activity>("activity_log", `select=action,detail,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc&limit=200`)
+      .catch(() => [] as Activity[]),
+    sbSelect<{ day: string }>("habit_logs", `select=day&member_email=eq.${encodeURIComponent(member)}`)
+      .catch(() => [] as { day: string }[]),
+    sbSelect<{ created_at: string }>("technique_reviews", `select=created_at&member_email=eq.${encodeURIComponent(member)}`)
+      .catch(() => [] as { created_at: string }[]),
+  ]);
+
+  const opened = activity.filter((a) => a.action === "plan_abierto" || a.action === "plan_descargado");
+  const logins = activity.filter((a) => a.action === "acceso");
+  const lastAccess = logins[0]?.created_at ?? null;
+
+  // Hitos verificables, en orden cronológico: es lo que se aporta en una disputa.
+  const milestones: { label: string; at: string | null }[] = [
+    { label: "Alta en la plataforma", at: profile?.created_at ?? null },
+    { label: `Aceptó las condiciones${profile?.terms_version ? ` (versión ${profile.terms_version})` : ""}`, at: profile?.terms_accepted_at ?? null },
+    { label: "Entró por primera vez", at: logins.length ? logins[logins.length - 1].created_at : null },
+    { label: "Completó el cuestionario", at: profile?.questionnaire_completed_at ?? null },
+    { label: "Firmó el contrato", at: contractSig?.signed_at ?? null },
+    { label: "Recibió su primer plan", at: plans.length ? plans[plans.length - 1].created_at : null },
+    { label: "Abrió un documento por primera vez", at: opened.length ? opened[opened.length - 1].created_at : null },
+    { label: "Hizo su primer check-in", at: checkins.length ? checkins[0].created_at : null },
+  ].filter((m) => m.at);
+  milestones.sort((a, b) => new Date(a.at as string).getTime() - new Date(b.at as string).getTime());
+
+  const usage = [
+    { v: logins.length, l: "accesos" },
+    { v: opened.length, l: "documentos abiertos" },
+    { v: checkins.length, l: "check-ins" },
+    { v: new Set(habitDays.map((h) => h.day)).size, l: "días de hábitos" },
+    { v: techniques.length, l: "vídeos de técnica" },
+    { v: plans.length, l: "planes recibidos" },
+  ];
 
   const q = profile?.questionnaire ?? {};
   const r = renewalInfo(profile?.renewal_date ?? null);
@@ -175,6 +231,60 @@ export default async function ClientaPage({ params }: { params: { email: string 
               </div>
             ) : (
               <p className="text-sm text-[#666666]">La clienta todavía no ha firmado el contrato.</p>
+            )}
+          </div>
+
+          {/* Uso del servicio: evidencia para disputas y reclamaciones */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h2 className="font-bold text-white">Uso del servicio</h2>
+              {lastAccess && <span className="text-xs text-[#A0A0A0]">Último acceso: {fmtFull(lastAccess)}</span>}
+            </div>
+            <p className="text-xs text-[#666666] mb-4">
+              Registro de la actividad de la clienta. Útil para acreditar que el servicio se ha prestado y utilizado.
+            </p>
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-5">
+              {usage.map((u) => (
+                <div key={u.l} className="text-center px-2 py-3 rounded-xl border border-[#252525] bg-[#141414]">
+                  <div className="text-2xl font-extrabold leading-none text-white">{u.v}</div>
+                  <div className="text-[10px] text-[#A0A0A0] mt-1.5 leading-tight">{u.l}</div>
+                </div>
+              ))}
+            </div>
+
+            {milestones.length > 0 && (
+              <>
+                <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Hitos</p>
+                <div className="flex flex-col gap-1.5 mb-5">
+                  {milestones.map((m) => (
+                    <div key={m.label} className="flex items-start justify-between gap-3 text-sm border-b border-[#161616] pb-1.5">
+                      <span className="text-[#A0A0A0]">{m.label}</span>
+                      <span className="text-white text-xs shrink-0 text-right">{fmtFull(m.at as string)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Actividad reciente</p>
+            {activity.length === 0 ? (
+              <p className="text-sm text-[#666666]">
+                Sin actividad registrada todavía. El registro empieza a acumularse desde que se activó esta función:
+                los accesos y aperturas anteriores no constan aquí, pero sí los hitos de arriba.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
+                {activity.slice(0, 60).map((a, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3 text-sm border-b border-[#161616] pb-1.5">
+                    <span className="text-[#A0A0A0]">
+                      {ACTION_LABEL[a.action] ?? a.action}
+                      {a.detail ? <span className="text-[#666666]"> · {a.detail}</span> : ""}
+                    </span>
+                    <span className="text-white text-xs shrink-0 text-right">{fmtFull(a.created_at)}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
