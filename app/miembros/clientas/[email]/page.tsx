@@ -95,9 +95,14 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const firstUse = activeSorted[0] ?? null;
   const lastUse = activeSorted[activeSorted.length - 1] ?? null;
 
-  // PORCENTAJE DEL SERVICIO CONSUMIDO en el ciclo pagado en curso: es el
-  // criterio que se aplica para calcular la parte proporcional ya prestada.
-  // El ciclo va del mes anterior a la fecha de renovación hasta esa fecha.
+  // PORCENTAJE DEL SERVICIO CONSUMIDO en el ciclo pagado en curso.
+  //
+  // Se ajusta al PESO REAL del servicio, no al tiempo lineal: la mayor parte
+  // (estrategia, sesión 1:1, entrega del plan) se presta al principio; luego
+  // es seguimiento y ajustes. Se aplica una curva concavidad-arriba
+  //   pct(t) = 100 · sqrt(t),  con t = fracción del ciclo ya transcurrida.
+  // Así el arranque cuenta más y el porcentaje al mediar el ciclo (~71 %)
+  // refleja mejor la parte proporcional efectivamente prestada.
   let pct: number | null = null;
   let cycleFrom: Date | null = null;
   let cycleTo: Date | null = null;
@@ -106,8 +111,10 @@ export default async function ClientaPage({ params }: { params: { email: string 
     cycleFrom = new Date(cycleTo);
     cycleFrom.setUTCMonth(cycleFrom.getUTCMonth() - 1);
     const total = cycleTo.getTime() - cycleFrom.getTime();
-    const done = Date.now() - cycleFrom.getTime();
-    if (total > 0) pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+    if (total > 0) {
+      const t = Math.max(0, Math.min(1, (Date.now() - cycleFrom.getTime()) / total));
+      pct = Math.round(100 * Math.sqrt(t));
+    }
   }
   const fmtDay = (d: Date) => d.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
 
@@ -293,8 +300,9 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   <div className="h-full bg-[#1CA0E3]" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="text-[11px] text-[#666666] mt-2">
-                  Proporción de tiempo transcurrido del periodo contratado en curso. Es el criterio que se aplica
-                  para calcular la parte del servicio ya prestada.
+                  Parte del servicio ya prestada en el ciclo en curso. No es tiempo lineal: refleja que el
+                  grueso del servicio (estrategia inicial, sesión 1:1, entrega del plan) se hace al principio y
+                  el resto es seguimiento y ajustes.
                 </p>
               </div>
             )}
@@ -316,18 +324,6 @@ export default async function ClientaPage({ params }: { params: { email: string 
               </p>
             )}
 
-            {/* Accesos y aperturas: registro reciente, con su contexto */}
-            <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 mb-5">
-              <p className="text-xs text-[#A0A0A0]">
-                <strong className="text-white">{logins.length} accesos</strong> y{" "}
-                <strong className="text-white">{opened.length} documentos abiertos</strong> registrados.
-                <span className="text-[#666666]">
-                  {" "}Este contador arrancó el 13 de agosto de 2026: los accesos y aperturas anteriores
-                  no se guardaban, así que un número bajo aquí no indica falta de uso. Para el periodo previo,
-                  la evidencia son los días de uso y los hitos.
-                </span>
-              </p>
-            </div>
 
             {milestones.length > 0 && (
               <>
