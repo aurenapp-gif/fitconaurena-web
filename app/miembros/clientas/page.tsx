@@ -7,6 +7,7 @@ import AddClient from "@/components/AddClient";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
 import { sbSelect } from "@/lib/supabase";
+import { servicePct } from "@/lib/company";
 
 export const metadata: Metadata = { title: "Clientas", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -14,28 +15,7 @@ export const dynamic = "force-dynamic";
 type Prof = { email: string; display_name: string | null; renewal_date: string | null };
 type Row = { member_email: string };
 type CheckInRow = { member_email: string; created_at: string };
-
-/** Porcentaje del servicio consumido en el ciclo pagado.
- *
- * NO es tiempo transcurrido a secas: el servicio se presta principalmente al
- * inicio (creación de la estrategia y sesiones 1:1) y luego pasa a seguimiento
- * y ajustes. La parte proporcional a estos efectos debe reflejar el VALOR
- * prestado, no los días pasados: por eso se aplica una curva que asigna un
- * ancla ~60 % al mediar el ciclo y llega al 100 % al final.
- *
- * Fórmula: pct(t) = 100 · t^0.5  (con t = fracción de días transcurridos).
- * Puntos clave: día 1 → 18 %, mitad → 71 %, últimos días → ~100 %.
- */
-function cyclePct(renewal: string | null | undefined): number | null {
-  if (!renewal) return null;
-  const to = new Date(renewal + "T00:00:00Z");
-  const from = new Date(to);
-  from.setUTCMonth(from.getUTCMonth() - 1);
-  const total = to.getTime() - from.getTime();
-  if (total <= 0) return null;
-  const t = Math.max(0, Math.min(1, (Date.now() - from.getTime()) / total));
-  return Math.round(100 * Math.sqrt(t));
-}
+type PlanRow = { member_email: string; created_at: string };
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
@@ -56,8 +36,8 @@ export default async function ClientasPage() {
       .catch(() => [] as CheckInRow[]),
     sbSelect<Row & { day: string }>("habit_logs", "select=member_email,day")
       .catch(() => [] as (Row & { day: string })[]),
-    sbSelect<Row>("plans", "select=member_email")
-      .catch(() => [] as Row[]),
+    sbSelect<PlanRow>("plans", "select=member_email,created_at")
+      .catch(() => [] as PlanRow[]),
     sbSelect<Row>("technique_reviews", "select=member_email")
       .catch(() => [] as Row[]),
   ]);
@@ -83,6 +63,11 @@ export default async function ClientasPage() {
   };
   const plansByEmail = countBy(plans);
   const techByEmail = countBy(techniques);
+  const planDatesByEmail = new Map<string, string[]>();
+  for (const p of plans) {
+    const arr = planDatesByEmail.get(p.member_email) ?? [];
+    arr.push(p.created_at); planDatesByEmail.set(p.member_email, arr);
+  }
 
   const rows = members.map((m) => {
     const p = profByEmail.get(m.email);
@@ -94,7 +79,7 @@ export default async function ClientasPage() {
       email: m.email,
       name: p?.display_name || m.name,
       renewal: renewalInfo(p?.renewal_date ?? null),
-      pct: cyclePct(p?.renewal_date),
+      pct: servicePct(p?.renewal_date, planDatesByEmail.get(m.email) ?? [])?.pct ?? null,
       daysUsed: (daysByEmail.get(m.email) ?? new Set()).size,
       checkins: cks.length,
       plans: plansByEmail.get(m.email) ?? 0,

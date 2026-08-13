@@ -30,16 +30,32 @@ export default function TerminosPage() {
       <p>El nombre, la marca, la imagen, la voz y los contenidos de la coach están protegidos: no pueden utilizarse con fines comerciales o promocionales, ni incorporarse a publicaciones propias, sin su autorización previa y por escrito.</p>
       <p>El incumplimiento de estos puntos puede conllevar la baja inmediata del programa, sin perjuicio de las acciones legales que correspondan.</p>
 
-      <h2 className="text-white font-bold text-base mt-4">6. Inicio inmediato y desistimiento</h2>
+      <h2 className="text-white font-bold text-base mt-4">6. Composición del servicio y valor de cada parte</h2>
+      <p>El servicio se compone de dos partes con pesos distintos:</p>
+      <ul className="list-disc pl-5 flex flex-col gap-1">
+        <li><strong className="text-white">Estrategia, llamada estratégica inicial y planificaciones (70 %).</strong> Constituye la fase más exigente del proceso: análisis del cuestionario, entrevista personalizada y elaboración y entrega de la planificación de nutrición y/o entrenamiento.</li>
+        <li><strong className="text-white">Seguimiento y adaptaciones (30 %).</strong> Comprende el acompañamiento durante el resto del ciclo contratado: revisión de check-ins, ajustes de la planificación y resolución de dudas.</li>
+      </ul>
+      <p>Estos porcentajes reflejan el valor efectivo entregado en cada fase y se emplean como criterio para calcular la parte proporcional prestada en caso de baja anticipada.</p>
+
+      <h2 className="text-white font-bold text-base mt-4">7. Inicio inmediato y desistimiento</h2>
       <p>Al aceptar estas condiciones, solicitas expresamente que la prestación del servicio comience de forma inmediata, sin esperar a que transcurra el plazo de desistimiento de 14 días naturales.</p>
       <p>Reconoces que la prestación principal del servicio consiste en el diseño y la entrega de la planificación personalizada (nutrición y/o entrenamiento) a partir de la información aportada en el cuestionario inicial, y que la coach comienza a preparar dicha planificación desde el mismo momento de tu aceptación.</p>
-      <p>En consecuencia, entiendes y aceptas que, una vez recibida la planificación personalizada, el servicio se considera ejecutado en su parte principal y perderás tu derecho de desistimiento respecto de esa parte. El resto del ciclo (seguimiento y ajustes) se considera consumido de forma progresiva a lo largo del periodo contratado.</p>
+      <p>En consecuencia, entiendes y aceptas que, una vez recibida la planificación personalizada, el servicio se considera ejecutado en su parte principal —equivalente al 70 % descrito en el apartado 6— y perderás tu derecho de desistimiento respecto de esa parte. El 30 % restante (seguimiento y adaptaciones) se considera consumido de forma progresiva a lo largo del periodo contratado.</p>
 
-      <h2 className="text-white font-bold text-base mt-4">7. Precio, ciclo y renovación</h2>
-      <p>El servicio se contrata por ciclos mensuales. La renovación se acuerda con la coach con antelación al vencimiento del ciclo en curso.</p>
+      <h2 className="text-white font-bold text-base mt-4">8. Duración, precio y pago</h2>
+      <p>El programa tiene una <strong className="text-white">duración de doce (12) meses</strong>. La clienta puede optar entre abonar el precio en un <strong className="text-white">pago único</strong> o en <strong className="text-white">pagos fraccionados</strong>, con periodicidad mensual, ya sea directamente con la empresa o a través de una entidad financiadora externa (por ejemplo, Sequra, Klarna u otra plataforma equivalente).</p>
+      <p>En caso de fraccionamiento, la clienta se obliga a abonar cada una de las cuotas en su fecha de vencimiento, con independencia de que el pago se gestione directamente con la empresa o a través de la entidad financiadora que fraccionó el importe. La obligación de pago del importe total del programa subsiste durante los 12 meses contratados.</p>
+      <p>El impago de cualquier cuota, ya sea a la empresa o a la entidad financiadora, faculta a la empresa para <strong className="text-white">exigir el pago íntegro del importe pendiente</strong> y, en su caso, iniciar las <strong className="text-white">acciones legales de reclamación</strong> que correspondan, así como repercutir los gastos de recobro, intereses de demora y costes judiciales derivados.</p>
 
-      <h2 className="text-white font-bold text-base mt-4">8. Legislación aplicable</h2>
-      <p>Estas condiciones se rigen por la legislación portuguesa, sin perjuicio de los derechos irrenunciables reconocidos a la persona consumidora por su normativa nacional de residencia.</p>
+      <h2 className="text-white font-bold text-base mt-4">9. Reserva de plaza en cupo limitado</h2>
+      <p>El programa se ofrece con un <strong className="text-white">número limitado de plazas por convocatoria</strong>, con el fin de garantizar la calidad del seguimiento personalizado. Al aceptar comenzar y confirmar tu plaza, la empresa la reserva a tu nombre y <strong className="text-white">deja de ofrecerla a otras candidatas en lista de espera</strong>, que son rechazadas o pospuestas.</p>
+      <p>Reconoces y aceptas expresamente que la aceptación de una plaza limitada genera para la empresa un <strong className="text-white">coste de oportunidad y unos daños ciertos</strong> (rechazo de otras candidatas, imposibilidad de comercializar esa plaza en la misma convocatoria y afectación al planning de trabajo), y que dichos daños son mayores cuanto más tarde se produzca la renuncia dentro del ciclo.</p>
+      <p>En consecuencia, la renuncia unilateral a continuar con el programa una vez aceptada la plaza no libera a la clienta del pago del programa contratado, sin perjuicio del régimen de desistimiento descrito en el apartado 7 y de la parte del servicio efectivamente prestada calculada conforme al apartado 6. La empresa podrá, además, <strong className="text-white">reclamar los daños y perjuicios</strong> ocasionados por la reserva de plaza y su posterior cancelación.</p>
+
+      <h2 className="text-white font-bold text-base mt-4">10. Legislación aplicable y jurisdicción</h2>
+      <p>Estas condiciones se rigen por la legislación portuguesa.</p>
+      <p>Para la resolución de cualquier controversia derivada del presente contrato, las partes se someten expresamente a los <strong className="text-white">Juzgados y Tribunales de Lisboa</strong>, con renuncia a cualquier otro fuero que pudiera corresponderles, sin perjuicio de los derechos irrenunciables que la normativa de consumo del país de residencia de la persona consumidora le reconozca.</p>
     </LegalLayout>
   );
 }

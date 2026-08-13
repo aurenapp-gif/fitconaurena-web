@@ -8,4 +8,4 @@
  *
  * Sube TERMS_VERSION cada vez que cambies el texto de alguna página legal.
  */
-export const TERMS_VERSION = "2026-08-4";
+export const TERMS_VERSION = "2026-08-5";
