@@ -36,19 +36,30 @@ export default function FileViewer({ url, label, buttonText = "Ver plan" }: { ur
 
   const downloadUrl = `${url}${url.includes("?") ? "&" : "?"}download`;
 
+  /** Deja constancia de que se ha abierto o descargado el documento. No bloquea
+   * la acción: si el registro falla, el archivo se abre igual. */
+  function track(action: "plan_abierto" | "plan_descargado") {
+    fetch("/api/miembros/actividad", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, detail: label }),
+      keepalive: true, // sobrevive a que la pestaña cambie de página
+    }).catch(() => {});
+  }
+
   return (
     <>
       <div className="flex items-center gap-3 flex-wrap mt-2">
         {canEmbed ? (
-          <button type="button" onClick={() => setOpen(true)} className="btn-brand text-sm px-5 py-2.5 inline-flex">
+          <button type="button" onClick={() => { track("plan_abierto"); setOpen(true); }} className="btn-brand text-sm px-5 py-2.5 inline-flex">
             {buttonText}
           </button>
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 inline-flex">
+          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => track("plan_abierto")} className="btn-brand text-sm px-5 py-2.5 inline-flex">
             {buttonText}
           </a>
         )}
-        <a href={downloadUrl} className="text-[#1CA0E3] text-sm font-semibold">Descargar</a>
+        <a href={downloadUrl} onClick={() => track("plan_descargado")} className="text-[#1CA0E3] text-sm font-semibold">Descargar</a>
       </div>
 
       {open && (

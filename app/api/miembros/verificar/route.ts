@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMagicToken, createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, isAdmin } from "@/lib/members";
+import { logActivity } from "@/lib/activity";
 import { plusOneMonthISO } from "@/lib/profile";
 import { sbSelect, sbUpsert } from "@/lib/supabase";
 import { siteOrigin } from "@/lib/routeUtils";
@@ -35,7 +36,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Clientas (no admin): asegurar fecha de renovación desde su primera entrada.
-  if (!isAdmin(email)) await ensureRenewal(email);
+  if (!isAdmin(email)) {
+    await ensureRenewal(email);
+    // Deja constancia del acceso (evidencia de uso del servicio).
+    await logActivity(email, "acceso");
+  }
 
   const res = NextResponse.redirect(`${origin}/miembros`);
   res.cookies.set(SESSION_COOKIE, createSessionToken(email), {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, isAdmin } from "@/lib/members";
+import { logActivity } from "@/lib/activity";
 import { plusOneMonthISO } from "@/lib/profile";
 import { sbSelect, sbDelete, sbUpsert, sbUpdate } from "@/lib/supabase";
 import { rateLimit } from "@/lib/ratelimit";
@@ -62,6 +63,9 @@ export async function POST(req: NextRequest) {
     console.error("[api/miembros/codigo]", err);
     return NextResponse.json({ error: "No se pudo verificar el código." }, { status: 500 });
   }
+
+  // Deja constancia del acceso (evidencia de uso del servicio).
+  if (!isAdmin(email)) await logActivity(email, "acceso");
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, createSessionToken(email), {
