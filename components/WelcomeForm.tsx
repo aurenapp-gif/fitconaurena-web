@@ -2,28 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { resizeImage } from "@/lib/image";
-import { PRIVACY_TEXT, TERMS_TEXT, IMAGE_TEXT, WITHDRAWAL_TEXT } from "@/lib/terms";
 
-function Bloque({ titulo, puntos }: { titulo: string; puntos: string[] }) {
-  return (
-    <div className="mb-4 last:mb-0">
-      <p className="text-xs font-bold uppercase tracking-wide text-[#1CA0E3] mb-1.5">{titulo}</p>
-      <ul className="flex flex-col gap-1.5">
-        {puntos.map((p, i) => (
-          <li key={i} className="text-xs text-[#A0A0A0] leading-relaxed">• {p}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
+/** Pantalla inicial obligatoria: nombre, foto y aceptación con casilla no
+ * premarcada. Los textos legales completos están en /legal/*: aquí solo se
+ * resumen los puntos clave y se enlaza a las páginas, como en cualquier alta. */
 export default function WelcomeForm({ initialName }: { initialName: string }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [accepted, setAccepted] = useState(false); // nunca marcada de inicio
+  const [accepted, setAccepted] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [msg, setMsg] = useState("");
 
@@ -90,20 +80,16 @@ export default function WelcomeForm({ initialName }: { initialName: string }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4 max-h-64 overflow-y-auto">
-        <Bloque titulo="Privacidad y tus datos" puntos={PRIVACY_TEXT} />
-        <Bloque titulo="Condiciones del servicio" puntos={TERMS_TEXT} />
-        <Bloque titulo="Confidencialidad e imagen" puntos={IMAGE_TEXT} />
-        <Bloque titulo="Inicio inmediato y desistimiento" puntos={WITHDRAWAL_TEXT} />
-      </div>
-
       <label className="flex items-start gap-3 cursor-pointer">
         <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)}
           className="accent-[#1CA0E3] w-5 h-5 mt-0.5 shrink-0" />
         <span className="text-sm text-[#A0A0A0]">
-          He leído y acepto la <strong className="text-white">política de privacidad</strong> y los{" "}
-          <strong className="text-white">términos y condiciones</strong>. Solicito que el servicio empiece
-          ya y entiendo que perderé el derecho de desistimiento cuando se haya ejecutado por completo.
+          He leído y acepto la{" "}
+          <Link href="/legal/privacidad" target="_blank" className="text-[#1CA0E3] underline">política de privacidad</Link>,
+          la{" "}
+          <Link href="/legal/cookies" target="_blank" className="text-[#1CA0E3] underline">política de cookies</Link>
+          {" "}y los{" "}
+          <Link href="/legal/terminos" target="_blank" className="text-[#1CA0E3] underline">términos y condiciones</Link>.
         </span>
       </label>
 
