@@ -13,6 +13,7 @@ import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
+import { servicePct } from "@/lib/company";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -95,27 +96,12 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const firstUse = activeSorted[0] ?? null;
   const lastUse = activeSorted[activeSorted.length - 1] ?? null;
 
-  // PORCENTAJE DEL SERVICIO CONSUMIDO en el ciclo pagado en curso.
-  //
-  // Se ajusta al PESO REAL del servicio, no al tiempo lineal: la mayor parte
-  // (estrategia, sesión 1:1, entrega del plan) se presta al principio; luego
-  // es seguimiento y ajustes. Se aplica una curva concavidad-arriba
-  //   pct(t) = 100 · sqrt(t),  con t = fracción del ciclo ya transcurrida.
-  // Así el arranque cuenta más y el porcentaje al mediar el ciclo (~71 %)
-  // refleja mejor la parte proporcional efectivamente prestada.
-  let pct: number | null = null;
-  let cycleFrom: Date | null = null;
-  let cycleTo: Date | null = null;
-  if (profile?.renewal_date) {
-    cycleTo = new Date(profile.renewal_date + "T00:00:00Z");
-    cycleFrom = new Date(cycleTo);
-    cycleFrom.setUTCMonth(cycleFrom.getUTCMonth() - 1);
-    const total = cycleTo.getTime() - cycleFrom.getTime();
-    if (total > 0) {
-      const t = Math.max(0, Math.min(1, (Date.now() - cycleFrom.getTime()) / total));
-      pct = Math.round(100 * Math.sqrt(t));
-    }
-  }
+  // PORCENTAJE DEL SERVICIO CONSUMIDO — fiel al apartado 6 de los Términos:
+  // estrategia y planificación son el 70 %, seguimiento el 30 %.
+  const svc = servicePct(profile?.renewal_date, plans.map((p) => p.created_at));
+  const pct = svc?.pct ?? null;
+  const cycleFrom = svc?.from ?? null;
+  const cycleTo = svc?.to ?? null;
   const fmtDay = (d: Date) => d.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
 
   // Hitos verificables, en orden cronológico: es lo que se aporta en una disputa.
@@ -172,6 +158,16 @@ export default async function ClientaPage({ params }: { params: { email: string 
               <span className="section-tag">Clienta</span>
               <h1 className="section-title text-2xl">{profile?.display_name || member}</h1>
               <p className="text-xs text-[#666666]">{member}</p>
+              {profile?.terms_accepted_at ? (
+                <p className="text-xs text-[#1CA0E3] mt-1">
+                  ✓ Aceptó las condiciones el {fmtFull(profile.terms_accepted_at)}
+                  {profile.terms_version ? ` · versión ${profile.terms_version}` : ""}
+                </p>
+              ) : (
+                <p className="text-xs text-[#666666] mt-1">
+                  Sin aceptación registrada (clienta anterior a la pantalla de bienvenida).
+                </p>
+              )}
             </div>
             <Link href="/miembros/clientas" className="btn-outline text-sm px-5 py-2.5">← Clientas</Link>
           </div>
@@ -300,9 +296,9 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   <div className="h-full bg-[#1CA0E3]" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="text-[11px] text-[#666666] mt-2">
-                  Parte del servicio ya prestada en el ciclo en curso. No es tiempo lineal: refleja que el
-                  grueso del servicio (estrategia inicial, sesión 1:1, entrega del plan) se hace al principio y
-                  el resto es seguimiento y ajustes.
+                  Parte del servicio ya prestada en el ciclo en curso, según el reparto contractual
+                  <strong className="text-white"> 70 % estrategia y planificación / 30 % seguimiento y adaptaciones</strong>.
+                  Al entregar el plan del ciclo, el contador salta al 70 %; el 30 % restante se prorratea el resto del ciclo.
                 </p>
               </div>
             )}
