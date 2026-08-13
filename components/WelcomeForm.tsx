@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { resizeImage } from "@/lib/image";
-import { PRIVACY_TEXT, TERMS_TEXT, WITHDRAWAL_TEXT } from "@/lib/terms";
+import { PRIVACY_TEXT, TERMS_TEXT, IMAGE_TEXT, WITHDRAWAL_TEXT } from "@/lib/terms";
 
 function Bloque({ titulo, puntos }: { titulo: string; puntos: string[] }) {
   return (
@@ -93,6 +93,7 @@ export default function WelcomeForm({ initialName }: { initialName: string }) {
       <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4 max-h-64 overflow-y-auto">
         <Bloque titulo="Privacidad y tus datos" puntos={PRIVACY_TEXT} />
         <Bloque titulo="Condiciones del servicio" puntos={TERMS_TEXT} />
+        <Bloque titulo="Confidencialidad e imagen" puntos={IMAGE_TEXT} />
         <Bloque titulo="Inicio inmediato y desistimiento" puntos={WITHDRAWAL_TEXT} />
       </div>
 
