@@ -14,8 +14,33 @@ export async function requireMember(): Promise<string> {
   if (!email) redirect("/miembros/acceso");
   // El redirect debe ir FUERA del try: redirect() funciona lanzando una
   // excepción (NEXT_REDIRECT) que un catch tragaría, anulando el corte.
-  if (await isAccessRevoked(email)) redirect("/miembros/acceso?revoked=1");
+  const state = await memberState(email);
+  if (state.revoked) redirect("/miembros/acceso?revoked=1");
+  if (state.needsOnboarding) redirect("/miembros/bienvenida");
   return email;
+}
+
+/**
+ * Estado de la clienta en una sola consulta: si sigue activa y si ya pasó por
+ * la pantalla de bienvenida (nombre, foto y aceptación de condiciones).
+ *
+ * Degradación segura: si la consulta falla (Supabase caído) no bloqueamos, para
+ * no dejar fuera a nadie por una incidencia puntual.
+ */
+export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean }> {
+  if (isAdmin(email)) return { revoked: false, needsOnboarding: false };
+  try {
+    const rows = await sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
+      "profiles",
+      `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
+    );
+    return {
+      revoked: rows[0]?.access_revoked === true,
+      needsOnboarding: !rows[0]?.onboarding_completed_at,
+    };
+  } catch {
+    return { revoked: false, needsOnboarding: false };
+  }
 }
 
 /**
