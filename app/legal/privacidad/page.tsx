@@ -12,7 +12,7 @@ export default function PrivacidadPage() {
 
       <h2 className="text-white font-bold text-base mt-4">2. Datos que tratamos</h2>
       <ul className="list-disc pl-5 flex flex-col gap-1">
-        <li>Identificación y contacto: nombre, email, foto de perfil.</li>
+        <li>Identificación y contacto: nombre, apellidos, email, foto de perfil, dirección de residencia y código postal (necesarios para el contrato y para poder notificarte en caso de gestiones administrativas o legales).</li>
         <li>Cuestionario inicial: edad, altura, objetivos, hábitos y estado de salud declarado.</li>
         <li>Seguimiento: check-ins (peso, medidas, fotos de progreso, notas) y hábitos diarios.</li>
         <li>Documentos: planes de nutrición y entrenamiento, vídeos de técnica y contrato firmado.</li>

@@ -23,6 +23,7 @@ type Prof = {
   questionnaire: Questionnaire | null; renewal_date: string | null;
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
+  full_name?: string | null; address?: string | null; postal_code?: string | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
@@ -159,10 +160,19 @@ export default async function ClientaPage({ params }: { params: { email: string 
               <h1 className="section-title text-2xl">{profile?.display_name || member}</h1>
               <p className="text-xs text-[#666666]">{member}</p>
               {profile?.terms_accepted_at ? (
-                <p className="text-xs text-[#1CA0E3] mt-1">
-                  ✓ Aceptó las condiciones el {fmtFull(profile.terms_accepted_at)}
-                  {profile.terms_version ? ` · versión ${profile.terms_version}` : ""}
-                </p>
+                <>
+                  <p className="text-xs text-[#1CA0E3] mt-1">
+                    ✓ Aceptó las condiciones el {fmtFull(profile.terms_accepted_at)}
+                    {profile.terms_version ? ` · versión ${profile.terms_version}` : ""}
+                  </p>
+                  {(profile.full_name || profile.address || profile.postal_code) && (
+                    <p className="text-xs text-[#A0A0A0] mt-1">
+                      {profile.full_name}
+                      {profile.address ? ` · ${profile.address}` : ""}
+                      {profile.postal_code ? ` · ${profile.postal_code}` : ""}
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-xs text-[#666666] mt-1">
                   Sin aceptación registrada (clienta anterior a la pantalla de bienvenida).
