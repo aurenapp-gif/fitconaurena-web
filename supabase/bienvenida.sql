@@ -10,6 +10,12 @@ alter table public.profiles add column if not exists onboarding_completed_at tim
 alter table public.profiles add column if not exists terms_accepted_at       timestamptz;
 alter table public.profiles add column if not exists terms_version           text;
 
+-- Datos identificativos y postales (necesarios para el contrato y para poder
+-- notificar en caso de acciones legales por deuda).
+alter table public.profiles add column if not exists full_name   text;
+alter table public.profiles add column if not exists address     text;
+alter table public.profiles add column if not exists postal_code text;
+
 -- Las clientas que YA estaban dentro quedan exentas: la pantalla solo aparece a
 -- quienes se den de alta a partir de ahora.
 --

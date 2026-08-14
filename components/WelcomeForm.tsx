@@ -5,12 +5,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { resizeImage } from "@/lib/image";
 
-/** Pantalla inicial obligatoria: nombre, foto y aceptación con casilla no
- * premarcada. Los textos legales completos están en /legal/*: aquí solo se
- * resumen los puntos clave y se enlaza a las páginas, como en cualquier alta. */
+/** Pantalla inicial obligatoria: nombre y apellidos, dirección postal, foto y
+ * aceptación con casilla no premarcada. La dirección se pide porque el programa
+ * es contractual (12 meses) y las condiciones prevén acciones legales por
+ * deuda: hace falta poder identificar a la clienta y notificarle. */
 export default function WelcomeForm({ initialName }: { initialName: string }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
+  const [fullName, setFullName] = useState("");
+  const [address, setAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -32,7 +36,10 @@ export default function WelcomeForm({ initialName }: { initialName: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (status === "saving") return;
-    if (!name.trim()) { setStatus("error"); setMsg("Escribe tu nombre."); return; }
+    if (!name.trim()) { setStatus("error"); setMsg("Escribe cómo quieres que te llame."); return; }
+    if (fullName.trim().split(/\s+/).length < 2) { setStatus("error"); setMsg("Escribe tu nombre y apellidos completos."); return; }
+    if (address.trim().length < 5) { setStatus("error"); setMsg("Escribe tu dirección de residencia."); return; }
+    if (!postalCode.trim()) { setStatus("error"); setMsg("Escribe tu código postal."); return; }
     if (!photo) { setStatus("error"); setMsg("Sube tu foto de perfil."); return; }
     if (!accepted) { setStatus("error"); setMsg("Marca la casilla para aceptar las condiciones."); return; }
 
@@ -40,6 +47,9 @@ export default function WelcomeForm({ initialName }: { initialName: string }) {
     try {
       const fd = new FormData();
       fd.append("name", name.trim());
+      fd.append("full_name", fullName.trim());
+      fd.append("address", address.trim());
+      fd.append("postal_code", postalCode.trim());
       fd.append("photo", photo);
       fd.append("accepted", "true");
       const res = await fetch("/api/miembros/bienvenida", { method: "POST", body: fd });
@@ -58,10 +68,29 @@ export default function WelcomeForm({ initialName }: { initialName: string }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-bold text-white">Tu nombre</span>
+        <span className="text-sm font-bold text-white">¿Cómo quieres que te llame?</span>
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
-          placeholder="Cómo quieres que te llame" className={cls} />
+          placeholder="Tu nombre de pila" className={cls} />
       </label>
+
+      <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4 flex flex-col gap-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#1CA0E3]">Datos para el contrato</p>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-bold text-white">Nombre y apellidos completos</span>
+          <input value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120}
+            autoComplete="name" placeholder="Como figura en tu DNI/pasaporte" className={cls} />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-bold text-white">Dirección de residencia</span>
+          <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200}
+            autoComplete="street-address" placeholder="Calle, número, piso, ciudad" className={cls} />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-bold text-white">Código postal</span>
+          <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} maxLength={12}
+            autoComplete="postal-code" placeholder="Ej. 28001 · 1500-328" inputMode="text" className={cls + " sm:w-40"} />
+        </label>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-bold text-white">Tu foto de perfil</span>
