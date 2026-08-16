@@ -6,13 +6,12 @@ import PushToggle from "@/components/PushToggle";
 import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
 import HabitsTracker from "@/components/HabitsTracker";
-import ContractSign from "@/components/ContractSign";
 import FileViewer from "@/components/FileViewer";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import type { Questionnaire } from "@/lib/profile";
-import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
+import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -84,7 +83,7 @@ export default async function PerfilPage() {
   const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
   // 1ª tanda: todo lo independiente en paralelo (una sola ida/vuelta, no en cascada).
-  const [profile, plans, habitRows, contractTpl] = await Promise.all([
+  const [profile, plans, habitRows, signatures] = await Promise.all([
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
@@ -97,31 +96,36 @@ export default async function PerfilPage() {
           `select=day,water,steps,sleep&member_email=eq.${encodeURIComponent(email)}&day=gte.${since}&order=day.asc`
         ).catch((e) => { console.error("[perfil] habits", e); return [] as HabitRow[]; }),
     admin
-      ? Promise.resolve(null)
-      : sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
-          .then((r) => r[0] ?? null)
-          .catch((e) => { console.error("[perfil] contract template", e); return null; }),
+      ? Promise.resolve([] as ContractSignature[])
+      : sbSelect<ContractSignature>(
+          "contract_signatures",
+          `select=*&member_email=eq.${encodeURIComponent(email)}&order=signed_at.desc`
+        ).catch((e) => { console.error("[perfil] contract signatures", e); return [] as ContractSignature[]; }),
   ]);
 
-  // Todos los planes de cada tipo (no solo el último): la coach puede subir
-  // varios (fases, revisiones) y la clienta debe poder abrirlos todos.
+  // Plantillas asociadas a las firmas (para poder mostrar título + kind).
+  const sigTplIds = Array.from(new Set(signatures.map((s) => s.template_id).filter((x): x is string => !!x)));
+  const sigTemplates = sigTplIds.length
+    ? await sbSelect<ContractTemplate>(
+        "contract_templates",
+        `select=id,title,kind&id=in.(${sigTplIds.join(",")})`
+      ).catch(() => [] as ContractTemplate[])
+    : [];
+  const sigTplById = new Map(sigTemplates.map((t) => [t.id, t]));
 
-  // La firma depende de la versión de la plantilla, así que va después.
-  let contractSig: ContractSignature | null = null;
-  if (contractTpl) {
-    contractSig = await sbSelect<ContractSignature>(
-      "contract_signatures",
-      `select=*&member_email=eq.${encodeURIComponent(email)}&version=eq.${contractTpl.version}`
-    ).then((r) => r[0] ?? null).catch((e) => { console.error("[perfil] contract signature", e); return null; });
-  }
-
-  // 2ª tanda: todas las URLs firmadas en paralelo (una por plan).
-  const [planUrls, photoUrl, contractTplUrl, signedPdfUrl] = await Promise.all([
+  // 2ª tanda: URLs firmadas de planes, foto y PDFs de contratos firmados.
+  const [planUrls, photoUrl, signedPdfUrls] = await Promise.all([
     Promise.all(plans.map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
-    contractTpl ? sbSignedUrl(CONTRACT_BUCKET, contractTpl.file_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
-    contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    Promise.all(signatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
+  const contratosFirmados = signatures.map((s, i) => ({
+    id: s.id,
+    signedAt: s.signed_at,
+    title: (s.template_id && sigTplById.get(s.template_id)?.title) || "Contrato",
+    kind: (s.template_id && sigTplById.get(s.template_id)?.kind) || "contrato",
+    url: signedPdfUrls[i],
+  }));
 
   const plansWithUrl = plans.map((p, i) => ({ ...p, url: planUrls[i] }));
   const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
@@ -191,14 +195,28 @@ export default async function PerfilPage() {
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
                 { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} /> },
                 { id: "contrato", icon: "📄", label: "Contrato", node: (
-                  <ContractSign
-                    hasTemplate={!!contractTpl}
-                    templateUrl={contractTplUrl}
-                    signed={!!contractSig}
-                    signedAt={contractSig?.signed_at}
-                    signedPdfUrl={signedPdfUrl}
-                    defaultName={profile?.display_name ?? ""}
-                  />
+                  <div className="card-dark p-6 !transform-none">
+                    <h2 className="font-bold text-white mb-3">Mis contratos firmados</h2>
+                    {contratosFirmados.length === 0 ? (
+                      <p className="text-sm text-[#666666]">Cuando firmes un contrato, aparecerá aquí para que puedas descargarlo.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {contratosFirmados.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-white truncate">{c.title}</p>
+                              <p className="text-xs text-[#666666]">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
+                            </div>
+                            {c.url ? (
+                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
+                            ) : (
+                              <span className="text-[#666666] text-xs shrink-0">No disponible</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) },
                 { id: "ajustes", icon: "⚙️", label: "Ajustes", node: <div className="flex flex-col gap-6"><PushToggle /><PwaInstall /></div> },
               ]}

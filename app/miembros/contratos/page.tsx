@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
-import { CONTRACT_BUCKET, type ContractSignature } from "@/lib/contract";
+import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Contratos firmados", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -17,20 +17,25 @@ export default async function ContratosPage() {
   if (!me) redirect("/miembros/acceso");
   if (!isAdmin(me)) redirect("/miembros");
 
-  // Firmas + nombres de clientas, en paralelo.
-  const [sigs, profiles] = await Promise.all([
+  // Firmas + nombres de clientas + plantillas, en paralelo.
+  const [sigs, profiles, templates] = await Promise.all([
     sbSelect<ContractSignature>("contract_signatures", "select=*&order=signed_at.desc")
       .catch((e) => { console.error("[contratos] sigs", e); return [] as ContractSignature[]; }),
     sbSelect<Prof>("profiles", "select=email,display_name")
       .catch((e) => { console.error("[contratos] profiles", e); return [] as Prof[]; }),
+    sbSelect<ContractTemplate>("contract_templates", "select=id,title,kind")
+      .catch(() => [] as ContractTemplate[]),
   ]);
   const nameByEmail = new Map(profiles.map((p) => [p.email, p.display_name]));
+  const tplById = new Map(templates.map((t) => [t.id, t]));
 
-  // URL firmada de cada PDF, en paralelo.
+  // URL firmada de cada PDF, en paralelo. Añadimos título y tipo (contrato / anexo).
   const withUrl = await Promise.all(
     sigs.map(async (s) => ({
       ...s,
       url: s.signed_pdf_path ? await sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : undefined,
+      docTitle: (s.template_id && tplById.get(s.template_id)?.title) || "Contrato",
+      docKind: (s.template_id && tplById.get(s.template_id)?.kind) || "contrato",
     }))
   );
 
@@ -78,10 +83,17 @@ export default async function ContratosPage() {
                   <div className="flex flex-col gap-2">
                     {items.map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
-                        <span className="text-sm text-[#A0A0A0]">
-                          Firmado el {new Date(s.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                          <span className="text-[#666666] text-xs"> · v{s.version}</span>
-                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.docKind === "anexo_salud" ? "bg-[#FFB800] text-black" : "bg-[#1CA0E3] text-white"}`}>
+                              {s.docKind === "anexo_salud" ? "Anexo salud" : "Contrato"}
+                            </span>
+                            <span className="text-sm text-white truncate">{s.docTitle}</span>
+                          </div>
+                          <span className="text-xs text-[#A0A0A0]">
+                            Firmado el {new Date(s.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                          </span>
+                        </div>
                         {s.url ? (
                           <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
                         ) : (

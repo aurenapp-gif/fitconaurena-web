@@ -8,11 +8,12 @@ import PlanDelete from "@/components/PlanDelete";
 import RenewalSetter from "@/components/RenewalSetter";
 import RemoveClient from "@/components/RemoveClient";
 import WeightChart from "@/components/WeightChart";
+import ContractAssign from "@/components/ContractAssign";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
-import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature } from "@/lib/contract";
+import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
@@ -54,19 +55,25 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const member = normalizeEmail(decodeURIComponent(params.email));
   if (!isValidEmail(member)) redirect("/miembros/clientas");
 
-  // Todas las lecturas independientes en paralelo (perfil, planes, check-ins y contrato).
-  const [profile, plans, checkins, contractTpl, contractSig] = await Promise.all([
+  // Todas las lecturas independientes en paralelo (perfil, planes, check-ins,
+  // firmas y estado de asignación de contratos/anexo).
+  const [profile, plans, checkins, allTemplates, mySignatures, assignments] = await Promise.all([
     sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`)
       .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
     sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`)
       .catch((e) => { console.error(e); return [] as Plan[]; }),
     sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
       .catch((e) => { console.error(e); return [] as CheckIn[]; }),
-    sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1")
-      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
-    sbSelect<ContractSignature>("contract_signatures", `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc&limit=1`)
-      .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    sbSelect<ContractTemplate>("contract_templates", "select=*&order=created_at.desc")
+      .catch(() => [] as ContractTemplate[]),
+    sbSelect<ContractSignature>("contract_signatures", `select=*&member_email=eq.${encodeURIComponent(member)}&order=signed_at.desc`)
+      .catch(() => [] as ContractSignature[]),
+    sbSelect<ContractAssignment>("contract_assignments", `select=*&member_email=eq.${encodeURIComponent(member)}&order=assigned_at.desc`)
+      .catch(() => [] as ContractAssignment[]),
   ]);
+  // La firma más reciente marca "firmó el contrato" en los hitos.
+  const contractSig: ContractSignature | null = mySignatures[0] ?? null;
+  const tplById = new Map(allTemplates.map((t) => [t.id, t]));
 
   // Evidencia de uso del servicio. Cada consulta cae por su cuenta si su tabla
   // aún no existe, para que la ficha se siga viendo entera.
@@ -142,12 +149,20 @@ export default async function ClientaPage({ params }: { params: { email: string 
   // Positivo = kg bajados.
   const lost = firstWeight != null && lastWeight != null ? Math.round((firstWeight - lastWeight) * 10) / 10 : null;
 
-  // URLs firmadas en paralelo: planes + PDF del contrato.
-  const [plansWithUrl, signedPdfUrl] = await Promise.all([
+  // URLs firmadas en paralelo: planes + todos los PDFs de contratos/anexos firmados.
+  const [plansWithUrl, signedPdfUrls] = await Promise.all([
     Promise.all(plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
-    contractSig?.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, contractSig.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
+    Promise.all(mySignatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
-  const contractOutdated = !!contractSig && !!contractTpl && contractSig.version < contractTpl.version;
+  const contratosFirmadosLista = mySignatures.map((s, i) => ({
+    id: s.id,
+    signedAt: s.signed_at,
+    signerName: s.signer_name,
+    title: (s.template_id && tplById.get(s.template_id)?.title) || "Contrato",
+    kind: (s.template_id && tplById.get(s.template_id)?.kind) || "contrato",
+    url: signedPdfUrls[i],
+  }));
+  const pendientes = assignments.filter((a) => a.status === "pendiente");
 
   return (
     <>
@@ -249,34 +264,56 @@ export default async function ClientaPage({ params }: { params: { email: string 
             )}
           </div>
 
-          {/* Contrato */}
+          {/* Contratos: asignar + estado + firmados */}
           <div className="card-dark p-6 !transform-none mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-              <h2 className="font-bold text-white">Contrato</h2>
-              {contractTpl && (
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${contractSig ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
-                  {contractSig ? "✍️ Firmado" : "⏳ Pendiente de firma"}
-                </span>
-              )}
-            </div>
-            {!contractTpl ? (
-              <p className="text-sm text-[#666666]">Aún no has subido la plantilla de contrato. Hazlo desde el panel de la coach.</p>
-            ) : contractSig ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-[#A0A0A0]">
-                  Firmado por <span className="font-bold text-white">{contractSig.signer_name}</span> el {new Date(contractSig.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}.
-                </p>
-                {contractOutdated && (
-                  <p className="text-xs text-[#FF6B6B]">Firmó una versión anterior (v{contractSig.version}); el contrato actual es la v{contractTpl.version}.</p>
+              <h2 className="font-bold text-white">Contratos y anexo de salud</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                {pendientes.length > 0 && (
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FFB800]/20 text-[#FFB800] border border-[#FFB800]/40">
+                    ⏳ {pendientes.length} pendiente{pendientes.length === 1 ? "" : "s"} de firma
+                  </span>
                 )}
-                {signedPdfUrl && (
-                  <a href={signedPdfUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-5 py-2.5 mt-1 inline-flex self-start">
-                    Descargar contrato firmado
-                  </a>
+                {contratosFirmadosLista.length > 0 && (
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#1CA0E3] text-white">
+                    ✍️ {contratosFirmadosLista.length} firmado{contratosFirmadosLista.length === 1 ? "" : "s"}
+                  </span>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-[#666666]">La clienta todavía no ha firmado el contrato.</p>
+            </div>
+
+            <ContractAssign
+              memberEmail={member}
+              templates={allTemplates.filter((t) => t.active)}
+              assignments={assignments.map((a) => ({ id: a.id, template_id: a.template_id, status: a.status }))}
+            />
+
+            {contratosFirmadosLista.length > 0 && (
+              <div className="mt-5">
+                <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Documentos firmados</p>
+                <div className="flex flex-col gap-2">
+                  {contratosFirmadosLista.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.kind === "anexo_salud" ? "bg-[#FFB800] text-black" : "bg-[#1CA0E3] text-white"}`}>
+                            {c.kind === "anexo_salud" ? "Anexo salud" : "Contrato"}
+                          </span>
+                        </div>
+                        <p className="text-sm font-bold text-white truncate mt-1">{c.title}</p>
+                        <p className="text-xs text-[#A0A0A0]">
+                          Firmado por {c.signerName} el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                      {c.url ? (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
+                      ) : (
+                        <span className="text-[#666666] text-xs shrink-0">No disponible</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

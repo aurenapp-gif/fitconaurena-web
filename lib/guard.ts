@@ -9,7 +9,7 @@ import { sbSelect } from "@/lib/supabase";
  * redirige. Como las páginas son dinámicas, la comprobación es efectiva en la
  * siguiente navegación.
  */
-export async function requireMember(): Promise<string> {
+export async function requireMember(opts?: { skipContractGate?: boolean }): Promise<string> {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
   // El redirect debe ir FUERA del try: redirect() funciona lanzando una
@@ -17,6 +17,10 @@ export async function requireMember(): Promise<string> {
   const state = await memberState(email);
   if (state.revoked) redirect("/miembros/acceso?revoked=1");
   if (state.needsOnboarding) redirect("/miembros/bienvenida");
+  // Si tiene contratos pendientes, la mandamos a firmarlos antes de nada. El
+  // opt-out (skipContractGate) es para la propia página de firma, que no puede
+  // redirigirse a sí misma.
+  if (!opts?.skipContractGate && state.pendingContracts > 0) redirect("/miembros/contrato");
   return email;
 }
 
@@ -27,19 +31,26 @@ export async function requireMember(): Promise<string> {
  * Degradación segura: si la consulta falla (Supabase caído) no bloqueamos, para
  * no dejar fuera a nadie por una incidencia puntual.
  */
-export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean }> {
-  if (isAdmin(email)) return { revoked: false, needsOnboarding: false };
+export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number }> {
+  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0 };
   try {
-    const rows = await sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
-      "profiles",
-      `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
-    );
+    const [profRows, pending] = await Promise.all([
+      sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
+        "profiles",
+        `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
+      ),
+      sbSelect<{ id: string }>(
+        "contract_assignments",
+        `select=id&member_email=eq.${encodeURIComponent(email)}&status=eq.pendiente`
+      ).catch(() => [] as { id: string }[]),
+    ]);
     return {
-      revoked: rows[0]?.access_revoked === true,
-      needsOnboarding: !rows[0]?.onboarding_completed_at,
+      revoked: profRows[0]?.access_revoked === true,
+      needsOnboarding: !profRows[0]?.onboarding_completed_at,
+      pendingContracts: pending.length,
     };
   } catch {
-    return { revoked: false, needsOnboarding: false };
+    return { revoked: false, needsOnboarding: false, pendingContracts: 0 };
   }
 }
 
