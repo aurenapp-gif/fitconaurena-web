@@ -42,6 +42,11 @@ create index if not exists contract_assignments_member_idx
 create unique index if not exists contract_assignments_unique
   on public.contract_assignments (member_email, template_id);
 
+-- RLS activado (igual que el resto de tablas). El backend usa la service key,
+-- que ignora RLS; esto solo bloquea accesos con la clave pública/anon.
+alter table public.contract_templates   enable row level security;
+alter table public.contract_assignments enable row level security;
+
 -- 3) FIRMAS: aceptar template_id + campos rellenos -----------
 -- Extendemos la tabla existente en vez de rehacerla, para no perder
 -- las firmas ya emitidas. `version` se mantiene por compatibilidad;
