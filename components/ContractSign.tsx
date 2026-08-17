@@ -35,8 +35,6 @@ export default function ContractSign({ items, defaultName, defaultValues }: Prop
     );
   }
 
-  const current = items[active];
-
   return (
     <div className="flex flex-col gap-4">
       {items.length > 1 && (
@@ -57,13 +55,19 @@ export default function ContractSign({ items, defaultName, defaultValues }: Prop
           ))}
         </div>
       )}
-      <ContractCard
-        key={current.assignmentId}
-        item={current}
-        defaultName={defaultName}
-        defaultValues={defaultValues}
-        onSigned={() => router.refresh()}
-      />
+      {/* Se montan TODOS y se oculta el inactivo con CSS. Si se desmontara al
+          cambiar de pestaña, la clienta perdería lo que llevara escrito y la
+          firma dibujada. El lienzo oculto mide 0×0 y se ajusta solo al mostrarse. */}
+      {items.map((it, i) => (
+        <div key={it.assignmentId} className={i === active ? undefined : "hidden"}>
+          <ContractCard
+            item={it}
+            defaultName={defaultName}
+            defaultValues={defaultValues}
+            onSigned={() => router.refresh()}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -99,27 +103,54 @@ function ContractCard({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
-  const hasDrawn = useRef(false);
 
+  /** Estilo del trazo. Hay que reaplicarlo tras cada cambio de tamaño, porque
+   *  tocar canvas.width reinicia el contexto. */
+  function applyStroke(ctx: CanvasRenderingContext2D, ratio: number) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0A0A0A";
+  }
+
+  /**
+   * Ajusta la resolución real del lienzo a su tamaño en pantalla CONSERVANDO lo
+   * que haya dibujado. Es clave: asignar canvas.width borra el contenido, y el
+   * lienzo se remide cada vez que la página se reajusta (al crecer un campo de
+   * texto, al aparecer un aviso, o al ocultarse la barra del navegador en el
+   * móvil). Sin conservar el trazo, la clienta perdía la firma sin enterarse y
+   * el envío fallaba.
+   */
   function sizeCanvas() {
     const c = canvasRef.current;
     if (!c) return;
     const w = c.clientWidth;
     const h = c.clientHeight;
-    if (!w || !h) return;
+    if (!w || !h) return; // aún oculta: no se puede medir
     const ratio = window.devicePixelRatio || 1;
     const targetW = Math.round(w * ratio);
     const targetH = Math.round(h * ratio);
-    if (c.width === targetW && c.height === targetH) return;
+    if (c.width === targetW && c.height === targetH) return; // ya está bien
+
+    // Copia de lo dibujado hasta ahora, para volver a pintarlo tras redimensionar.
+    let prev: HTMLCanvasElement | null = null;
+    if (c.width > 0 && c.height > 0) {
+      try {
+        prev = document.createElement("canvas");
+        prev.width = c.width; prev.height = c.height;
+        prev.getContext("2d")?.drawImage(c, 0, 0);
+      } catch { prev = null; }
+    }
+
     c.width = targetW; c.height = targetH;
     const ctx = c.getContext("2d");
-    if (ctx) {
-      ctx.scale(ratio, ratio);
-      ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.strokeStyle = "#0A0A0A";
+    if (!ctx) return;
+    applyStroke(ctx, ratio);
+    if (prev) {
+      try { ctx.drawImage(prev, 0, 0, w, h); } catch { /* se pierde el trazo, no el envío */ }
     }
-    hasDrawn.current = false;
   }
+
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
@@ -127,7 +158,25 @@ function ContractCard({
     const ro = new ResizeObserver(() => sizeCanvas());
     ro.observe(c);
     return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** ¿Hay trazo de verdad? Se mira el lienzo, no una bandera que cualquier
+   *  reajuste podría dejar desincronizada. */
+  function hasInk(): boolean {
+    const c = canvasRef.current;
+    if (!c || !c.width || !c.height) return false;
+    try {
+      const data = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+      for (let i = 3; i < data.length; i += 16) {
+        if (data[i] > 8) return true; // canal alfa
+      }
+      return false;
+    } catch {
+      // Si el navegador impide leer el lienzo, no bloqueamos: que decida el servidor.
+      return true;
+    }
+  }
 
   function point(e: React.PointerEvent<HTMLCanvasElement>) {
     const c = canvasRef.current!;
@@ -135,22 +184,31 @@ function ContractCard({
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
   function start(e: React.PointerEvent<HTMLCanvasElement>) {
-    e.preventDefault(); sizeCanvas(); drawing.current = true;
-    canvasRef.current!.setPointerCapture(e.pointerId);
-    const ctx = canvasRef.current!.getContext("2d")!;
-    const { x, y } = point(e); ctx.beginPath(); ctx.moveTo(x, y);
+    e.preventDefault();
+    const c = canvasRef.current;
+    if (!c) return;
+    if (!c.width || !c.height) sizeCanvas(); // solo si todavía no tiene tamaño
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    drawing.current = true;
+    try { c.setPointerCapture(e.pointerId); } catch { /* no todos lo admiten */ }
+    const { x, y } = point(e);
+    ctx.beginPath(); ctx.moveTo(x, y);
+    // Un toque suelto también deja marca (una firma corta o un punto).
+    ctx.lineTo(x + 0.01, y); ctx.stroke();
   }
   function move(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!drawing.current) return;
     e.preventDefault();
-    const ctx = canvasRef.current!.getContext("2d")!;
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
     const { x, y } = point(e); ctx.lineTo(x, y); ctx.stroke();
-    hasDrawn.current = true;
   }
   function end() { drawing.current = false; }
   function clearSig() {
-    const c = canvasRef.current!; c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
-    hasDrawn.current = false;
+    const c = canvasRef.current;
+    if (!c) return;
+    c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
   }
 
   function setField(key: string, val: string | boolean) {
@@ -160,7 +218,7 @@ function ContractCard({
   async function submit() {
     if (status === "loading") return;
     if (name.trim().length < 3) { setStatus("error"); setMsg("Escribe tu nombre completo al firmar."); return; }
-    if (!hasDrawn.current) { setStatus("error"); setMsg("Dibuja tu firma en el recuadro."); return; }
+    if (!hasInk()) { setStatus("error"); setMsg("Dibuja tu firma en el recuadro."); return; }
     if (!accepted) { setStatus("error"); setMsg("Marca la casilla para aceptar y firmar."); return; }
     // Validación básica en cliente (el backend re-valida).
     for (const f of item.fields) {
