@@ -28,6 +28,15 @@ export const TOOLS: Tool[] = [
     icon: "🍽️",
     hint: "Se abre en ChatGPT. Sube la foto de la carta y te dirá qué pedir.",
   },
+  {
+    id: "entrenamiento",
+    name: "Entrenamiento",
+    description:
+      "Dudas con algún ejercicio: mándame una foto y te explico la técnica, qué no fallar y por cuál sustituirlo.",
+    url: "https://chatgpt.com/g/g-6a830314d184819182a93bc2518c45a9-entrenamiento-fitcondamian",
+    icon: "🏋️",
+    hint: "Se abre en ChatGPT. Para que tu coach revise tu técnica en vídeo, usa «Revisión de técnica».",
+  },
 ];
 
 export function findTool(id: string): Tool | undefined {
