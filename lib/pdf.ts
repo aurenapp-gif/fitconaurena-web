@@ -1,11 +1,19 @@
 /**
  * Generación del PDF de contrato FIRMADO (solo servidor, runtime nodejs).
  *
- * Toma el PDF de la plantilla y añade al final:
- *  - Una página con los DATOS RELLENADOS por la clienta (identificación,
- *    dirección, teléfono… o cribado de salud y consentimientos, según tipo).
- *  - Una página de FIRMA con el trazo dibujado, nombre, email, fecha/hora,
- *    IP y navegador (evidencia eIDAS de firma electrónica simple).
+ * Si la plantilla trae CAMPOS DE FORMULARIO (AcroForm) con los nombres que usa
+ * la app, los datos de la clienta se escriben DENTRO del propio documento (en
+ * los huecos de «Nombre y apellidos», «Documento de identidad», las casillas
+ * SÍ/NO del cribado de salud…) y el formulario se aplana para que queden fijos
+ * y nadie pueda modificarlos.
+ *
+ * Si la plantilla no trae campos (por ejemplo, un PDF subido a mano), se
+ * mantiene el comportamiento anterior: se añade una página con los datos
+ * rellenados, para no perder esa información.
+ *
+ * En ambos casos se añade al final una página de FIRMA con el trazo dibujado,
+ * nombre, email, fecha/hora, IP y navegador (evidencia eIDAS de firma
+ * electrónica simple).
  */
 
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
@@ -89,6 +97,86 @@ function drawWrapped(page: PDFPage, text: string, opts: { x: number; y: number; 
   return y;
 }
 
+/** Texto plano de un valor, para escribirlo en un campo del PDF. */
+function asText(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
+/** dd/mm/aaaa a partir de un ISO yyyy-mm-dd (o el valor tal cual si no lo es). */
+function dmy(v: unknown): string {
+  const raw = asText(v);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : raw;
+}
+
+/**
+ * Escribe los datos de la clienta en los campos de formulario de la plantilla.
+ * Devuelve cuántos campos se han rellenado: 0 significa que la plantilla no
+ * tiene formulario y hay que recurrir a la página de datos.
+ */
+async function fillTemplateForm(pdf: PDFDocument, opts: SignedPdfInput): Promise<number> {
+  const form = pdf.getForm();
+  const names = new Set(form.getFields().map((f) => f.getName()));
+  if (names.size === 0) return 0;
+
+  const v = opts.fieldValues;
+  const texts: Record<string, string> = {};
+  const checks: string[] = [];
+
+  if (opts.kind === "anexo_salud") {
+    texts.nombre_completo = asText(v.nombre_completo) || opts.signerName;
+    texts.fecha_nacimiento = dmy(v.fecha_nacimiento);
+    texts.emergencia = [asText(v.emergencia_nombre), asText(v.emergencia_telefono)]
+      .filter(Boolean).join(" · ");
+    texts.detalle_afirmativas = asText(v.detalle_afirmativas);
+    texts.fecha = new Intl.DateTimeFormat("es-ES", {
+      timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", year: "numeric",
+    }).format(opts.signedAt);
+
+    // Cribado: una casilla por respuesta (SÍ / NO).
+    for (const f of opts.fields) {
+      if (f.type === "yesno") {
+        const ans = asText(v[f.key]).toLowerCase();
+        if (ans === "si" || ans === "no") checks.push(`${f.key}_${ans}`);
+      } else if (f.type === "checkbox" && v[f.key] === true) {
+        checks.push(f.key);
+      }
+    }
+  } else {
+    texts.nombre_completo = asText(v.nombre_completo) || opts.signerName;
+    texts.dni = asText(v.dni);
+    // El domicilio del contrato es una sola línea: calle, CP y ciudad juntos.
+    const cp = [asText(v.codigo_postal), asText(v.ciudad)].filter(Boolean).join(" ");
+    texts.domicilio = [asText(v.domicilio), cp].filter(Boolean).join(", ");
+    texts.pais = asText(v.pais);
+    texts.email = opts.signerEmail;
+    texts.telefono = asText(v.telefono);
+    texts.fecha_nacimiento = dmy(v.fecha_nacimiento);
+    const dia = new Intl.DateTimeFormat("es-ES", {
+      timeZone: "Europe/Madrid", day: "numeric", month: "long", year: "numeric",
+    }).format(opts.signedAt);
+    texts.lugar_fecha = [asText(v.ciudad), dia].filter(Boolean).join(", ");
+  }
+
+  let filled = 0;
+  for (const [key, value] of Object.entries(texts)) {
+    if (!value || !names.has(key)) continue;
+    try { form.getTextField(key).setText(value); filled++; } catch { /* campo de otro tipo */ }
+  }
+  for (const key of checks) {
+    if (!names.has(key)) continue;
+    try { form.getCheckBox(key).check(); filled++; } catch { /* campo de otro tipo */ }
+  }
+  if (filled === 0) return 0;
+
+  // Aplanar deja los valores incrustados como contenido fijo: ya no son
+  // campos editables, así que el documento firmado no se puede alterar.
+  const helv = await pdf.embedFont(StandardFonts.Helvetica);
+  form.updateFieldAppearances(helv);
+  form.flatten();
+  return filled;
+}
+
 export async function buildSignedContractPdf(opts: SignedPdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.load(opts.template, { ignoreEncryption: true });
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -98,8 +186,19 @@ export async function buildSignedContractPdf(opts: SignedPdfInput): Promise<Uint
   const M = 56;
   const contentW = A4[0] - M * 2;
 
-  // ------ Página 1 añadida: DATOS RELLENADOS por la clienta ------
-  {
+  // Datos DENTRO del documento, si la plantilla trae campos de formulario.
+  let filledInPlace = 0;
+  try {
+    filledInPlace = await fillTemplateForm(pdf, opts);
+  } catch (e) {
+    // Nunca impedimos la firma por un problema al rellenar: caemos a la
+    // página de datos, que conserva toda la información igualmente.
+    console.error("[pdf] rellenar formulario", e);
+    filledInPlace = 0;
+  }
+
+  // ------ Página añadida con los DATOS (solo si no se pudieron incrustar) ------
+  if (!filledInPlace) {
     let page = pdf.addPage(A4);
     let y = A4[1] - M;
     page.drawText("fitconaurena", { x: M, y, size: 16, font: bold, color: INK });
