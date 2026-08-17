@@ -1,13 +1,15 @@
 /**
  * Generación del PDF de contrato FIRMADO (solo servidor, runtime nodejs).
  *
- * Toma el PDF de la plantilla y le añade al final una página de firma con: el
- * trazo dibujado por la clienta, su nombre, email, fecha/hora, IP y navegador.
- * El resultado es un único documento descargable que sirve como prueba de la
- * firma electrónica simple.
+ * Toma el PDF de la plantilla y añade al final:
+ *  - Una página con los DATOS RELLENADOS por la clienta (identificación,
+ *    dirección, teléfono… o cribado de salud y consentimientos, según tipo).
+ *  - Una página de FIRMA con el trazo dibujado, nombre, email, fecha/hora,
+ *    IP y navegador (evidencia eIDAS de firma electrónica simple).
  */
 
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
+import type { ContractField, ContractKind } from "@/lib/contract";
 
 const A4: [number, number] = [595.28, 841.89];
 const INK = rgb(0.04, 0.04, 0.04);
@@ -23,6 +25,10 @@ export type SignedPdfInput = {
   ip: string;
   userAgent: string;
   version: number;
+  kind: ContractKind;
+  title: string;
+  fields: ContractField[];
+  fieldValues: Record<string, unknown>;
 };
 
 function madridStamp(d: Date): string {
@@ -36,85 +42,159 @@ function madridStamp(d: Date): string {
   }).format(d);
 }
 
+/** Convierte un valor de campo en algo legible en el PDF. */
+function display(field: ContractField, value: unknown): string {
+  if (field.type === "checkbox") return value === true ? "Aceptado" : "No aceptado";
+  if (field.type === "yesno") {
+    const v = String(value ?? "").toLowerCase();
+    if (v === "si") return "SÍ";
+    if (v === "no") return "NO";
+    return "—";
+  }
+  if (field.type === "date") {
+    const raw = String(value ?? "");
+    if (!raw) return "—";
+    // ISO YYYY-MM-DD → dd/mm/aaaa
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : raw;
+  }
+  const s = String(value ?? "").trim();
+  return s.length ? s : "—";
+}
+
+/** Escribe texto envuelto por anchura, avanzando `y`. Devuelve el nuevo `y`. */
+function drawWrapped(page: PDFPage, text: string, opts: { x: number; y: number; maxW: number; size: number; font: PDFFont; color: ReturnType<typeof rgb>; lineHeight?: number }): number {
+  const { x, maxW, size, font, color } = opts;
+  const lh = opts.lineHeight ?? size + 4;
+  let y = opts.y;
+  const paragraphs = String(text).split(/\n/);
+  for (const para of paragraphs) {
+    const words = para.split(/\s+/);
+    let line = "";
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (font.widthOfTextAtSize(test, size) > maxW && line) {
+        page.drawText(line, { x, y, size, font, color });
+        y -= lh;
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if (line) {
+      page.drawText(line, { x, y, size, font, color });
+      y -= lh;
+    }
+  }
+  return y;
+}
+
 export async function buildSignedContractPdf(opts: SignedPdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.load(opts.template, { ignoreEncryption: true });
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const png = await pdf.embedPng(opts.signaturePng);
 
-  const page = pdf.addPage(A4);
-  const { width, height } = page.getSize();
-  const M = 56; // margen
-  let y = height - M;
+  const M = 56;
+  const contentW = A4[0] - M * 2;
 
-  // Encabezado de marca.
-  page.drawText("fitconaurena", { x: M, y, size: 16, font: bold, color: INK });
-  page.drawRectangle({ x: M, y: y - 10, width: width - M * 2, height: 2, color: BRAND });
-  y -= 48;
+  // ------ Página 1 añadida: DATOS RELLENADOS por la clienta ------
+  {
+    let page = pdf.addPage(A4);
+    let y = A4[1] - M;
+    page.drawText("fitconaurena", { x: M, y, size: 16, font: bold, color: INK });
+    page.drawRectangle({ x: M, y: y - 10, width: contentW, height: 2, color: BRAND });
+    y -= 40;
 
-  page.drawText("Contrato firmado electrónicamente", { x: M, y, size: 20, font: bold, color: INK });
-  y -= 40;
-
-  const row = (label: string, value: string) => {
-    page.drawText(label, { x: M, y, size: 10, font, color: MUTED });
-    page.drawText(value, { x: M + 130, y, size: 12, font: bold, color: INK });
+    page.drawText(opts.kind === "anexo_salud" ? "Anexo de salud rellenado" : "Datos del contrato rellenados", {
+      x: M, y, size: 18, font: bold, color: INK,
+    });
     y -= 26;
-  };
+    page.drawText(opts.title, { x: M, y, size: 10, font, color: MUTED });
+    y -= 22;
 
-  row("Firmante", opts.signerName);
-  row("Email", opts.signerEmail);
-  row("Fecha y hora", `${madridStamp(opts.signedAt)} (hora de Madrid)`);
-  row("Versión", `v${opts.version}`);
-  row("IP", opts.ip || "—");
+    const addFieldPage = () => {
+      page = pdf.addPage(A4);
+      y = A4[1] - M;
+      page.drawText("fitconaurena", { x: M, y, size: 12, font: bold, color: MUTED });
+      y -= 24;
+    };
 
-  // user-agent puede ser largo: lo recortamos para que no se salga.
-  const ua = (opts.userAgent || "—").slice(0, 90);
-  row("Dispositivo", ua);
+    for (const f of opts.fields) {
+      // Salto de página cuando queda poco espacio.
+      if (y < M + 60) addFieldPage();
 
-  y -= 20;
-  page.drawText("Firma:", { x: M, y, size: 10, font, color: MUTED });
-  y -= 12;
-
-  // Caja de firma con el trazo escalado manteniendo proporción.
-  const boxW = 260;
-  const boxH = 110;
-  const scaled = png.scaleToFit(boxW - 16, boxH - 16);
-  const boxY = y - boxH;
-  page.drawRectangle({
-    x: M,
-    y: boxY,
-    width: boxW,
-    height: boxH,
-    borderColor: rgb(0.85, 0.85, 0.85),
-    borderWidth: 1,
-  });
-  page.drawImage(png, {
-    x: M + (boxW - scaled.width) / 2,
-    y: boxY + (boxH - scaled.height) / 2,
-    width: scaled.width,
-    height: scaled.height,
-  });
-  y = boxY - 28;
-
-  const legal =
-    "Documento firmado mediante firma electrónica simple (Reglamento eIDAS UE 910/2014). " +
-    "La validez de la firma queda acreditada por el registro de identidad, fecha, hora y " +
-    "dirección IP recogidos en el momento de la aceptación.";
-  // Texto legal en varias líneas (envoltura simple por ancho).
-  const maxW = width - M * 2;
-  const words = legal.split(" ");
-  let line = "";
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (font.widthOfTextAtSize(test, 9) > maxW) {
-      page.drawText(line, { x: M, y, size: 9, font, color: MUTED });
-      y -= 14;
-      line = w;
-    } else {
-      line = test;
+      // Etiqueta
+      const labelLines: number = Math.max(1, Math.ceil(font.widthOfTextAtSize(f.label, 9) / contentW));
+      const preLabelY = y;
+      y = drawWrapped(page, f.label, { x: M, y, maxW: contentW, size: 9, font, color: MUTED, lineHeight: 12 });
+      // Valor
+      const val = display(f, opts.fieldValues[f.key]);
+      y -= 2;
+      y = drawWrapped(page, val, { x: M, y, maxW: contentW, size: 12, font: bold, color: INK, lineHeight: 15 });
+      // Separador
+      y -= 6;
+      page.drawRectangle({ x: M, y, width: contentW, height: 0.6, color: rgb(0.88, 0.88, 0.88) });
+      y -= 10;
+      // Para evitar warning de variable no usada en despliegue
+      void labelLines; void preLabelY;
     }
   }
-  if (line) page.drawText(line, { x: M, y, size: 9, font, color: MUTED });
+
+  // ------ Página final: FIRMA + metadatos ------
+  {
+    const page = pdf.addPage(A4);
+    let y = A4[1] - M;
+
+    page.drawText("fitconaurena", { x: M, y, size: 16, font: bold, color: INK });
+    page.drawRectangle({ x: M, y: y - 10, width: contentW, height: 2, color: BRAND });
+    y -= 48;
+
+    page.drawText(opts.kind === "anexo_salud" ? "Anexo de salud firmado electrónicamente" : "Contrato firmado electrónicamente", {
+      x: M, y, size: 18, font: bold, color: INK,
+    });
+    y -= 34;
+
+    const row = (label: string, value: string) => {
+      page.drawText(label, { x: M, y, size: 10, font, color: MUTED });
+      page.drawText(value, { x: M + 130, y, size: 12, font: bold, color: INK });
+      y -= 24;
+    };
+
+    row("Documento", opts.title);
+    row("Firmante", opts.signerName);
+    row("Email", opts.signerEmail);
+    row("Fecha y hora", `${madridStamp(opts.signedAt)} (hora de Madrid)`);
+    row("Versión", `v${opts.version}`);
+    row("IP", opts.ip || "—");
+    const ua = (opts.userAgent || "—").slice(0, 90);
+    row("Dispositivo", ua);
+
+    y -= 16;
+    page.drawText("Firma:", { x: M, y, size: 10, font, color: MUTED });
+    y -= 12;
+
+    const boxW = 260;
+    const boxH = 110;
+    const scaled = png.scaleToFit(boxW - 16, boxH - 16);
+    const boxY = y - boxH;
+    page.drawRectangle({
+      x: M, y: boxY, width: boxW, height: boxH,
+      borderColor: rgb(0.85, 0.85, 0.85), borderWidth: 1,
+    });
+    page.drawImage(png, {
+      x: M + (boxW - scaled.width) / 2,
+      y: boxY + (boxH - scaled.height) / 2,
+      width: scaled.width, height: scaled.height,
+    });
+    y = boxY - 28;
+
+    const legal =
+      "Documento firmado mediante firma electrónica simple (Reglamento eIDAS UE 910/2014). " +
+      "La validez de la firma queda acreditada por el registro de identidad, fecha, hora, " +
+      "dirección IP y datos rellenados por el firmante en el momento de la aceptación.";
+    drawWrapped(page, legal, { x: M, y, maxW: contentW, size: 9, font, color: MUTED, lineHeight: 12 });
+  }
 
   return pdf.save();
 }

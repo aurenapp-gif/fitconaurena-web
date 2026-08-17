@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/mailer";
-import { sbUpsert } from "@/lib/supabase";
+import { sbUpsert, sbSelect, sbInsertIgnore } from "@/lib/supabase";
+import type { ContractTemplate } from "@/lib/contract";
 import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let body: { email?: unknown; name?: unknown };
+  let body: { email?: unknown; name?: unknown; templateId?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
   }
   const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 60) : "";
+  const templateId = typeof body.templateId === "string" ? body.templateId.trim() : "";
   if (!isValidEmail(email)) return NextResponse.json({ error: "Email no válido." }, { status: 400 });
 
   const apiKey = process.env.MAILERLITE_API_KEY;
@@ -45,12 +47,40 @@ export async function POST(req: NextRequest) {
   }
 
   // Reactiva el acceso por si estaba revocada de antes.
-  await sbUpsert("profiles", {
+  //
+  // `contracts_exempt: false` solo se fuerza cuando la coach ha elegido contrato:
+  // así una clienta ANTIGUA a la que se vuelva a dar de alta sin contrato sigue
+  // exenta (no se le exige firmar nada), mientras que si se le asigna contrato
+  // pasa a estar obligada, igual que una nueva.
+  const base = {
     email,
     ...(name ? { display_name: name } : {}),
     access_revoked: false,
     updated_at: new Date().toISOString(),
-  }).catch(() => {});
+  };
+  await sbUpsert("profiles", templateId ? { ...base, contracts_exempt: false } : base)
+    // Si la columna de exención todavía no existe, guardamos al menos lo básico.
+    .catch(() => sbUpsert("profiles", base).catch(() => {}));
+
+  // Contrato elegido en el alta + anexo de salud, listos para firmar al entrar.
+  if (templateId) {
+    try {
+      const now = new Date().toISOString();
+      const assign = (id: string) => sbInsertIgnore("contract_assignments", {
+        member_email: email, template_id: id, status: "pendiente", assigned_by: me, assigned_at: now,
+      });
+      await assign(templateId);
+      const anexo = (await sbSelect<ContractTemplate>(
+        "contract_templates",
+        "select=id&kind=eq.anexo_salud&active=is.true&order=created_at.desc&limit=1"
+      ).catch(() => []))[0];
+      if (anexo) await assign(anexo.id);
+    } catch (err) {
+      // El alta ya está hecha: no la tumbamos por esto, pero avisamos.
+      console.error("[alta] asignar contrato", err);
+      return NextResponse.json({ ok: true, warning: "Alta hecha, pero no se pudo asignar el contrato. Asígnalo desde su ficha." });
+    }
+  }
 
   // 2) Email de bienvenida con acceso directo (enlace válido 7 días).
   try {

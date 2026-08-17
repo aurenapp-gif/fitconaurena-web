@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, adminEmails } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sbSelect, sbInsert, sbUpload, sbDownload, safePath } from "@/lib/supabase";
-import { CONTRACT_BUCKET, type ContractTemplate } from "@/lib/contract";
+import { sbSelect, sbInsert, sbUpload, sbDownload, sbUpdate, safePath } from "@/lib/supabase";
+import {
+  CONTRACT_BUCKET,
+  fieldsFor,
+  validateFields,
+  type ContractTemplate,
+  type ContractAssignment,
+} from "@/lib/contract";
 import { buildSignedContractPdf } from "@/lib/pdf";
 import { sendContractSignedNotice } from "@/lib/mailer";
 import { sendPushToEmails } from "@/lib/push";
@@ -11,9 +17,14 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * Registra la FIRMA de la clienta sobre la plantilla vigente: guarda el trazo,
- * genera el PDF firmado (plantilla + página de firma con nombre, fecha, IP y
- * navegador) y avisa a la coach. Firma electrónica simple (eIDAS).
+ * Firma una asignación concreta de contrato. Recibe:
+ *   - assignmentId (o templateId directo, para compatibilidad)
+ *   - signerName
+ *   - signature (data:image/png;base64,...)
+ *   - fieldValues (objeto con los campos del formulario)
+ *
+ * Guarda la firma con IP + user-agent + hora, marca la asignación como firmada
+ * y genera un PDF que incluye los campos rellenados y la firma manuscrita.
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
@@ -21,12 +32,8 @@ export async function POST(req: NextRequest) {
   if (isAdmin(me)) return NextResponse.json({ error: "La coach no firma el contrato." }, { status: 400 });
   if (await isAccessRevoked(me)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  let body: { signerName?: string; signature?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
-  }
+  let body: { assignmentId?: string; templateId?: string; signerName?: string; signature?: string; fieldValues?: Record<string, unknown> };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const signerName = (body.signerName ?? "").trim().slice(0, 120);
   if (signerName.length < 3) return NextResponse.json({ error: "Escribe tu nombre completo." }, { status: 400 });
@@ -37,25 +44,45 @@ export async function POST(req: NextRequest) {
   if (sigBytes.length < 200 || sigBytes.length > 600 * 1024)
     return NextResponse.json({ error: "La firma no es válida. Inténtalo de nuevo." }, { status: 400 });
 
-  // Plantilla vigente.
+  // Resolver asignación + plantilla. Se admiten dos rutas:
+  //  a) assignmentId → consulta directa (ruta principal desde /miembros/contrato)
+  //  b) templateId sin asignación previa → solo si esa plantilla está activa y
+  //     asignada realmente a esta clienta (fallback defensivo).
+  let assignment: ContractAssignment | undefined;
   let tpl: ContractTemplate | undefined;
   try {
-    tpl = (await sbSelect<ContractTemplate>("contract_template", "select=*&id=eq.1"))[0];
-  } catch (e) {
-    console.error("[contrato/firmar] template", e);
-  }
-  if (!tpl) return NextResponse.json({ error: "Todavía no hay contrato disponible." }, { status: 409 });
+    if (body.assignmentId) {
+      const rows = await sbSelect<ContractAssignment>(
+        "contract_assignments",
+        `select=*&id=eq.${encodeURIComponent(body.assignmentId)}&member_email=eq.${encodeURIComponent(me)}&limit=1`
+      );
+      assignment = rows[0];
+    }
+    if (!assignment && body.templateId) {
+      const rows = await sbSelect<ContractAssignment>(
+        "contract_assignments",
+        `select=*&template_id=eq.${encodeURIComponent(body.templateId)}&member_email=eq.${encodeURIComponent(me)}&limit=1`
+      );
+      assignment = rows[0];
+    }
+    if (!assignment) return NextResponse.json({ error: "No tienes ese contrato asignado." }, { status: 404 });
+    if (assignment.status === "firmado") return NextResponse.json({ error: "Ya has firmado este contrato." }, { status: 409 });
 
-  // ¿Ya firmó esta versión?
-  try {
-    const existing = await sbSelect<{ id: string }>(
-      "contract_signatures",
-      `select=id&member_email=eq.${encodeURIComponent(me)}&version=eq.${tpl.version}`
+    const tplRows = await sbSelect<ContractTemplate>(
+      "contract_templates",
+      `select=*&id=eq.${encodeURIComponent(assignment.template_id)}&limit=1`
     );
-    if (existing.length) return NextResponse.json({ error: "Ya has firmado este contrato." }, { status: 409 });
+    tpl = tplRows[0];
+    if (!tpl) return NextResponse.json({ error: "La plantilla del contrato ya no existe." }, { status: 409 });
   } catch (e) {
-    console.error("[contrato/firmar] check", e);
+    console.error("[contrato/firmar] resolve", e);
+    return NextResponse.json({ error: "No se pudo cargar el contrato." }, { status: 500 });
   }
+
+  // Validar campos según el tipo (contrato / anexo_salud).
+  const values = (body.fieldValues && typeof body.fieldValues === "object") ? body.fieldValues : {};
+  const err = validateFields(tpl.kind, values);
+  if (err) return NextResponse.json({ error: err }, { status: 400 });
 
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "—";
   const userAgent = (req.headers.get("user-agent") ?? "—").slice(0, 300);
@@ -72,19 +99,30 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
       version: tpl.version,
+      kind: tpl.kind,
+      title: tpl.title,
+      fields: fieldsFor(tpl.kind),
+      fieldValues: values,
     });
-    const sigPath = `firmas/${safePath(`v${tpl.version}-${me}.png`)}`;
-    const pdfPath = `firmados/${safePath(`v${tpl.version}-${me}.pdf`)}`;
+    const sigPath = `firmas/${safePath(`${tpl.kind}-${me}.png`)}`;
+    const pdfPath = `firmados/${safePath(`${tpl.kind}-${me}.pdf`)}`;
     await sbUpload(CONTRACT_BUCKET, sigPath, sigBytes, "image/png");
     await sbUpload(CONTRACT_BUCKET, pdfPath, signedPdf, "application/pdf");
     await sbInsert("contract_signatures", {
       member_email: me,
       version: tpl.version,
+      template_id: tpl.id,
+      assignment_id: assignment.id,
       signer_name: signerName,
       signature_path: sigPath,
       signed_pdf_path: pdfPath,
+      field_values: values,
       ip,
       user_agent: userAgent,
+      signed_at: signedAt.toISOString(),
+    });
+    await sbUpdate("contract_assignments", `id=eq.${encodeURIComponent(assignment.id)}`, {
+      status: "firmado",
       signed_at: signedAt.toISOString(),
     });
   } catch (err) {
@@ -97,8 +135,8 @@ export async function POST(req: NextRequest) {
   if (admins.length) {
     sendContractSignedNotice(admins, me, signerName).catch((e) => console.error("[contrato] email", e));
     sendPushToEmails(admins, {
-      title: "Contrato firmado ✍️",
-      body: `${signerName} ha firmado el contrato.`,
+      title: `${tpl.kind === "anexo_salud" ? "Anexo de salud firmado" : "Contrato firmado"} ✍️`,
+      body: `${signerName} ha firmado ${tpl.title}.`,
       url: `/miembros/clientas/${encodeURIComponent(me)}`,
     }).catch((e) => console.error("[contrato] push", e));
   }
