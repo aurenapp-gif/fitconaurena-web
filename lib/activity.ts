@@ -7,6 +7,7 @@ export const ACTIONS = {
   plan_abierto: "Ha abierto un plan",
   plan_descargado: "Ha descargado un plan",
   contrato_abierto: "Ha abierto el contrato",
+  herramienta_abierta: "Ha usado una herramienta",
 } as const;
 
 export type Action = keyof typeof ACTIONS;

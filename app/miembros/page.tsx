@@ -150,6 +150,9 @@ export default async function MiembrosPage() {
                 {admin ? "Publicar comunicado" : "Ver comunicados"}
               </Link>
             </Card>
+            <Card title="Herramientas" desc="Utilidades para el día a día, como saber qué pedir en un restaurante sin frenar tu progreso.">
+              <Link href="/miembros/herramientas" className="btn-brand text-sm px-6 py-3">Ver herramientas</Link>
+            </Card>
             <Card title="Revisión de técnica" desc="Sube un vídeo corto de tu ejercicio y tu coach te corrige la técnica.">
               <Link href="/miembros/tecnica" className="btn-brand text-sm px-6 py-3">Subir vídeo de técnica</Link>
             </Card>

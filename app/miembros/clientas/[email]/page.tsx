@@ -46,6 +46,7 @@ const ACTION_LABEL: Record<string, string> = {
   plan_abierto: "Abrió un documento",
   plan_descargado: "Descargó un documento",
   contrato_abierto: "Abrió el contrato",
+  herramienta_abierta: "Usó una herramienta",
 };
 
 export default async function ClientaPage({ params }: { params: { email: string } }) {
