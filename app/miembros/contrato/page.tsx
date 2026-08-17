@@ -19,6 +19,7 @@ type Profile = {
   full_name: string | null;
   address: string | null;
   postal_code: string | null;
+  contracts_exempt?: boolean | null;
 };
 
 /**
@@ -30,14 +31,21 @@ export default async function ContratoPage() {
   const email = await requireMember({ skipContractGate: true });
 
   const [profileRows, assignmentsRaw] = await Promise.all([
-    sbSelect<Profile>("profiles", `select=display_name,full_name,address,postal_code&email=eq.${encodeURIComponent(email)}`)
-      .catch((e) => { console.error("[contrato] profile", e); return [] as Profile[]; }),
+    sbSelect<Profile>("profiles", `select=display_name,full_name,address,postal_code,contracts_exempt&email=eq.${encodeURIComponent(email)}`)
+      .catch(() =>
+        // La columna de exención aún no existe: leemos sin ella.
+        sbSelect<Profile>("profiles", `select=display_name,full_name,address,postal_code&email=eq.${encodeURIComponent(email)}`)
+          .catch((e) => { console.error("[contrato] profile", e); return [] as Profile[]; })
+      ),
     sbSelect<ContractAssignment>(
       "contract_assignments",
       `select=*&member_email=eq.${encodeURIComponent(email)}&status=eq.pendiente&order=assigned_at.asc`
     ).catch((e) => { console.error("[contrato] assignments", e); return [] as ContractAssignment[]; }),
   ]);
   const profile = profileRows[0];
+  // Exenta = clienta anterior a la firma obligatoria. No está bloqueada aquí:
+  // si le han asignado algo puede firmarlo, pero también volverse atrás.
+  const exempt = profile?.contracts_exempt !== false;
 
   // Cargar plantillas asociadas.
   const templates = assignmentsRaw.length
@@ -76,11 +84,18 @@ export default async function ContratoPage() {
       <main className="relative pt-16 min-h-screen">
         <div className="container-content relative z-10 py-16">
           <div className="mb-6">
-            <span className="section-tag">Antes de empezar</span>
-            <h1 className="section-title">Firma tu contrato</h1>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <span className="section-tag">{exempt ? "Documentos" : "Antes de empezar"}</span>
+                <h1 className="section-title">Firma tu contrato</h1>
+              </div>
+              {/* Las clientas exentas no están bloqueadas: pueden volver cuando quieran. */}
+              {exempt && <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>}
+            </div>
             <p className="text-sm text-[#A0A0A0] mt-2 max-w-2xl">
-              Para poder empezar tu programa necesitamos que rellenes y firmes {items.length === 1 ? "este documento" : "estos documentos"}.
-              Es rápido y queda guardado con validez legal (firma electrónica simple, eIDAS).
+              {exempt
+                ? <>Tu coach ha dejado {items.length === 1 ? "este documento" : "estos documentos"} a tu disposición. Firmarlo{items.length === 1 ? "" : "s"} es opcional y puedes hacerlo cuando quieras.</>
+                : <>Para poder empezar tu programa necesitamos que rellenes y firmes {items.length === 1 ? "este documento" : "estos documentos"}. Es rápido y queda guardado con validez legal (firma electrónica simple, eIDAS).</>}
             </p>
           </div>
 

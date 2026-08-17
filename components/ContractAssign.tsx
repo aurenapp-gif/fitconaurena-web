@@ -8,14 +8,19 @@ type Props = {
   memberEmail: string;
   templates: ContractTemplate[];   // solo activas
   assignments: { id: string; template_id: string; status: "pendiente" | "firmado" }[];
+  exempt: boolean;                 // clienta anterior a la firma obligatoria
 };
 
 /**
  * Panel para la coach dentro de la ficha de una clienta: elige qué contrato le
  * asigna. El anexo de salud (si hay uno activo) se asigna automáticamente al
  * asignar cualquier contrato, no hace falta seleccionarlo.
+ *
+ * Si la clienta está EXENTA (ya estaba dentro antes de implantar la firma
+ * obligatoria) puede seguir usando la app sin firmar nada. La coach puede
+ * exigirle la firma más adelante, por ejemplo al renovar.
  */
-export default function ContractAssign({ memberEmail, templates, assignments }: Props) {
+export default function ContractAssign({ memberEmail, templates, assignments, exempt }: Props) {
   const router = useRouter();
   const contratos = useMemo(() => templates.filter((t) => t.kind === "contrato"), [templates]);
   const anexo = useMemo(() => templates.find((t) => t.kind === "anexo_salud"), [templates]);
@@ -55,18 +60,62 @@ export default function ContractAssign({ memberEmail, templates, assignments }: 
     finally { setBusy(false); }
   }
 
+  async function setExempt(value: boolean) {
+    const msg = value
+      ? "¿Eximir a esta clienta? Podrá usar la app sin firmar nada."
+      : "¿Exigirle la firma? La próxima vez que entre no podrá usar la app hasta firmar los documentos que le asignes.";
+    if (!confirm(msg)) return;
+    setBusy(true); setErr("");
+    try {
+      const res = await fetch("/api/miembros/contrato/exencion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberEmail, exempt: value }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error ?? "No se pudo guardar."); return; }
+      router.refresh();
+    } catch { setErr("Error de conexión."); }
+    finally { setBusy(false); }
+  }
+
+  const exemptBanner = (
+    <div className={`rounded-xl border p-4 ${exempt ? "border-[#252525] bg-[#141414]" : "border-[#1CA0E3]/30 bg-[#1CA0E3]/5"}`}>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-white">
+            {exempt ? "Exenta de firma obligatoria" : "Firma obligatoria activada"}
+          </p>
+          <p className="text-xs text-[#A0A0A0] mt-0.5 max-w-lg">
+            {exempt
+              ? "Ya estaba dada de alta antes de implantar la firma. Entra a su área privada sin firmar nada; si le asignas un contrato podrá firmarlo, pero de forma voluntaria."
+              : "No podrá usar la app hasta firmar los documentos que le asignes."}
+          </p>
+        </div>
+        <button type="button" onClick={() => setExempt(!exempt)} disabled={busy}
+          className="text-xs font-bold px-4 py-2 rounded-lg border border-[#252525] text-[#A0A0A0] hover:border-[#1CA0E3]/40 hover:text-white transition-colors shrink-0 disabled:opacity-40">
+          {exempt ? "Exigir firma" : "Eximir"}
+        </button>
+      </div>
+    </div>
+  );
+
   if (contratos.length === 0) {
     return (
-      <div className="rounded-xl border border-[#252525] bg-[#141414] p-4">
-        <p className="text-sm text-[#A0A0A0]">
-          Aún no has subido ninguna plantilla de contrato. Súbelas desde el <strong className="text-white">Panel de la coach</strong> para poder asignarlas.
-        </p>
+      <div className="flex flex-col gap-4">
+        {exemptBanner}
+        <div className="rounded-xl border border-[#252525] bg-[#141414] p-4">
+          <p className="text-sm text-[#A0A0A0]">
+            Aún no has subido ninguna plantilla de contrato. Súbelas desde el <strong className="text-white">Panel de la coach</strong> para poder asignarlas.
+          </p>
+        </div>
+        {err && <p className="text-xs text-[#FF6B6B]">{err}</p>}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {exemptBanner}
       <div>
         <label className="block text-xs text-[#A0A0A0] mb-1.5">Contrato asignado</label>
         <div className="flex gap-2 flex-wrap">

@@ -3,10 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function AddClient() {
+type Tpl = { id: string; title: string };
+
+/**
+ * Alta de una clienta nueva. La coach elige aquí mismo qué contrato tendrá que
+ * firmar: al entrar por primera vez, la clienta pasa por la bienvenida (nombre,
+ * foto y condiciones) y acto seguido por la firma del contrato y del anexo de
+ * salud, sin poder usar el resto de la app hasta completarlo.
+ */
+export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; hasAnexo: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [templateId, setTemplateId] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [msg, setMsg] = useState("");
 
@@ -19,7 +28,7 @@ export default function AddClient() {
       const res = await fetch("/api/miembros/clientas/alta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
+        body: JSON.stringify({ email, name, templateId: templateId || undefined }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -28,9 +37,12 @@ export default function AddClient() {
         return;
       }
       setStatus("ok");
-      setMsg(d.warning ?? "Alta hecha y correo de bienvenida enviado ✓");
+      setMsg(d.warning ?? (templateId
+        ? "Alta hecha, contrato asignado y correo de bienvenida enviado ✓"
+        : "Alta hecha y correo de bienvenida enviado ✓"));
       setEmail("");
       setName("");
+      setTemplateId("");
       router.refresh();
     } catch {
       setStatus("error");
@@ -46,12 +58,33 @@ export default function AddClient() {
       <div className="flex gap-3 flex-wrap">
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email de la clienta" className={`${cls} flex-1 min-w-[200px]`} />
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="nombre (opcional)" className={cls} />
+      </div>
+
+      <div className="flex gap-3 flex-wrap mt-3">
+        <select
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          aria-label="Contrato que tendrá que firmar"
+          className={`${cls} flex-1 min-w-[220px]`}
+        >
+          <option value="">— Contrato que firmará (opcional) —</option>
+          {contracts.map((c) => (
+            <option key={c.id} value={c.id}>{c.title}</option>
+          ))}
+        </select>
         <button type="submit" disabled={status === "loading"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
           {status === "loading" ? "Dando de alta…" : "Dar de alta + enviar acceso"}
         </button>
       </div>
+
       {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
-      <p className="text-xs text-[#666666] mt-2">Se le da de alta y recibe un email de bienvenida con su enlace de acceso.</p>
+      <p className="text-xs text-[#666666] mt-2">
+        Recibe un email de bienvenida con su enlace de acceso. Si eliges contrato, al entrar por primera vez tendrá que poner su nombre y foto, aceptar las condiciones y firmar el contrato
+        {hasAnexo ? " junto con el anexo de salud" : ""} antes de poder usar la app.
+      </p>
+      {contracts.length === 0 && (
+        <p className="text-xs text-[#FFB800] mt-1">No hay plantillas de contrato subidas todavía. Súbelas desde el Panel de la coach.</p>
+      )}
     </form>
   );
 }

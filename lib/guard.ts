@@ -25,32 +25,49 @@ export async function requireMember(opts?: { skipContractGate?: boolean }): Prom
 }
 
 /**
- * Estado de la clienta en una sola consulta: si sigue activa y si ya pasó por
- * la pantalla de bienvenida (nombre, foto y aceptación de condiciones).
+ * Estado de la clienta en una sola consulta: si sigue activa, si ya pasó por
+ * la pantalla de bienvenida (nombre, foto y aceptación de condiciones) y si
+ * tiene contratos pendientes que le impidan entrar.
+ *
+ * EXENCIÓN: las clientas que ya estaban dadas de alta antes de implantar la
+ * firma obligatoria llevan `contracts_exempt = true` y nunca quedan bloqueadas,
+ * aunque la coach les asigne un contrato (podrán firmarlo, pero de forma
+ * voluntaria). El bloqueo solo se aplica a las altas nuevas.
  *
  * Degradación segura: si la consulta falla (Supabase caído) no bloqueamos, para
- * no dejar fuera a nadie por una incidencia puntual.
+ * no dejar fuera a nadie por una incidencia puntual. Por el mismo motivo, si la
+ * columna `contracts_exempt` todavía no existe se trata como exenta.
  */
-export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number }> {
-  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0 };
+export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number; contractsExempt: boolean }> {
+  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true };
   try {
     const [profRows, pending] = await Promise.all([
-      sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
+      sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null; contracts_exempt?: boolean | null }>(
         "profiles",
-        `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
+        `select=access_revoked,onboarding_completed_at,contracts_exempt&email=eq.${encodeURIComponent(email)}`
+      ).catch(() =>
+        // La columna aún no existe (falta la migración): leemos sin ella y
+        // tratamos a todo el mundo como exento, para no bloquear a nadie.
+        sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
+          "profiles",
+          `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
+        ).then((rows) => rows.map((r) => ({ ...r, contracts_exempt: true })))
       ),
       sbSelect<{ id: string }>(
         "contract_assignments",
         `select=id&member_email=eq.${encodeURIComponent(email)}&status=eq.pendiente`
       ).catch(() => [] as { id: string }[]),
     ]);
+    // Sin fila de perfil no podemos saber si es antigua: no bloqueamos.
+    const exempt = profRows.length === 0 || profRows[0]?.contracts_exempt !== false;
     return {
       revoked: profRows[0]?.access_revoked === true,
       needsOnboarding: !profRows[0]?.onboarding_completed_at,
-      pendingContracts: pending.length,
+      pendingContracts: exempt ? 0 : pending.length,
+      contractsExempt: exempt,
     };
   } catch {
-    return { revoked: false, needsOnboarding: false, pendingContracts: 0 };
+    return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true };
   }
 }
 

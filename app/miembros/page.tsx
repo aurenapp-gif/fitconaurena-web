@@ -36,10 +36,18 @@ export default async function MiembrosPage() {
 
   const name = profile?.display_name || email.split("@")[0];
 
-  // Foto + señal de la checklist de primeros pasos, en paralelo (independientes).
-  const [photoUrl, checkinDone] = await Promise.all([
+  // Foto + señal de la checklist + documentos pendientes, en paralelo.
+  const [photoUrl, checkinDone, pendingDocs] = await Promise.all([
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     admin ? Promise.resolve(false) : sbSelect("check_ins", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`).then((r) => r.length > 0).catch(() => false),
+    // Las clientas exentas (las de antes) no quedan bloqueadas, así que si la
+    // coach les asigna un contrato hay que avisarlas aquí de forma visible.
+    admin
+      ? Promise.resolve(0)
+      : sbSelect<{ id: string }>(
+          "contract_assignments",
+          `select=id&member_email=eq.${encodeURIComponent(email)}&status=eq.pendiente`
+        ).then((r) => r.length).catch(() => 0),
   ]);
 
   // Misma fuente de verdad que el formulario y la API (no duplicar la lista).
@@ -79,6 +87,26 @@ export default async function MiembrosPage() {
               <a href="/api/miembros/salir" className="btn-outline text-sm px-5 py-2.5">Cerrar sesión</a>
             </div>
           </div>
+
+          {/* Documentos pendientes de firma. Solo lo ven las clientas exentas:
+              a las nuevas el guard ya las lleva directamente a firmarlos. */}
+          {pendingDocs > 0 && (
+            <div className="card-dark p-6 !transform-none border-[#FFB800]/40 bg-[#FFB800]/5 mb-5">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-white mb-1">
+                    ✍️ Tienes {pendingDocs} documento{pendingDocs === 1 ? "" : "s"} pendiente{pendingDocs === 1 ? "" : "s"} de firma
+                  </h3>
+                  <p className="text-sm text-[#A0A0A0] max-w-xl">
+                    Tu coach te ha dejado {pendingDocs === 1 ? "un documento" : "unos documentos"} para rellenar y firmar. Solo te llevará un par de minutos.
+                  </p>
+                </div>
+                <Link href="/miembros/contrato" className="btn-brand text-sm px-6 py-3 shrink-0">
+                  Rellenar y firmar
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Checklist de primeros pasos (desaparece al completarse) */}
           {showChecklist && (

@@ -25,6 +25,7 @@ type Prof = {
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
+  contracts_exempt?: boolean | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
@@ -286,6 +287,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
               memberEmail={member}
               templates={allTemplates.filter((t) => t.active)}
               assignments={assignments.map((a) => ({ id: a.id, template_id: a.template_id, status: a.status }))}
+              exempt={profile?.contracts_exempt !== false}
             />
 
             {contratosFirmadosLista.length > 0 && (

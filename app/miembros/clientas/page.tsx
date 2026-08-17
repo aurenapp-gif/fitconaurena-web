@@ -28,7 +28,7 @@ export default async function ClientasPage() {
 
   // Todo en paralelo. Cada consulta cae por su cuenta para que el listado no se
   // caiga entero si una tabla flaquea.
-  const [members, profiles, checkins, habits, plans, techniques] = await Promise.all([
+  const [members, profiles, checkins, habits, plans, techniques, templates] = await Promise.all([
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email))),
     sbSelect<Prof>("profiles", "select=email,display_name,renewal_date")
       .catch((e) => { console.error("[clientas] profiles", e); return [] as Prof[]; }),
@@ -40,7 +40,12 @@ export default async function ClientasPage() {
       .catch(() => [] as PlanRow[]),
     sbSelect<Row>("technique_reviews", "select=member_email")
       .catch(() => [] as Row[]),
+    sbSelect<{ id: string; title: string; kind: string }>(
+      "contract_templates", "select=id,title,kind&active=is.true&order=created_at.asc"
+    ).catch(() => [] as { id: string; title: string; kind: string }[]),
   ]);
+  const contractTpls = templates.filter((t) => t.kind === "contrato").map((t) => ({ id: t.id, title: t.title }));
+  const hasAnexo = templates.some((t) => t.kind === "anexo_salud");
 
   // Indexes por email, para no recorrer las listas por cada clienta.
   const profByEmail = new Map(profiles.map((p) => [p.email, p]));
@@ -107,7 +112,7 @@ export default async function ClientasPage() {
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
-          <AddClient />
+          <AddClient contracts={contractTpls} hasAnexo={hasAnexo} />
 
           {members.length === 0 ? (
             <p className="text-[#A0A0A0]">Aún no tienes clientas dadas de alta (grupo &quot;Miembros&quot; en MailerLite).</p>
