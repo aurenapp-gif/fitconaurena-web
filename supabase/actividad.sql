@@ -18,3 +18,10 @@ create table if not exists public.activity_log (
 -- Consulta habitual: la actividad de una clienta, de lo más reciente a lo más antiguo.
 create index if not exists activity_log_member_idx
   on public.activity_log (member_email, created_at desc);
+
+-- RLS activado. IMPRESCINDIBLE: sin esto la tabla queda expuesta en la API
+-- pública de Supabase y cualquiera con la URL del proyecto puede leer, escribir
+-- y borrar (aquí, los correos de las clientas y cuándo entran). El backend usa
+-- la clave de servicio, que ignora el RLS, así que la web sigue funcionando
+-- igual; sin políticas, nadie más entra.
+alter table public.activity_log enable row level security;

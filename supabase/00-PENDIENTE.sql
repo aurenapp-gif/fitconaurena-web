@@ -58,3 +58,25 @@ create table if not exists public.activity_log (
 
 create index if not exists activity_log_member_idx
   on public.activity_log (member_email, created_at desc);
+
+-- 6) CERRAR EL ACCESO PÚBLICO --------------------------------
+-- Toda tabla nueva nace ABIERTA en la API pública de Supabase: sin RLS,
+-- cualquiera con la URL del proyecto puede leer, escribir y borrar. El backend
+-- entra con la clave de servicio, que ignora el RLS, así que activarlo no
+-- cambia nada para la web; sin políticas, no entra nadie más.
+--
+-- Este bloque recorre TODAS las tablas de public y activa el RLS en las que les
+-- falte, para que no vuelva a quedarse ninguna abierta por descuido.
+do $$
+declare t record;
+begin
+  for t in
+    select c.relname
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'r' and c.relrowsecurity = false
+  loop
+    execute format('alter table public.%I enable row level security', t.relname);
+    raise notice 'RLS activado en %', t.relname;
+  end loop;
+end $$;
