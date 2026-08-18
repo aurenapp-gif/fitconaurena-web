@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbSignedUploadUrl, safePath } from "@/lib/supabase";
 import { signPath } from "@/lib/token";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,11 @@ export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Acceso no disponible." }, { status: 403 });
+  // Cada permiso emitido habilita subir un vídeo (hasta 100 MB) directamente a
+  // Storage. 15 por hora cubre de sobra el uso real y acota el coste.
+  if (!rateLimit(`tecnica-sign:${email}`, 15, 3600_000)) {
+    return NextResponse.json({ error: "Demasiadas subidas seguidas. Prueba dentro de un rato." }, { status: 429 });
+  }
 
   let body: { filename?: unknown; kind?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
