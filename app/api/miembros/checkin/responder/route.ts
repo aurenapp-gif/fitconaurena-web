@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Faltan datos." }, { status: 400 });
   }
 
-  // Validación básica del id (uuid) para el filtro PostgREST.
-  if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
+  // El id va directo al filtro de PostgREST, así que solo se admite un uuid
+  // exacto: nada de caracteres que puedan cambiar el sentido de la consulta.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return NextResponse.json({ error: "ID no válido." }, { status: 400 });
   }
 

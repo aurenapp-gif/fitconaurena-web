@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbSelect, sbInsert, sbUpload, safePath } from "@/lib/supabase";
 import { validateUpload } from "@/lib/upload";
+import { rateLimit } from "@/lib/ratelimit";
 import { sendPushToEmail } from "@/lib/push";
 
 export const runtime = "nodejs";
@@ -50,6 +51,11 @@ export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
+  // Un check-in sube hasta tres fotos. 10 por hora es de sobra para el uso
+  // normal y evita que una cuenta robada llene el almacenamiento.
+  if (!rateLimit(`checkin:${email}`, 10, 3600_000)) {
+    return NextResponse.json({ error: "Has enviado varios check-ins seguidos. Prueba dentro de un rato." }, { status: 429 });
+  }
 
   let form: FormData;
   try {

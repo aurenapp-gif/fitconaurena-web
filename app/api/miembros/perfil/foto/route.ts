@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbUpsert, sbUpload, safePath } from "@/lib/supabase";
 import { validateUpload } from "@/lib/upload";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
+  // Cambiar la foto es cosa de una vez cada mucho: 12 por hora sobra.
+  if (!rateLimit(`foto:${email}`, 12, 3600_000)) {
+    return NextResponse.json({ error: "Demasiados intentos seguidos. Prueba dentro de un rato." }, { status: 429 });
+  }
 
   let form: FormData;
   try {

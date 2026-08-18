@@ -34,7 +34,12 @@ function validSignature(header: string | null, raw: string, key: string): boolea
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const key = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
-  if (key && !validSignature(req.headers.get("calendly-webhook-signature"), raw, key)) {
+  // Sin clave configurada NO se acepta nada: este endpoint es público, y sin
+  // comprobar la firma cualquiera podría cambiar el estado y la fecha de
+  // llamada de los leads. Mismo criterio que /api/cron: si falta el secreto,
+  // se cierra en vez de quedarse abierto.
+  if (!key || !validSignature(req.headers.get("calendly-webhook-signature"), raw, key)) {
+    if (!key) console.error("[calendly] falta CALENDLY_WEBHOOK_SIGNING_KEY: webhook rechazado");
     return NextResponse.json({ error: "Firma no válida." }, { status: 401 });
   }
 
