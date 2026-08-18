@@ -318,3 +318,26 @@ export async function sendMagicLink(to: string, loginUrl: string, code: string):
   </div>`;
   await send({ to, subject, html, text });
 }
+
+/**
+ * Avisa a la coach de que hay una duda nueva en el buzón anónimo.
+ *
+ * El correo NO incluye el texto de la duda a propósito: es contenido sensible
+ * (comida, cabeza, cuerpo) y el buzón promete anonimato. Se avisa de que hay
+ * algo nuevo y se entra a leerlo al área privada.
+ */
+export async function sendDudaNotice(to: string[], categoria: string, privada: boolean): Promise<void> {
+  const url = `${SITE_URL}/miembros/dudas`;
+  const subject = privada ? "🔒 Una clienta te pide respuesta en privado" : "💬 Nueva duda en el buzón anónimo";
+  const intro = privada
+    ? `Una clienta ha dejado una consulta sobre ${categoria} y ha pedido que le respondas en privado.`
+    : `Hay una duda nueva sobre ${categoria} en el buzón anónimo.`;
+  const text = `${intro}\n\nLéela en tu área: ${url}`;
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">${privada ? "Consulta privada 🔒" : "Nueva duda 💬"}</h2>
+    <p style="font-size:14px;line-height:1.5;">${escapeHtml(intro)}</p>
+    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Leer la duda</a>
+  </div>`;
+  await send({ to, subject, html, text });
+}

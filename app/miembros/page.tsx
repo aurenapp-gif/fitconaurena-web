@@ -153,6 +153,16 @@ export default async function MiembrosPage() {
             <Card title="Herramientas" desc="Asistentes que te resuelven dudas al instante: qué pedir en un restaurante o cómo hacer bien un ejercicio.">
               <Link href="/miembros/herramientas" className="btn-brand text-sm px-6 py-3">Ver herramientas</Link>
             </Card>
+            <Card
+              title="Dudas"
+              desc={admin
+                ? "Lo que no se atreven a preguntar en la llamada. Anónimo, y con las más votadas arriba."
+                : "Pregunta sin dar la cara. Nadie sabrá que has sido tú, ni siquiera tu coach."}
+            >
+              <Link href="/miembros/dudas" className="btn-brand text-sm px-6 py-3">
+                {admin ? "Ver las dudas" : "Dejar mi duda"}
+              </Link>
+            </Card>
             <Card title="Revisión de técnica" desc="Sube un vídeo corto de tu ejercicio y tu coach te corrige la técnica.">
               <Link href="/miembros/tecnica" className="btn-brand text-sm px-6 py-3">Subir vídeo de técnica</Link>
             </Card>
