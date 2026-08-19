@@ -7,6 +7,10 @@ import type { ContractTemplate } from "@/lib/contract";
 import { siteOrigin } from "@/lib/routeUtils";
 
 export const runtime = "nodejs";
+// Margen para los reintentos del correo de acceso: en el peor caso (Resend sin
+// responder) son 3 intentos de 12 s más las esperas, unos 39 s. Sin este margen
+// la función se cortaría antes y el alta quedaría a medias.
+export const maxDuration = 60;
 const WELCOME_TTL = 7 * 24 * 60 * 60 * 1000; // 7 días
 
 export async function POST(req: NextRequest) {
@@ -62,13 +66,21 @@ export async function POST(req: NextRequest) {
     // Si la columna de exención todavía no existe, guardamos al menos lo básico.
     .catch(() => sbUpsert("profiles", base).catch(() => {}));
 
+  // Los avisos se acumulan y se devuelven al final. NUNCA se sale antes de
+  // enviar el correo de acceso: sin ese correo la clienta no puede entrar, así
+  // que es lo último que debe fallar y lo único imprescindible de este alta.
+  const avisos: string[] = [];
+
   // Contrato elegido en el alta + anexo de salud, listos para firmar al entrar.
   if (templateId) {
     try {
       const now = new Date().toISOString();
+      // on_conflict con las columnas del índice: si ya tenía ese contrato
+      // asignado (por ejemplo al repetir el alta) no da error, simplemente no
+      // hace nada.
       const assign = (id: string) => sbInsertIgnore("contract_assignments", {
         member_email: email, template_id: id, status: "pendiente", assigned_by: me, assigned_at: now,
-      });
+      }, "member_email,template_id");
       await assign(templateId);
       const anexo = (await sbSelect<ContractTemplate>(
         "contract_templates",
@@ -76,22 +88,27 @@ export async function POST(req: NextRequest) {
       ).catch(() => []))[0];
       if (anexo) await assign(anexo.id);
     } catch (err) {
-      // El alta ya está hecha: no la tumbamos por esto, pero avisamos.
       console.error("[alta] asignar contrato", err);
-      return NextResponse.json({ ok: true, warning: "Alta hecha, pero no se pudo asignar el contrato. Asígnalo desde su ficha." });
+      avisos.push("no se pudo asignar el contrato (asígnalo desde su ficha)");
     }
   }
 
   // 2) Email de bienvenida con acceso directo (enlace válido 7 días).
+  let emailEnviado = false;
   try {
     const token = createMagicToken(email, WELCOME_TTL);
     const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
     await sendWelcomeEmail(email, url);
+    emailEnviado = true;
   } catch (err) {
     console.error("[alta] welcome email", err);
-    // El alta sí se hizo; avisamos de que el email falló.
-    return NextResponse.json({ ok: true, warning: "Alta hecha, pero el email de bienvenida falló." });
+    avisos.push("el email de acceso NO se ha enviado, vuelve a intentarlo");
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    email,
+    emailEnviado,
+    ...(avisos.length ? { warning: `Alta hecha, pero ${avisos.join("; ")}.` } : {}),
+  });
 }

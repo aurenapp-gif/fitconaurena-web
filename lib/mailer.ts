@@ -54,6 +54,16 @@ interface SendArgs {
   replyTo?: string;
 }
 
+/**
+ * Envía por Resend, con reintentos.
+ *
+ * Antes se abortaba a los 8 segundos y ese correo se perdía sin más: en los
+ * registros aparecían envíos cortados por tiempo. Un correo perdido no es un
+ * detalle — puede ser el enlace de acceso de una clienta nueva —, así que se da
+ * más margen y se reintenta ante un corte de tiempo, un fallo de red o un error
+ * temporal de Resend (429 o 5xx). Un rechazo definitivo (dirección inválida,
+ * clave mal) no se reintenta: fallaría igual.
+ */
 async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
@@ -61,18 +71,47 @@ async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<voi
   const payload: Record<string, unknown> = { from: FROM, to, subject, html, text };
   if (replyTo) payload.reply_to = replyTo;
 
-  const res = await fetchWithTimeout("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const INTENTOS = 3;
+  let ultimo = new Error("Resend: no se pudo enviar");
 
-  if (!res.ok) {
+  for (let intento = 1; intento <= INTENTOS; intento++) {
+    const r = await enviarUnaVez(apiKey, payload);
+    if (r.ok) return;
+    ultimo = r.error;
+    if (!r.reintentable || intento === INTENTOS) break;
+    await new Promise((res) => setTimeout(res, intento * 1000));
+  }
+
+  throw ultimo;
+}
+
+type Intento = { ok: true } | { ok: false; error: Error; reintentable: boolean };
+
+/** Un solo envío. Distingue lo que merece otro intento de lo que no. */
+async function enviarUnaVez(apiKey: string, payload: Record<string, unknown>): Promise<Intento> {
+  try {
+    const res = await fetchWithTimeout("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }, 12000);
+
+    if (res.ok) return { ok: true };
+
     const body = await res.text().catch(() => "");
-    throw new Error(`Resend send failed (${res.status}): ${body}`);
+    return {
+      ok: false,
+      error: new Error(`Resend send failed (${res.status}): ${body}`),
+      // Saturación o avería de Resend: reintentable. Un 4xx (dirección mal,
+      // clave inválida) fallaría igual, así que no se insiste.
+      reintentable: res.status === 429 || res.status >= 500,
+    };
+  } catch (err) {
+    // Corte por tiempo o fallo de red: es justo el caso que perdía correos.
+    return { ok: false, error: err instanceof Error ? err : new Error(String(err)), reintentable: true };
   }
 }
 

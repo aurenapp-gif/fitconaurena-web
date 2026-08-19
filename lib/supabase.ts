@@ -58,9 +58,15 @@ export async function sbInsert<T = unknown>(table: string, row: object): Promise
  * INSERT que ignora duplicados (ON CONFLICT DO NOTHING). Útil cuando hay una
  * restricción UNIQUE y dos peticiones simultáneas podrían chocar: en vez de un
  * error 409, no hace nada. No devuelve fila.
+ *
+ * `onConflict` es IMPRESCINDIBLE cuando la restricción UNIQUE no es la clave
+ * primaria: sin indicar las columnas, PostgREST solo sabe ignorar el choque de
+ * la primaria y devuelve 409 igualmente. Ejemplo: sbInsertIgnore(
+ * "contract_assignments", row, "member_email,template_id").
  */
-export async function sbInsertIgnore(table: string, row: object): Promise<void> {
-  const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
+export async function sbInsertIgnore(table: string, row: object, onConflict?: string): Promise<void> {
+  const qs = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : "";
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}${qs}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
     body: JSON.stringify(row),

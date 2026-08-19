@@ -18,6 +18,10 @@ export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; h
   const [templateId, setTemplateId] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [msg, setMsg] = useState("");
+  // Dirección a la que se acaba de enviar el acceso. Se muestra tal cual para
+  // que una errata al teclear se vea: es la causa más habitual de "no le ha
+  // llegado el correo", y desde el formulario en blanco no hay forma de notarla.
+  const [enviadoA, setEnviadoA] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,8 +42,9 @@ export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; h
       }
       setStatus("ok");
       setMsg(d.warning ?? (templateId
-        ? "Alta hecha, contrato asignado y correo de bienvenida enviado ✓"
-        : "Alta hecha y correo de bienvenida enviado ✓"));
+        ? "Alta hecha, contrato asignado y correo de acceso enviado ✓"
+        : "Alta hecha y correo de acceso enviado ✓"));
+      setEnviadoA(d.emailEnviado ? (d.email ?? email) : "");
       setEmail("");
       setName("");
       setTemplateId("");
@@ -78,6 +83,18 @@ export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; h
       </div>
 
       {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
+      {enviadoA && (
+        <div className="mt-2 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
+          <p className="text-xs text-[#A0A0A0]">
+            Enviado a <strong className="text-white break-all">{enviadoA}</strong>
+          </p>
+          <p className="text-[11px] text-[#666666] mt-1">
+            Comprueba que la dirección es exactamente la suya, letra por letra. Si sobra o falta una
+            letra el correo no llega a ningún sitio y no hay forma de saberlo. Dile también que mire
+            en spam o correo no deseado la primera vez.
+          </p>
+        </div>
+      )}
       <p className="text-xs text-[#666666] mt-2">
         Recibe un email de bienvenida con su enlace de acceso. Si eliges contrato, al entrar por primera vez tendrá que poner su nombre y foto, aceptar las condiciones y firmar el contrato
         {hasAnexo ? " junto con el anexo de salud" : ""} antes de poder usar la app.
