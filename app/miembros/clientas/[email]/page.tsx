@@ -6,13 +6,18 @@ import Navbar from "@/components/Navbar";
 import PlanUpload from "@/components/PlanUpload";
 import PlanDelete from "@/components/PlanDelete";
 import RenewalSetter from "@/components/RenewalSetter";
+import ServiceEndSetter from "@/components/ServiceEndSetter";
 import RemoveClient from "@/components/RemoveClient";
 import WeightChart from "@/components/WeightChart";
 import ContractAssign from "@/components/ContractAssign";
+import CallAdd from "@/components/CallAdd";
+import CallDelete from "@/components/CallDelete";
+import SetupSql from "@/components/SetupSql";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
-import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
+import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
+import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
 
@@ -21,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 type Prof = {
   email: string; display_name: string | null; photo_path: string | null;
-  questionnaire: Questionnaire | null; renewal_date: string | null;
+  questionnaire: Questionnaire | null; renewal_date: string | null; service_ends_at?: string | null;
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
@@ -47,6 +52,7 @@ const ACTION_LABEL: Record<string, string> = {
   plan_descargado: "Descargó un documento",
   contrato_abierto: "Abrió el contrato",
   herramienta_abierta: "Usó una herramienta",
+  llamada_abierta: "Vio su llamada estratégica",
 };
 
 export default async function ClientaPage({ params }: { params: { email: string } }) {
@@ -87,6 +93,20 @@ export default async function ClientaPage({ params }: { params: { email: string 
     sbSelect<{ created_at: string }>("technique_reviews", `select=created_at&member_email=eq.${encodeURIComponent(member)}`)
       .catch(() => [] as { created_at: string }[]),
   ]);
+
+  // Llamadas estratégicas de esta clienta. Si la tabla aún no existe se avisa
+  // con el SQL a mano, en vez de dejar la ficha a medias sin explicar por qué.
+  let calls: MemberCall[] = [];
+  let callsNeedSetup = false;
+  try {
+    calls = await sbSelect<MemberCall>(
+      "member_calls",
+      `select=*&member_email=eq.${encodeURIComponent(member)}&order=call_date.desc.nullslast,created_at.desc`
+    );
+  } catch (e) {
+    if (isMissingTable(e)) callsNeedSetup = true;
+    else console.error("[clienta] llamadas", e);
+  }
 
   const opened = activity.filter((a) => a.action === "plan_abierto" || a.action === "plan_descargado");
   const logins = activity.filter((a) => a.action === "acceso");
@@ -141,6 +161,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   const q = profile?.questionnaire ?? {};
   const r = renewalInfo(profile?.renewal_date ?? null);
+  const fin = serviceEndInfo(profile?.service_ends_at);
 
   // Gráfica y resumen de peso (solo pesos numéricos válidos).
   const points = checkins
@@ -208,6 +229,22 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <RenewalSetter member={member} current={profile?.renewal_date ?? undefined} />
           </div>
 
+          {/* Vencimiento del servicio contratado. Va aparte de la renovación
+              mensual a propósito: aquella se recalcula sola con cada plan, esta
+              es la fecha en la que se le acaba lo que ha contratado. */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h2 className="font-bold text-white">Vencimiento del servicio ({SERVICE_MONTHS} meses)</h2>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${fin.urgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>{fin.text}</span>
+            </div>
+            <p className="text-xs text-[#666666] mb-4">
+              {profile?.service_ends_at
+                ? `Termina el ${new Date(profile.service_ends_at + "T12:00:00Z").toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" })}. Se puso solo al darla de alta; cámbialo solo si con ella pactaste otra cosa.`
+                : `Esta clienta es anterior al cambio, por eso no tiene fecha. Las altas nuevas la reciben solas: ${SERVICE_MONTHS} meses desde el día del alta.`}
+            </p>
+            <ServiceEndSetter member={member} current={profile?.service_ends_at ?? undefined} />
+          </div>
+
           {/* Progreso de peso */}
           <div className="card-dark p-6 !transform-none mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -263,6 +300,56 @@ export default async function ClientaPage({ params }: { params: { email: string 
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Llamadas estratégicas: el enlace de la grabación de cada una */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h2 className="font-bold text-white">Llamadas estratégicas</h2>
+              {calls.length > 0 && (
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#1CA0E3] text-white">
+                  📞 {calls.length} {calls.length === 1 ? "llamada" : "llamadas"}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#666666] mb-4">
+              Pega aquí el enlace de la grabación de su llamada. Le aparece en su perfil, en la pestaña «Llamadas»,
+              y solo la ve ella.
+            </p>
+
+            {callsNeedSetup ? (
+              <SetupSql title="Falta un paso para poder subir llamadas" sql={CALLS_SQL} />
+            ) : (
+              <>
+                <CallAdd member={member} />
+
+                {calls.length > 0 && (
+                  <div className="mt-5 flex flex-col gap-2">
+                    <p className="text-xs font-bold text-[#666666] uppercase tracking-wide">Llamadas subidas</p>
+                    {calls.map((c) => (
+                      <div key={c.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                          {/* Título y fecha en dos líneas: en el móvil, con todo
+                              en una, la fecha se cortaba y era justo el dato que
+                              distingue una llamada de otra. */}
+                          <span className="min-w-0">
+                            <span className="block text-sm text-white truncate">📞 {c.title || DEFAULT_TITLE}</span>
+                            <span className="block text-xs text-[#666666]">{callDay(c)}</span>
+                          </span>
+                          <span className="flex items-center gap-3 shrink-0">
+                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>
+                            <CallDelete id={c.id} />
+                          </span>
+                        </div>
+                        {c.note && (
+                          <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">💬 {c.note}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/mailer";
 import { sbUpsert, sbSelect, sbInsertIgnore } from "@/lib/supabase";
+import { nuevoVencimiento } from "@/lib/profile";
 import type { ContractTemplate } from "@/lib/contract";
 import { siteOrigin } from "@/lib/routeUtils";
 
@@ -56,14 +57,30 @@ export async function POST(req: NextRequest) {
   // así una clienta ANTIGUA a la que se vuelva a dar de alta sin contrato sigue
   // exenta (no se le exige firmar nada), mientras que si se le asigna contrato
   // pasa a estar obligada, igual que una nueva.
+  // VENCIMIENTO DEL SERVICIO: doce meses desde hoy, puesto solo. La decisión
+  // de si toca fecha nueva o se respeta la que ya tiene vive en
+  // `nuevoVencimiento` (ver allí el porqué).
+  let serviceEnd: string | null = null;
+  try {
+    const prev = (await sbSelect<{ service_ends_at: string | null }>(
+      "profiles",
+      `select=service_ends_at&email=eq.${encodeURIComponent(email)}`
+    ))[0];
+    serviceEnd = nuevoVencimiento(prev?.service_ends_at);
+  } catch {
+    // La columna aún no existe (falta la migración): seguimos sin ella, que el
+    // alta no se caiga por esto.
+  }
+
   const base = {
     email,
     ...(name ? { display_name: name } : {}),
     access_revoked: false,
     updated_at: new Date().toISOString(),
   };
-  await sbUpsert("profiles", templateId ? { ...base, contracts_exempt: false } : base)
-    // Si la columna de exención todavía no existe, guardamos al menos lo básico.
+  const conVencimiento = serviceEnd ? { ...base, service_ends_at: serviceEnd } : base;
+  await sbUpsert("profiles", templateId ? { ...conVencimiento, contracts_exempt: false } : conVencimiento)
+    // Si alguna columna todavía no existe, guardamos al menos lo básico.
     .catch(() => sbUpsert("profiles", base).catch(() => {}));
 
   // Los avisos se acumulan y se devuelven al final. NUNCA se sale antes de

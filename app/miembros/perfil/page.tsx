@@ -7,9 +7,11 @@ import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
 import HabitsTracker from "@/components/HabitsTracker";
 import FileViewer from "@/components/FileViewer";
+import CallLink from "@/components/CallLink";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { callDay, DEFAULT_TITLE, type MemberCall } from "@/lib/llamadas";
 import type { Questionnaire } from "@/lib/profile";
 import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
@@ -83,7 +85,7 @@ export default async function PerfilPage() {
   const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
   // 1ª tanda: todo lo independiente en paralelo (una sola ida/vuelta, no en cascada).
-  const [profile, plans, habitRows, signatures] = await Promise.all([
+  const [profile, plans, habitRows, signatures, calls] = await Promise.all([
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
@@ -101,6 +103,12 @@ export default async function PerfilPage() {
           "contract_signatures",
           `select=*&member_email=eq.${encodeURIComponent(email)}&order=signed_at.desc`
         ).catch((e) => { console.error("[perfil] contract signatures", e); return [] as ContractSignature[]; }),
+    admin
+      ? Promise.resolve([] as MemberCall[])
+      : sbSelect<MemberCall>(
+          "member_calls",
+          `select=*&member_email=eq.${encodeURIComponent(email)}&order=call_date.desc.nullslast,created_at.desc`
+        ).catch((e) => { console.error("[perfil] llamadas", e); return [] as MemberCall[]; }),
   ]);
 
   // Plantillas asociadas a las firmas (para poder mostrar título + kind).
@@ -194,6 +202,40 @@ export default async function PerfilPage() {
               tabs={[
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
                 { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} /> },
+                { id: "llamadas", icon: "📞", label: "Llamadas", node: (
+                  <div className="card-dark p-6 !transform-none">
+                    <h2 className="font-bold text-white mb-1">Mis llamadas estratégicas</h2>
+                    <p className="text-xs text-[#666666] mb-4">
+                      Aquí tienes la grabación de tus llamadas, para que puedas volver a verlas cuando quieras.
+                    </p>
+                    {calls.length === 0 ? (
+                      <p className="text-sm text-[#666666]">
+                        Todavía no hay ninguna. Cuando tu coach suba la grabación de tu llamada, aparecerá aquí.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {calls.map((c, i) => (
+                          <div key={c.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              {i === 0 && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">La última</span>
+                              )}
+                              <span className="text-xs text-[#666666]">{callDay(c)}</span>
+                            </div>
+                            <p className="text-sm text-white font-bold mb-2">{c.title || DEFAULT_TITLE}</p>
+                            <CallLink url={c.url} title={c.title || DEFAULT_TITLE} />
+                            {c.note && (
+                              <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
+                                <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{c.note}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) },
                 { id: "contrato", icon: "📄", label: "Contrato", node: (
                   <div className="card-dark p-6 !transform-none">
                     <h2 className="font-bold text-white mb-3">Mis contratos firmados</h2>
