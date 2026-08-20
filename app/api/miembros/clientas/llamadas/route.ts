@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbDelete, isMissingTable } from "@/lib/supabase";
 import { safeLink, MAX_TITLE, MAX_NOTE } from "@/lib/llamadas";
+import { isValidDateISO } from "@/lib/profile";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const title = typeof data.title === "string" ? data.title.trim().slice(0, MAX_TITLE) : "";
   const note = typeof data.note === "string" ? data.note.trim().slice(0, MAX_NOTE) : "";
   const date = typeof data.date === "string" ? data.date.trim() : "";
-  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (date && !isValidDateISO(date)) {
     return NextResponse.json({ error: "Fecha no válida." }, { status: 400 });
   }
 

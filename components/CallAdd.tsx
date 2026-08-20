@@ -61,7 +61,7 @@ export default function CallAdd({ member }: { member: string }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={MAX_TITLE}
-          placeholder="Título (opcional): «Llamada de arranque»…"
+          placeholder="Título (opcional): «Llamada de onboarding»…"
           aria-label="Título de la llamada"
           className={`${cls} flex-1 min-w-[200px]`}
         />

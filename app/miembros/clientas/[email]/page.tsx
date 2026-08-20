@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import PlanUpload from "@/components/PlanUpload";
 import PlanDelete from "@/components/PlanDelete";
 import RenewalSetter from "@/components/RenewalSetter";
+import ServiceEndSetter from "@/components/ServiceEndSetter";
 import RemoveClient from "@/components/RemoveClient";
 import WeightChart from "@/components/WeightChart";
 import ContractAssign from "@/components/ContractAssign";
@@ -14,7 +15,7 @@ import CallDelete from "@/components/CallDelete";
 import SetupSql from "@/components/SetupSql";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
-import { PROFILE_FIELDS, renewalInfo, type Questionnaire } from "@/lib/profile";
+import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
@@ -25,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 type Prof = {
   email: string; display_name: string | null; photo_path: string | null;
-  questionnaire: Questionnaire | null; renewal_date: string | null;
+  questionnaire: Questionnaire | null; renewal_date: string | null; service_ends_at?: string | null;
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
@@ -160,6 +161,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   const q = profile?.questionnaire ?? {};
   const r = renewalInfo(profile?.renewal_date ?? null);
+  const fin = serviceEndInfo(profile?.service_ends_at);
 
   // Gráfica y resumen de peso (solo pesos numéricos válidos).
   const points = checkins
@@ -225,6 +227,22 @@ export default async function ClientaPage({ params }: { params: { email: string 
               <span className={`text-xs font-bold px-3 py-1 rounded-full ${r.urgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>{r.text}</span>
             </div>
             <RenewalSetter member={member} current={profile?.renewal_date ?? undefined} />
+          </div>
+
+          {/* Vencimiento del servicio contratado. Va aparte de la renovación
+              mensual a propósito: aquella se recalcula sola con cada plan, esta
+              es la fecha en la que se le acaba lo que ha contratado. */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h2 className="font-bold text-white">Vencimiento del servicio ({SERVICE_MONTHS} meses)</h2>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${fin.urgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>{fin.text}</span>
+            </div>
+            <p className="text-xs text-[#666666] mb-4">
+              {profile?.service_ends_at
+                ? `Termina el ${new Date(profile.service_ends_at + "T12:00:00Z").toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" })}. Se puso solo al darla de alta; cámbialo solo si con ella pactaste otra cosa.`
+                : `Esta clienta es anterior al cambio, por eso no tiene fecha. Las altas nuevas la reciben solas: ${SERVICE_MONTHS} meses desde el día del alta.`}
+            </p>
+            <ServiceEndSetter member={member} current={profile?.service_ends_at ?? undefined} />
           </div>
 
           {/* Progreso de peso */}
