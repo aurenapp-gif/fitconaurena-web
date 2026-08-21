@@ -9,6 +9,7 @@ import PhotoLightbox from "@/components/PhotoLightbox";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
+import { periodoDe, todayMadrid, NORMA } from "@/lib/revisiones";
 
 export const metadata: Metadata = { title: "Check-ins", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -115,6 +116,32 @@ export default async function CheckinsPage() {
         }).catch((e) => { console.error("[checkins] goal", e); return null; }),
   ]);
 
+  // Quincena en curso (día 1 o día 15). Para la clienta, si ya subió la suya;
+  // para la coach, quién la ha hecho y quién no.
+  const periodo = periodoDe(todayMadrid());
+  const hechaEstaQuincena = admin
+    ? false
+    : rows.some((r) => r.created_at.slice(0, 10) >= periodo.inicio);
+
+  let pendientes: string[] = [];
+  let alDia: string[] = [];
+  if (admin) {
+    try {
+      const [profs, hechas] = await Promise.all([
+        sbSelect<{ email: string; display_name: string | null; access_revoked: boolean | null }>(
+          "profiles", "select=email,display_name,access_revoked"
+        ),
+        sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${periodo.inicio}T00:00:00`),
+      ]);
+      const yaEstan = new Set(hechas.map((h) => h.member_email));
+      for (const p of profs) {
+        if (p.access_revoked === true || isAdmin(p.email)) continue;
+        (yaEstan.has(p.email) ? alDia : pendientes).push(p.display_name || p.email);
+      }
+      pendientes.sort(); alDia.sort();
+    } catch (e) { console.error("[checkins] pendientes", e); }
+  }
+
   const items = await withPhoto(admin ? rows : [...rows].reverse());
   // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
   const points = (admin ? [] : rows)
@@ -152,6 +179,47 @@ export default async function CheckinsPage() {
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
+
+          {/* Estado de la quincena en curso. A la clienta le dice si le falta la
+              suya; a la coach, quién la ha hecho y quién no. */}
+          {admin ? (
+            <div className="card-dark p-5 !transform-none mb-8">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <h2 className="font-bold text-white">Revisión del {periodo.etiqueta}</h2>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${pendientes.length === 0 ? "bg-[#1CA0E3] text-white" : "bg-[#FFB800]/20 text-[#FFB800] border border-[#FFB800]/40"}`}>
+                  {alDia.length} de {alDia.length + pendientes.length} hechas
+                </span>
+              </div>
+              <p className="text-xs text-[#666666] mb-3">{NORMA}</p>
+              {pendientes.length === 0 ? (
+                <p className="text-sm text-[#1CA0E3]">Todas al día ✓</p>
+              ) : (
+                <>
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
+                  <p className="text-sm text-white mb-3">{pendientes.join(" · ")}</p>
+                </>
+              )}
+              {alDia.length > 0 && (
+                <>
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-1.5">Hechas ({alDia.length})</p>
+                  <p className="text-sm text-[#A0A0A0]">{alDia.join(" · ")}</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className={`rounded-xl border px-5 py-4 mb-8 ${hechaEstaQuincena ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#FFB800]/40 bg-[#FFB800]/5"}`}>
+              <p className={`text-sm font-bold ${hechaEstaQuincena ? "text-[#1CA0E3]" : "text-[#FFB800]"}`}>
+                {hechaEstaQuincena
+                  ? `Revisión del ${periodo.etiqueta} hecha ✓`
+                  : `Te falta la revisión del ${periodo.etiqueta}`}
+              </p>
+              <p className="text-xs text-[#A0A0A0] mt-1">
+                {NORMA} {hechaEstaQuincena
+                  ? "La próxima te tocará en la siguiente fecha."
+                  : "Sube tu peso y tus 3 fotos (frente, perfil y espaldas)."}
+              </p>
+            </div>
+          )}
 
           {!admin && (
             <>
