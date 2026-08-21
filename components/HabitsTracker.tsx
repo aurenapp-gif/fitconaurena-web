@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { litros, vasos } from "@/lib/suplementos";
 
 type Today = { water: number | null; steps: number | null; sleep: number | null };
 
@@ -9,10 +10,13 @@ export default function HabitsTracker({
   initial,
   streak,
   last7,
+  aguaObjetivo,
 }: {
   initial: Today;
   streak: number;
   last7: { label: string; done: boolean }[];
+  /** Litros al día que le ha puesto su coach, si le ha puesto alguno. */
+  aguaObjetivo?: number | null;
 }) {
   const router = useRouter();
   const [water, setWater] = useState<number>(initial.water ?? 0);
@@ -73,7 +77,19 @@ export default function HabitsTracker({
             <button type="button" onClick={() => setWater((w) => Math.max(0, w - 1))} className="btn-outline w-10 h-10 !px-0 !py-0 text-lg">−</button>
             <span className="text-2xl font-extrabold text-white w-10 text-center">{water}</span>
             <button type="button" onClick={() => setWater((w) => Math.min(40, w + 1))} className="btn-outline w-10 h-10 !px-0 !py-0 text-lg">+</button>
+            {/* El objetivo lo pone la coach en litros, pero aquí se cuenta en
+                vasos: se enseñan los dos para que no haya que hacer cuentas. */}
+            {aguaObjetivo != null && (
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${water >= vasos(aguaObjetivo) ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
+                {water >= vasos(aguaObjetivo) ? "Objetivo cumplido ✓" : `de ${vasos(aguaObjetivo)}`}
+              </span>
+            )}
           </div>
+          {aguaObjetivo != null && (
+            <p className="text-xs text-[#666666] mt-2">
+              Tu coach te ha puesto <strong className="text-white">{litros(aguaObjetivo)} al día</strong>, que son unos {vasos(aguaObjetivo)} vasos.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 mb-5">

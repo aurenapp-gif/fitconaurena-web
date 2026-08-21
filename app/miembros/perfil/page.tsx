@@ -12,13 +12,14 @@ import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { callDay, DEFAULT_TITLE, type MemberCall } from "@/lib/llamadas";
+import { pauta, type Supplement } from "@/lib/suplementos";
 import type { Questionnaire } from "@/lib/profile";
 import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null };
+type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null; water_target_l?: number | null };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
 
@@ -85,7 +86,7 @@ export default async function PerfilPage() {
   const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
   // 1ª tanda: todo lo independiente en paralelo (una sola ida/vuelta, no en cascada).
-  const [profile, plans, habitRows, signatures, calls] = await Promise.all([
+  const [profile, plans, habitRows, signatures, calls, supplements] = await Promise.all([
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
@@ -109,6 +110,12 @@ export default async function PerfilPage() {
           "member_calls",
           `select=*&member_email=eq.${encodeURIComponent(email)}&order=call_date.desc.nullslast,created_at.desc`
         ).catch((e) => { console.error("[perfil] llamadas", e); return [] as MemberCall[]; }),
+    admin
+      ? Promise.resolve([] as Supplement[])
+      : sbSelect<Supplement>(
+          "member_supplements",
+          `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`
+        ).catch((e) => { console.error("[perfil] suplementos", e); return [] as Supplement[]; }),
   ]);
 
   // Plantillas asociadas a las firmas (para poder mostrar título + kind).
@@ -169,6 +176,32 @@ export default async function PerfilPage() {
           <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." />
         </div>
       </div>
+
+      {/* Suplementación: qué toma, cuánto, cuándo y dónde comprarlo. */}
+      {supplements.length > 0 && (
+        <div className="rounded-xl border border-[#252525] p-4 mt-4">
+          <p className="font-bold text-white mb-1">💊 Suplementación</p>
+          <p className="text-xs text-[#666666] mb-3">Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada.</p>
+          <div className="flex flex-col gap-2">
+            {supplements.map((s) => (
+              <div key={s.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-white">{s.name}</span>
+                    {pauta(s) && <span className="block text-xs text-[#A0A0A0] mt-0.5">{pauta(s)}</span>}
+                  </span>
+                  {s.url && (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">
+                      Comprarlo
+                    </a>
+                  )}
+                </div>
+                {s.note && <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">{s.note}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -201,7 +234,7 @@ export default async function PerfilPage() {
             <PerfilTabs
               tabs={[
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
-                { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} /> },
+                { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} aguaObjetivo={profile?.water_target_l ?? null} /> },
                 { id: "llamadas", icon: "📞", label: "Llamadas", node: (
                   <div className="card-dark p-6 !transform-none">
                     <h2 className="font-bold text-white mb-1">Mis llamadas estratégicas</h2>

@@ -13,8 +13,10 @@ import ContractAssign from "@/components/ContractAssign";
 import CallAdd from "@/components/CallAdd";
 import CallDelete from "@/components/CallDelete";
 import SetupSql from "@/components/SetupSql";
+import SupplementPlan from "@/components/SupplementPlan";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
+import { type Supplement } from "@/lib/suplementos";
 import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
@@ -30,7 +32,7 @@ type Prof = {
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
-  contracts_exempt?: boolean | null;
+  contracts_exempt?: boolean | null; water_target_l?: number | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
@@ -107,6 +109,16 @@ export default async function ClientaPage({ params }: { params: { email: string 
     if (isMissingTable(e)) callsNeedSetup = true;
     else console.error("[clienta] llamadas", e);
   }
+
+  // Pauta de agua y suplementación. Si la tabla aún no existe se sigue
+  // mostrando la ficha entera, solo que sin este apartado.
+  let supplements: Supplement[] = [];
+  try {
+    supplements = await sbSelect<Supplement>(
+      "member_supplements",
+      `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`
+    );
+  } catch (e) { console.error("[clienta] suplementos", e); }
 
   const opened = activity.filter((a) => a.action === "plan_abierto" || a.action === "plan_descargado");
   const logins = activity.filter((a) => a.action === "acceso");
@@ -301,6 +313,22 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Agua y suplementación: lo que tiene que tomar cada día */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h2 className="font-bold text-white">Agua y suplementación</h2>
+              {supplements.length > 0 && (
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#1CA0E3] text-white">
+                  💊 {supplements.length} {supplements.length === 1 ? "suplemento" : "suplementos"}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#666666] mb-5">
+              Le aparece en su perfil: el agua junto a sus hábitos y los suplementos junto a su plan.
+            </p>
+            <SupplementPlan member={member} agua={profile?.water_target_l ?? null} items={supplements} />
           </div>
 
           {/* Llamadas estratégicas: el enlace de la grabación de cada una */}
