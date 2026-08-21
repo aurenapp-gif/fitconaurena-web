@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMembers, isAdmin } from "@/lib/members";
+import { getMembers, isAdmin, adminEmails } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert, sbUpdate, sbDeleteObject } from "@/lib/supabase";
-import { sendCallReminder, sendCheckinReminder, sendPlanUpdateEmail } from "@/lib/mailer";
+import { sendCallReminder, sendCheckinReminder, sendCheckinReport, sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
+import { periodoDe, tocaAvisar, tocaParteCoach, textoAviso } from "@/lib/revisiones";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -145,36 +146,95 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2) Recordatorio de revisión cada ~15 días (si no ha hecho check-in ni se le
-  //    ha recordado en los últimos 15 días). Solo por la mañana (no de madrugada).
+  // 2) Revisiones en FECHAS FIJAS: día 1 y día 15 de cada mes.
+  //
+  //    Antes cada clienta llevaba su propio ciclo de quince días desde la última
+  //    que hizo, y acababan repartidas por todo el calendario. Ahora todas caen
+  //    el mismo día y la coach las compara de una sentada.
+  //
+  //    Se avisa a quien no la haya subido los días 0, 2 y 5 de la quincena, y a
+  //    la coach se le pasa el parte de quién falta los días 3 y 8.
+  const periodo = periodoDe(today);
+  const quincenaDesde = `${periodo.inicio}T00:00:00`;
+  let reportSent = false;
+
   if (nowHour >= REMINDER_HOUR) try {
-    const since = isoDaysAgo(15);
-    const recent = new Set(
-      (await sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)).map((r) => r.member_email)
+    // Quién ya la ha subido EN ESTA QUINCENA (no "en los últimos 15 días").
+    const hechas = new Set(
+      (await sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${quincenaDesde}`))
+        .map((r) => r.member_email)
     );
-    const profs = await sbSelect<{ email: string; last_checkin_reminder: string | null; created_at: string | null }>("profiles", "select=email,last_checkin_reminder,created_at");
+    // `last_checkin_report` tiene que venir en el SELECT: es lo que evita que el
+    // parte de la coach se le mande otra vez en cada pasada del cron (corre cada
+    // hora). Sin pedirlo, siempre sale undefined y se enviaría catorce veces.
+    const profs = await sbSelect<{
+      email: string; display_name: string | null; last_checkin_reminder: string | null;
+      created_at: string | null; last_checkin_report?: string | null;
+    }>(
+      "profiles",
+      "select=email,display_name,last_checkin_reminder,created_at,last_checkin_report"
+    ).catch(async (e) => {
+      // Si la columna aún no existe (falta la migración), se lee sin ella para
+      // que los recordatorios a las clientas sigan saliendo igualmente.
+      console.error("[cron] sin last_checkin_report", e);
+      return sbSelect<{
+        email: string; display_name: string | null; last_checkin_reminder: string | null;
+        created_at: string | null; last_checkin_report?: string | null;
+      }>("profiles", "select=email,display_name,last_checkin_reminder,created_at");
+    });
     const remMap = new Map(profs.map((p) => [p.email, p.last_checkin_reminder]));
     const joinedMap = new Map(profs.map((p) => [p.email, p.created_at]));
+    const nameMap = new Map(profs.map((p) => [p.email, p.display_name]));
+    const quien = (email: string) => nameMap.get(email) || email;
 
-    for (const m of members) {
-      if (recent.has(m.email)) continue; // hizo check-in hace poco
-      // Margen para clientas nuevas: no se les recuerda hasta 15 días después del
-      // alta. Si no, una recién dada de alta (sin check-ins aún) recibiría el
-      // recordatorio el primer día.
+    // Margen para las recién llegadas: a quien lleve menos de tres días dada de
+    // alta no se le reclama nada. Bastante tiene con instalarse y empezar.
+    const reciente = isoDaysAgo(3);
+    const enPlazo = members.filter((m) => {
       const joined = joinedMap.get(m.email);
-      if (joined && joined.slice(0, 10) >= since) continue;
-      const lastRem = remMap.get(m.email);
-      if (lastRem && lastRem >= since) continue; // ya se le recordó hace <15d
-      try {
-        await sendCheckinReminder(m.email);
-        sendPushToEmail(m.email, {
-          title: "Toca check-in 📲",
-          body: "Cuéntale a Aurena cómo te ha ido esta semana.",
-          url: "/miembros/checkins",
-        }).catch((e) => console.error("[cron] push checkin", e));
-        await sbUpsert("profiles", { email: m.email, last_checkin_reminder: today, updated_at: new Date().toISOString() });
-        checkinSent++;
-      } catch (e) { console.error("[cron] checkin", m.email, e); }
+      return !(joined && joined.slice(0, 10) >= reciente);
+    });
+    const faltan = enPlazo.filter((m) => !hechas.has(m.email));
+
+    // 2a) Aviso a las clientas que la tienen sin subir.
+    if (tocaAvisar(periodo)) {
+      const aviso = textoAviso(periodo);
+      for (const m of faltan) {
+        // Un aviso al día como mucho: si el cron se dispara dos veces, no repite.
+        if (remMap.get(m.email) === today) continue;
+        try {
+          await sendCheckinReminder(m.email, aviso);
+          sendPushToEmail(m.email, {
+            title: aviso.heading,
+            body: periodo.dia === 0 ? "Hoy toca: peso y tus 3 fotos." : `Te falta la revisión del ${periodo.etiqueta}.`,
+            url: "/miembros/checkins",
+          }).catch((e) => console.error("[cron] push checkin", e));
+          await sbUpsert("profiles", { email: m.email, last_checkin_reminder: today, updated_at: new Date().toISOString() });
+          checkinSent++;
+        } catch (e) { console.error("[cron] checkin", m.email, e); }
+      }
+    }
+
+    // 2b) Parte para la coach: quién la ha hecho y quién no.
+    //     Idempotente con `last_checkin_report` en su propia ficha, para que dos
+    //     ejecuciones del mismo día no le manden el parte dos veces.
+    const coaches = adminEmails();
+    if (tocaParteCoach(periodo) && coaches.length > 0) {
+      const yaEnviado = profs.find((p) => p.email === coaches[0]);
+      if (yaEnviado?.last_checkin_report !== today) {
+        try {
+          await sendCheckinReport(
+            coaches,
+            periodo.etiqueta,
+            enPlazo.filter((m) => hechas.has(m.email)).map((m) => quien(m.email)).sort(),
+            faltan.map((m) => quien(m.email)).sort()
+          );
+          for (const c of coaches) {
+            await sbUpsert("profiles", { email: c, last_checkin_report: today, updated_at: new Date().toISOString() }).catch(() => {});
+          }
+          reportSent = true;
+        } catch (e) { console.error("[cron] parte revisiones", e); }
+      }
     }
   } catch (e) {
     console.error("[cron] checkin reminders", e);
@@ -254,5 +314,5 @@ export async function GET(req: NextRequest) {
     console.error("[cron] técnica cleanup", e);
   }
 
-  return NextResponse.json({ ok: true, callSent, checkinSent, habitPushed, planSeqSent, techniqueCleaned });
+  return NextResponse.json({ ok: true, quincena: periodo.inicio, diaDeQuincena: periodo.dia, callSent, checkinSent, reportSent, habitPushed, planSeqSent, techniqueCleaned });
 }

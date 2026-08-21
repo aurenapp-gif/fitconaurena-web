@@ -311,19 +311,84 @@ export async function sendCallReminder(to: string): Promise<void> {
   await send({ to, subject, html, text });
 }
 
-/** Recordatorio para que la clienta suba su revisión (check-in). */
-export async function sendCheckinReminder(to: string): Promise<void> {
-  const subject = "📸 Toca tu revisión quincenal";
+/**
+ * Recordatorio para que la clienta suba su revisión (check-in).
+ *
+ * El texto lo decide `textoAviso` según lo que se haya retrasado: no es lo
+ * mismo el aviso del propio día 1 que el tercero, cinco días después.
+ */
+export async function sendCheckinReminder(
+  to: string,
+  aviso?: { subject: string; heading: string; message: string }
+): Promise<void> {
+  const a = aviso ?? {
+    subject: "📸 Toca tu revisión",
+    heading: "Toca tu revisión 📸",
+    message: "Sube tu peso y tus 3 fotos (frente, perfil y espaldas) para seguir tu progreso.",
+  };
   const url = `${SITE_URL}/miembros/checkins`;
-  const text = `Han pasado ~15 días: toca subir tu revisión (peso + 3 fotos). Hazla aquí: ${url}`;
+  const text = `${a.message}\n\nHazla aquí: ${url}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
       <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
-      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Toca tu revisión 📸</h1>
-      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Han pasado unos 15 días. Sube tu <strong style="color:#fff;">peso y tus 3 fotos</strong> (frente, perfil, espaldas) para seguir tu progreso.</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">${escapeHtml(a.heading)}</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">${escapeHtml(a.message)}</p>
       <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Hacer mi revisión</a>
     </div>
+  </div>`;
+  await send({ to, subject: a.subject, html, text });
+}
+
+/** Avisa a la coach en cuanto una clienta sube su revisión. */
+export async function sendCheckinDoneNotice(to: string[], quien: string, quincena: string): Promise<void> {
+  const url = `${SITE_URL}/miembros/checkins`;
+  const subject = `✅ ${quien} ha subido su revisión`;
+  const text = `${quien} acaba de subir su revisión del ${quincena}.\n\nVerla: ${url}`;
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 8px;">Revisión subida ✅</h2>
+    <p style="font-size:14px;line-height:1.5;"><strong>${escapeHtml(quien)}</strong> acaba de subir su revisión del ${escapeHtml(quincena)}.</p>
+    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver la revisión</a>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
+/**
+ * Parte para la coach: quién ha hecho la revisión de la quincena y quién no.
+ * Las que faltan van primero, que es lo que hay que mirar.
+ */
+export async function sendCheckinReport(
+  to: string[],
+  quincena: string,
+  hechas: string[],
+  faltan: string[]
+): Promise<void> {
+  const url = `${SITE_URL}/miembros/checkins`;
+  const total = hechas.length + faltan.length;
+  const subject = faltan.length === 0
+    ? `✅ Revisión del ${quincena}: las ${total} hechas`
+    : `⏳ Revisión del ${quincena}: faltan ${faltan.length} de ${total}`;
+
+  const lista = (nombres: string[]) =>
+    nombres.length === 0
+      ? `<p style="font-size:14px;color:#666;margin:0 0 16px;">Ninguna.</p>`
+      : `<ul style="font-size:14px;line-height:1.7;margin:0 0 16px;padding-left:20px;">${nombres.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
+
+  const text =
+    `Revisión del ${quincena} — ${hechas.length} de ${total} hechas.\n\n` +
+    `SIN HACER (${faltan.length}):\n${faltan.map((n) => `  · ${n}`).join("\n") || "  ninguna"}\n\n` +
+    `Hechas (${hechas.length}):\n${hechas.map((n) => `  · ${n}`).join("\n") || "  ninguna"}\n\n${url}`;
+
+  const html = `
+  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
+    <h2 style="margin:0 0 4px;">Revisión del ${escapeHtml(quincena)}</h2>
+    <p style="font-size:14px;color:#666;margin:0 0 20px;">${hechas.length} de ${total} hechas.</p>
+    <h3 style="font-size:15px;margin:0 0 6px;">Sin hacer (${faltan.length})</h3>
+    ${lista(faltan)}
+    <h3 style="font-size:15px;margin:0 0 6px;">Hechas (${hechas.length})</h3>
+    ${lista(hechas)}
+    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver las revisiones</a>
   </div>`;
   await send({ to, subject, html, text });
 }

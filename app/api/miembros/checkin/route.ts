@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySession } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, adminEmails } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbSelect, sbInsert, sbUpload, safePath } from "@/lib/supabase";
 import { validateUpload } from "@/lib/upload";
 import { rateLimit } from "@/lib/ratelimit";
 import { sendPushToEmail } from "@/lib/push";
+import { sendCheckinDoneNotice } from "@/lib/mailer";
+import { periodoDe, todayMadrid } from "@/lib/revisiones";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -123,6 +125,24 @@ export async function POST(req: NextRequest) {
     console.error("[api/miembros/checkin] error", err);
     return NextResponse.json({ error: "No se pudo guardar el check-in." }, { status: 500 });
   }
+
+  // Avisa a la coach al momento (no bloqueante): quiere enterarse en cuanto
+  // alguien sube su revisión, sin tener que ir mirando.
+  try {
+    const coaches = adminEmails();
+    if (coaches.length > 0) {
+      const nombre = (await sbSelect<{ display_name: string | null }>(
+        "profiles", `select=display_name&email=eq.${encodeURIComponent(email)}`
+      ).catch(() => []))[0]?.display_name || email;
+      const quincena = periodoDe(todayMadrid()).etiqueta;
+      sendCheckinDoneNotice(coaches, nombre, quincena).catch((e) => console.error("[checkin] aviso coach", e));
+      sendPushToEmail(coaches[0], {
+        title: "Revisión subida ✅",
+        body: `${nombre} ha subido su revisión del ${quincena}.`,
+        url: "/miembros/checkins",
+      }).catch((e) => console.error("[checkin] push coach", e));
+    }
+  } catch (e) { console.error("[checkin] aviso coach", e); }
 
   // Hito (no bloqueante): ¿ha alcanzado su objetivo o un nuevo kg? Felicitación.
   let celebrate: string | null = null;
