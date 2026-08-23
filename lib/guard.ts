@@ -16,6 +16,8 @@ export async function requireMember(opts?: { skipContractGate?: boolean }): Prom
   // excepción (NEXT_REDIRECT) que un catch tragaría, anulando el corte.
   const state = await memberState(email);
   if (state.revoked) redirect("/miembros/acceso?revoked=1");
+  // Eligió esperar los catorce días: todavía no hay servicio que prestar.
+  if (enEspera(state.accessFrom)) redirect(`/miembros/espera?hasta=${state.accessFrom}`);
   if (state.needsOnboarding) redirect("/miembros/bienvenida");
   // Si tiene contratos pendientes, la mandamos a firmarlos antes de nada. El
   // opt-out (skipContractGate) es para la propia página de firma, que no puede
@@ -38,20 +40,20 @@ export async function requireMember(opts?: { skipContractGate?: boolean }): Prom
  * no dejar fuera a nadie por una incidencia puntual. Por el mismo motivo, si la
  * columna `contracts_exempt` todavía no existe se trata como exenta.
  */
-export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number; contractsExempt: boolean }> {
-  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true };
+export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number; contractsExempt: boolean; accessFrom: string | null }> {
+  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true, accessFrom: null };
   try {
     const [profRows, pending] = await Promise.all([
-      sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null; contracts_exempt?: boolean | null }>(
+      sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null; contracts_exempt?: boolean | null; access_from?: string | null }>(
         "profiles",
-        `select=access_revoked,onboarding_completed_at,contracts_exempt&email=eq.${encodeURIComponent(email)}`
+        `select=access_revoked,onboarding_completed_at,contracts_exempt,access_from&email=eq.${encodeURIComponent(email)}`
       ).catch(() =>
-        // La columna aún no existe (falta la migración): leemos sin ella y
+        // Alguna columna aún no existe (falta la migración): leemos sin ellas y
         // tratamos a todo el mundo como exento, para no bloquear a nadie.
         sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null }>(
           "profiles",
           `select=access_revoked,onboarding_completed_at&email=eq.${encodeURIComponent(email)}`
-        ).then((rows) => rows.map((r) => ({ ...r, contracts_exempt: true })))
+        ).then((rows) => rows.map((r) => ({ ...r, contracts_exempt: true, access_from: null })))
       ),
       sbSelect<{ id: string }>(
         "contract_assignments",
@@ -65,10 +67,29 @@ export async function memberState(email: string): Promise<{ revoked: boolean; ne
       needsOnboarding: !profRows[0]?.onboarding_completed_at,
       pendingContracts: exempt ? 0 : pending.length,
       contractsExempt: exempt,
+      accessFrom: profRows[0]?.access_from ?? null,
     };
   } catch {
-    return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true };
+    return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true, accessFrom: null };
   }
+}
+
+/**
+ * ¿Todavía está en el plazo de espera que ella misma eligió?
+ *
+ * Si en el Anexo II-A marcó «prefiero esperar», el servicio NO empieza hasta que
+ * pasen los catorce días: ni plataforma, ni contenidos, ni llamada. Darle acceso
+ * antes sería entregarle contenido digital sin que lo haya pedido, y entonces
+ * conserva el derecho a que se le devuelva el 100 %.
+ *
+ * Se compara por DÍA en horario de Madrid: con UTC, entre las 00:00 y las 02:00
+ * el servidor creería que aún es el día anterior y la dejaría fuera una noche
+ * de más.
+ */
+export function enEspera(accessFrom: string | null | undefined): boolean {
+  if (!accessFrom) return false;
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
+  return hoy < accessFrom;
 }
 
 /**

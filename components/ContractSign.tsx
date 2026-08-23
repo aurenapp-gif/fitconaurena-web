@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ContractField, ContractKind } from "@/lib/contract";
+import { esObligatorio, type ContractField, type ContractKind } from "@/lib/contract";
 
 export type ContractItem = {
   assignmentId: string;
@@ -88,6 +88,8 @@ function ContractCard({
     const v: Record<string, string | boolean> = {};
     for (const f of item.fields) {
       if (f.type === "checkbox") v[f.key] = false;
+      // Los radios arrancan VACÍOS: nada preseleccionado.
+      else if (f.type === "radio") v[f.key] = "";
       else if (f.key === "nombre_completo" && defaultName) v[f.key] = defaultName;
       else if (defaultValues?.[f.key]) v[f.key] = defaultValues[f.key];
       else v[f.key] = "";
@@ -212,7 +214,19 @@ function ContractCard({
   }
 
   function setField(key: string, val: string | boolean) {
-    setValues((prev) => ({ ...prev, [key]: val }));
+    setValues((prev) => {
+      const next = { ...prev, [key]: val };
+      // Si cambia de «empezar ya» a «prefiero esperar», el reconocimiento de
+      // pérdida del derecho deja de tener sentido y se desmarca. Si se quedara
+      // marcado, se enviaría un consentimiento contradictorio que el servidor
+      // rechaza, y la clienta no entendería por qué.
+      for (const f of item.fields) {
+        if (f.requiredIf && f.requiredIf.key === key && String(val) !== f.requiredIf.value) {
+          next[f.key] = false;
+        }
+      }
+      return next;
+    });
   }
 
   async function submit() {
@@ -223,9 +237,14 @@ function ContractCard({
     // Validación básica en cliente (el backend re-valida).
     for (const f of item.fields) {
       if (f.key === "detalle_afirmativas") continue;
-      if (!f.required) continue;
+      if (!esObligatorio(f, values)) continue;
       const v = values[f.key];
-      if (f.type === "checkbox") {
+      if (f.type === "radio") {
+        const permitidos = (f.options ?? []).map((o) => o.value);
+        if (typeof v !== "string" || !permitidos.includes(v)) {
+          setStatus("error"); setMsg("Elige cuándo quieres que empiece el servicio."); return;
+        }
+      } else if (f.type === "checkbox") {
         if (v !== true) { setStatus("error"); setMsg(`Falta aceptar: “${f.label}”.`); return; }
       } else if (f.type === "yesno") {
         if (v !== "si" && v !== "no") { setStatus("error"); setMsg(`Responde SÍ o NO: “${f.label}”.`); return; }
@@ -281,9 +300,21 @@ function ContractCard({
       )}
 
       <div className="flex flex-col gap-4 mb-6">
-        {item.fields.map((f) => (
-          <FieldRow key={f.key} field={f} value={values[f.key]} onChange={(v) => setField(f.key, v)} inputCls={inputCls} />
-        ))}
+        {item.fields.map((f) => {
+          // El reconocimiento de pérdida del derecho solo se enseña si ha
+          // elegido empezar ya: es la condición que le da sentido.
+          if (f.requiredIf && String(values[f.requiredIf.key] ?? "") !== f.requiredIf.value) return null;
+          return (
+            <FieldRow
+              key={f.key}
+              field={f}
+              value={values[f.key]}
+              onChange={(v) => setField(f.key, v)}
+              inputCls={inputCls}
+              obligatorio={esObligatorio(f, values)}
+            />
+          );
+        })}
       </div>
 
       <div className="border-t border-[#252525] pt-6">
@@ -318,13 +349,57 @@ function ContractCard({
 }
 
 function FieldRow({
-  field, value, onChange, inputCls,
+  field, value, onChange, inputCls, obligatorio,
 }: {
   field: ContractField;
   value: string | boolean | undefined;
   onChange: (v: string | boolean) => void;
   inputCls: string;
+  obligatorio?: boolean;
 }) {
+  const marcaObligatorio = obligatorio ?? field.required;
+
+  // Elección del inicio del servicio (Anexo II-A). Nada preseleccionado: el
+  // consentimiento tiene que ser un clic de la clienta, no un valor de fábrica.
+  if (field.type === "radio") {
+    return (
+      <fieldset className="rounded-xl border border-[#1CA0E3]/30 bg-[#1CA0E3]/[0.04] p-5">
+        <legend className="px-2 text-sm font-bold text-white">
+          {field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}
+        </legend>
+        {field.hint && <p className="text-xs text-[#A0A0A0] mb-4">{field.hint}</p>}
+        <div className="flex flex-col gap-3">
+          {(field.options ?? []).map((o) => {
+            const on = value === o.value;
+            return (
+              <label
+                key={o.value}
+                className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
+                  on ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#0A0A0A] hover:border-[#1CA0E3]/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={field.key}
+                  value={o.value}
+                  checked={on}
+                  onChange={() => onChange(o.value)}
+                  className="mt-1 w-4 h-4 accent-[#1CA0E3] shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className={`block font-bold ${o.destacar ? "text-base text-white" : "text-sm text-[#E5E5E5]"}`}>
+                    {o.label}
+                  </span>
+                  {o.detalle && <span className="block text-xs text-[#A0A0A0] mt-1.5 leading-relaxed">{o.detalle}</span>}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }
+
   if (field.type === "checkbox") {
     return (
       <label className="flex items-start gap-3 cursor-pointer">
@@ -334,14 +409,14 @@ function FieldRow({
           onChange={(e) => onChange(e.target.checked)}
           className="mt-0.5 w-4 h-4 accent-[#1CA0E3] shrink-0"
         />
-        <span className="text-sm text-[#A0A0A0]">{field.label}{field.required && <span className="text-[#1CA0E3]"> *</span>}</span>
+        <span className="text-sm text-[#A0A0A0]">{field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}</span>
       </label>
     );
   }
   if (field.type === "yesno") {
     return (
       <div>
-        <p className="text-sm text-[#A0A0A0] mb-2">{field.label}{field.required && <span className="text-[#1CA0E3]"> *</span>}</p>
+        <p className="text-sm text-[#A0A0A0] mb-2">{field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}</p>
         <div className="flex gap-2">
           {(["si", "no"] as const).map((opt) => (
             <button
@@ -378,7 +453,7 @@ function FieldRow({
   return (
     <div>
       <label className="block text-xs text-[#A0A0A0] mb-1.5">
-        {field.label}{field.required && <span className="text-[#1CA0E3]"> *</span>}
+        {field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}
       </label>
       <input
         type={type}

@@ -340,6 +340,26 @@ export async function sendCheckinReminder(
   await send({ to, subject: a.subject, html, text });
 }
 
+/**
+ * Se acabó el plazo de espera que la clienta eligió en el Anexo II-A: hoy
+ * empieza su programa de verdad.
+ */
+export async function sendEsperaTerminada(to: string): Promise<void> {
+  const url = MEMBER_AREA_URL;
+  const subject = "🚀 Hoy empieza tu programa";
+  const text = `Se han cumplido los catorce días que elegiste esperar. Tu área ya está abierta: ${url}`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Hoy empieza tu programa 🚀</h1>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Se han cumplido los catorce días que elegiste esperar antes de comenzar. Tu área ya está abierta: entra y empezamos.</p>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Entrar a mi área</a>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
 /** Avisa a la coach en cuanto una clienta sube su revisión. */
 export async function sendCheckinDoneNotice(to: string[], quien: string, quincena: string): Promise<void> {
   const url = `${SITE_URL}/miembros/checkins`;

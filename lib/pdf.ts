@@ -17,7 +17,13 @@
  */
 
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
-import type { ContractField, ContractKind } from "@/lib/contract";
+import {
+  OPCION_INMEDIATO,
+  OPCION_DIFERIDO,
+  DIAS_DESISTIMIENTO,
+  type ContractField,
+  type ContractKind,
+} from "@/lib/contract";
 
 const A4: [number, number] = [595.28, 841.89];
 const INK = rgb(0.04, 0.04, 0.04);
@@ -37,6 +43,10 @@ export type SignedPdfInput = {
   title: string;
   fields: ContractField[];
   fieldValues: Record<string, unknown>;
+  /** Día en que arranca el servicio. Con inicio inmediato es hoy; con el
+   *  diferido, catorce días después. Sirve para el Anexo III (fecha de inicio y
+   *  día de cargo). */
+  serviceStart?: Date;
 };
 
 function madridStamp(d: Date): string {
@@ -156,6 +166,38 @@ async function fillTemplateForm(pdf: PDFDocument, opts: SignedPdfInput): Promise
       timeZone: "Europe/Madrid", day: "numeric", month: "long", year: "numeric",
     }).format(opts.signedAt);
     texts.lugar_fecha = [asText(v.ciudad), dia].filter(Boolean).join(", ");
+
+    // ---- ANEXO II-A: la elección sobre el inicio del servicio ----
+    // Esto es lo que faltaba. Sin estas casillas marcadas, el contrato no
+    // acredita ni la petición expresa de inicio inmediato ni el reconocimiento
+    // de pérdida del derecho, y la clienta conserva los 14 días completos.
+    const eleccion = asText(v.inicio_servicio);
+    if (eleccion === OPCION_INMEDIATO) checks.push("inicio_opcion1");
+    if (eleccion === OPCION_DIFERIDO) checks.push("inicio_opcion2");
+    // Solo con inicio inmediato: con el diferido no hay nada que reconocer.
+    if (eleccion === OPCION_INMEDIATO && v.reconoce_perdida === true) checks.push("reconoce_perdida");
+
+    // Fecha y firma de los tres anexos que la piden.
+    const dmyHoy = new Intl.DateTimeFormat("es-ES", {
+      timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", year: "numeric",
+    }).format(opts.signedAt);
+    for (const p of ["anexo1", "anexo2", "anexo3b", "anexo4"]) {
+      texts[`${p}_firma`] = texts.nombre_completo;
+      texts[`${p}_fecha`] = dmyHoy;
+    }
+    // La clienta rellena el Anexo I en la misma sesión, así que consta recibido.
+    checks.push("anexo1_recibido");
+
+    // Datos del servicio que se calculan solos (Anexo III).
+    if (opts.serviceStart) {
+      texts.fecha_inicio = new Intl.DateTimeFormat("es-ES", {
+        timeZone: "Europe/Madrid", day: "numeric", month: "long", year: "numeric",
+      }).format(opts.serviceStart);
+      texts.dia_cargo = String(
+        Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" })
+          .format(opts.serviceStart).slice(8, 10))
+      );
+    }
   }
 
   let filled = 0;
@@ -268,6 +310,25 @@ export async function buildSignedContractPdf(opts: SignedPdfInput): Promise<Uint
     row("IP", opts.ip || "—");
     const ua = (opts.userAgent || "—").slice(0, 90);
     row("Dispositivo", ua);
+
+    // La elección del Anexo II-A también en el certificado: así queda a la
+    // vista sin tener que buscarla dentro del contrato, que es donde hará falta
+    // si algún día hay que acreditarla.
+    if (opts.kind !== "anexo_salud") {
+      const eleccion = asText(opts.fieldValues.inicio_servicio);
+      row(
+        "Inicio del servicio",
+        eleccion === OPCION_INMEDIATO ? "Opción 1 — Inicio inmediato solicitado"
+          : eleccion === OPCION_DIFERIDO ? `Opción 2 — Diferido ${DIAS_DESISTIMIENTO} días`
+          : "No consta",
+      );
+      row(
+        "Pérdida del desistimiento",
+        eleccion === OPCION_INMEDIATO
+          ? (opts.fieldValues.reconoce_perdida === true ? "Aceptado" : "NO aceptado")
+          : "No aplica",
+      );
+    }
 
     y -= 16;
     page.drawText("Firma:", { x: M, y, size: 10, font, color: MUTED });

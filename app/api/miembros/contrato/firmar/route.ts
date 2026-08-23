@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, adminEmails } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sbSelect, sbInsert, sbUpload, sbDownload, sbUpdate, safePath } from "@/lib/supabase";
+import { sbSelect, sbInsert, sbUpload, sbDownload, sbUpdate, sbUpsert, safePath } from "@/lib/supabase";
 import {
   CONTRACT_BUCKET,
+  DIAS_DESISTIMIENTO,
+  OPCION_DIFERIDO,
+  OPCION_INMEDIATO,
   fieldsFor,
   validateFields,
   type ContractTemplate,
@@ -88,6 +91,19 @@ export async function POST(req: NextRequest) {
   const userAgent = (req.headers.get("user-agent") ?? "—").slice(0, 300);
   const signedAt = new Date();
 
+  // ANEXO II-A. La elección solo existe en el contrato, no en el anexo de salud.
+  //
+  // FAIL-CLOSED: si el contrato no trae elección válida, se difiere. Dar acceso
+  // sin petición expresa de inicio inmediato es entregar contenido digital sin
+  // que se haya pedido, y entonces se le debe el 100 % del importe. Ante la
+  // duda, esperar cuesta catorce días; equivocarse cuesta el contrato entero.
+  const esContrato = tpl.kind !== "anexo_salud";
+  const eleccion = esContrato ? String(values.inicio_servicio ?? "") : "";
+  const inmediato = eleccion === OPCION_INMEDIATO && values.reconoce_perdida === true;
+  const serviceStart = new Date(signedAt);
+  if (esContrato && !inmediato) serviceStart.setDate(serviceStart.getDate() + DIAS_DESISTIMIENTO);
+  const soloDia = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(d);
+
   try {
     const template = await sbDownload(CONTRACT_BUCKET, tpl.file_path);
     const signedPdf = await buildSignedContractPdf({
@@ -103,6 +119,7 @@ export async function POST(req: NextRequest) {
       title: tpl.title,
       fields: fieldsFor(tpl.kind),
       fieldValues: values,
+      serviceStart,
     });
     const sigPath = `firmas/${safePath(`${tpl.kind}-${me}.png`)}`;
     const pdfPath = `firmados/${safePath(`${tpl.kind}-${me}.pdf`)}`;
@@ -120,11 +137,28 @@ export async function POST(req: NextRequest) {
       ip,
       user_agent: userAgent,
       signed_at: signedAt.toISOString(),
+      ...(esContrato ? {
+        inicio_servicio: inmediato ? OPCION_INMEDIATO : OPCION_DIFERIDO,
+        reconoce_perdida: values.reconoce_perdida === true,
+        condicion_cliente: typeof values.condicion_cliente === "string" ? values.condicion_cliente : null,
+        nif_empresa: typeof values.nif_empresa === "string" ? values.nif_empresa.slice(0, 40) : null,
+        service_start: soloDia(serviceStart),
+      } : {}),
     });
     await sbUpdate("contract_assignments", `id=eq.${encodeURIComponent(assignment.id)}`, {
       status: "firmado",
       signed_at: signedAt.toISOString(),
     });
+
+    // Si eligió esperar, se le cierra el acceso hasta el día que toca. El cron
+    // le abre la puerta y le avisa cuando llega la fecha.
+    if (esContrato && !inmediato) {
+      await sbUpsert("profiles", {
+        email: me,
+        access_from: soloDia(serviceStart),
+        updated_at: signedAt.toISOString(),
+      }).catch((e) => console.error("[contrato/firmar] access_from", e));
+    }
   } catch (err) {
     console.error("[contrato/firmar]", err);
     return NextResponse.json({ error: "No se pudo registrar tu firma. Inténtalo de nuevo." }, { status: 500 });

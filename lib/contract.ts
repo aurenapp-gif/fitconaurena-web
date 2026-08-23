@@ -57,7 +57,16 @@ export type ContractSignature = {
 };
 
 /** Tipo de un campo del formulario dentro de un contrato. */
-export type FieldType = "text" | "date" | "tel" | "yesno" | "textarea" | "checkbox";
+export type FieldType = "text" | "date" | "tel" | "yesno" | "textarea" | "checkbox" | "radio";
+
+export type FieldOption = {
+  value: string;
+  label: string;
+  /** Texto largo bajo la etiqueta (el literal legal de la opción). */
+  detalle?: string;
+  /** Se pinta con más peso visual. */
+  destacar?: boolean;
+};
 
 export type ContractField = {
   key: string;
@@ -65,7 +74,63 @@ export type ContractField = {
   type: FieldType;
   required?: boolean;
   hint?: string;
+  options?: FieldOption[];
+  /** Obligatorio SOLO si otro campo tiene un valor concreto. */
+  requiredIf?: { key: string; value: string };
 };
+
+/**
+ * ANEXO II-A — ELECCIÓN SOBRE EL INICIO DEL SERVICIO
+ *
+ * Es el bloque que faltaba y por el que los contratos firmados hasta ahora no
+ * protegen nada: sin la petición expresa de inicio inmediato y sin el
+ * reconocimiento de pérdida del derecho, la clienta conserva catorce días para
+ * pedir el 100 % del importe.
+ *
+ * Son DOS consentimientos jurídicamente distintos y van en dos controles
+ * separados a propósito. Fundirlos en uno, o meterlos dentro de un «acepto los
+ * términos» genérico, los invalida.
+ *
+ * Nada viene preseleccionado. El TJUE lo dejó claro en Planet49 (C-673/17):
+ * una casilla marcada de fábrica no es consentimiento. Tiene que ser un clic.
+ */
+export const OPCION_INMEDIATO = "inmediato";
+export const OPCION_DIFERIDO = "diferido";
+
+/** Días naturales de derecho de desistimiento. */
+export const DIAS_DESISTIMIENTO = 14;
+
+export const INICIO_FIELDS: ContractField[] = [
+  {
+    key: "inicio_servicio",
+    label: "¿Cuándo quieres empezar?",
+    type: "radio",
+    required: true,
+    hint: `Tienes ${DIAS_DESISTIMIENTO} días naturales para desistir del contrato sin dar explicaciones. Elige una de las dos opciones.`,
+    options: [
+      {
+        value: OPCION_INMEDIATO,
+        label: "Quiero empezar ya",
+        detalle:
+          "Solicito EXPRESAMENTE que la prestación del servicio y el suministro íntegro de los contenidos digitales y del acceso a la plataforma comiencen de forma inmediata, antes de que finalice el plazo de catorce días.",
+        destacar: true,
+      },
+      {
+        value: OPCION_DIFERIDO,
+        label: "Prefiero esperar",
+        detalle:
+          "El servicio comenzará una vez transcurrido el plazo de catorce días naturales, conservando íntegro mi derecho de libre resolución durante dicho plazo.",
+      },
+    ],
+  },
+  {
+    key: "reconoce_perdida",
+    label:
+      "RECONOZCO Y ACEPTO que, una vez suministrados los contenidos digitales y habilitado el acceso a la plataforma, PIERDO MI DERECHO DE LIBRE RESOLUCIÓN respecto de ellos; y que, si desisto tras haber comenzado la prestación, deberé abonar el importe proporcional al servicio ya prestado conforme a la ponderación de valor del Anexo III-B.",
+    type: "checkbox",
+    requiredIf: { key: "inicio_servicio", value: OPCION_INMEDIATO },
+  },
+];
 
 /**
  * Campos que la clienta rellena según el tipo de plantilla. Fijos a propósito:
@@ -110,9 +175,19 @@ export const ANEXO_SALUD_FIELDS: ContractField[] = [
   { key: "consent_salud",  label: "PRESTO MI CONSENTIMIENTO EXPLÍCITO al tratamiento de mis datos de salud (art. 9.2.a RGPD) con la finalidad de elaboración y seguimiento del Programa.", type: "checkbox", required: true },
 ];
 
-/** Devuelve los campos que corresponden a un tipo de plantilla. */
+/** Devuelve los campos que corresponden a un tipo de plantilla.
+ *
+ * La elección de inicio va SOLO en el contrato: el anexo de salud no la lleva,
+ * y pedirla dos veces confundiría a la clienta sobre qué está eligiendo.
+ */
 export function fieldsFor(kind: ContractKind): ContractField[] {
-  return kind === "anexo_salud" ? ANEXO_SALUD_FIELDS : CONTRACT_FIELDS;
+  return kind === "anexo_salud" ? ANEXO_SALUD_FIELDS : [...CONTRACT_FIELDS, ...INICIO_FIELDS];
+}
+
+/** ¿Este campo es obligatorio con los valores que hay ahora mismo? */
+export function esObligatorio(f: ContractField, values: Record<string, unknown>): boolean {
+  if (f.requiredIf) return String(values[f.requiredIf.key] ?? "") === f.requiredIf.value;
+  return f.required === true;
 }
 
 /**
@@ -133,7 +208,14 @@ export function validateFields(kind: ContractKind, values: Record<string, unknow
       }
       continue;
     }
-    if (!f.required) continue;
+    if (!esObligatorio(f, values)) continue;
+    if (f.type === "radio") {
+      const permitidos = (f.options ?? []).map((o) => o.value);
+      if (typeof raw !== "string" || !permitidos.includes(raw)) {
+        return "Elige cuándo quieres que empiece el servicio.";
+      }
+      continue;
+    }
     if (f.type === "checkbox") {
       if (raw !== true) return `Falta aceptar: “${f.label}”.`;
       continue;
@@ -145,6 +227,17 @@ export function validateFields(kind: ContractKind, values: Record<string, unknow
     }
     if (typeof raw !== "string" || raw.trim().length < 2) {
       return `Falta rellenar: “${f.label}”.`;
+    }
+  }
+
+  // Coherencia del Anexo II-A: el reconocimiento de pérdida del derecho solo
+  // tiene sentido con el inicio inmediato. Si llega marcado junto al inicio
+  // diferido, el envío no viene de la pantalla: se rechaza en vez de guardar un
+  // consentimiento contradictorio que luego no valdría para nada.
+  if (kind !== "anexo_salud") {
+    const eleccion = String(values.inicio_servicio ?? "");
+    if (eleccion === OPCION_DIFERIDO && values.reconoce_perdida === true) {
+      return "La declaración de pérdida del derecho solo se aplica si eliges empezar ya.";
     }
   }
   return null;
