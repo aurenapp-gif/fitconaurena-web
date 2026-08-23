@@ -97,14 +97,15 @@ FIRMAS_ANEXO = ["anexo2", "anexo3b", "anexo4"]
 # Texto fijo del plan, igual para las tres modalidades. Se estampa en vez de
 # dejar un hueco que nadie rellena.
 #
-# El plazo de respuesta se deja EN BLANCO a propósito: es un compromiso
-# contractual y nadie ha dicho cuántas horas son. Inventarlo sería obligarse a
-# algo que no se ha pactado.
+# El plazo de respuesta es de UNA hora hábil, dentro del horario de atención
+# (L-V de 9:00 a 18:00): fuera de ese horario no corre. Es un compromiso
+# contractual exigible, así que se escribe tal cual se ha pactado.
 FIJOS = [
     ("Plan nutricional",        "Incluido  ·  Revisión semanal"),
     ("Plan de entrenamiento",   "Incluido  ·  Revisión semanal  ·  Revisión técnica cada 15 días"),
     ("Sesiones de seguimiento", "Sesiones de soporte de 60 minutos  ·  frecuencia semanal"),
     ("Canal de soporte",        "Plataforma fitconaurena.com y WhatsApp  ·  Horario: L-V, 9:00-18:00"),
+    ("Plazo de respuesta",      "1 hora hábil (dentro del horario de atención)"),
 ]
 
 # --------------------------------------------------------------- utilidades
@@ -186,12 +187,29 @@ def bordes_tabla(pagina):
     return xs[1], xs[-1]
 
 
-def tapar(pagina, rect):
-    pagina.draw_rect(rect, color=None, fill=BLANCO)
+def marcar_borrado(pagina, rect):
+    """Marca un trozo de página para BORRARLO de verdad.
+
+    Pintar un rectángulo blanco encima no vale: el texto original sigue en el
+    documento y se recupera copiando y pegando o con cualquier extractor. En un
+    contrato eso deja dos versiones del mismo dato («Revisiones cada ______
+    semanas» debajo de «Revisión semanal»), que es justo la ambigüedad que no
+    puede tener. La redacción elimina el contenido del flujo de la página.
+
+    `PDF_REDACT_LINE_ART_NONE` conserva los dibujos: si no, se llevaría por
+    delante los bordes de las tablas.
+    """
+    pagina.add_redact_annot(rect)
+
+
+def aplicar_borrados(pagina):
+    pagina.apply_redactions(
+        images=pymupdf.PDF_REDACT_IMAGE_NONE,
+        graphics=pymupdf.PDF_REDACT_LINE_ART_NONE,
+    )
 
 
 def poner_casilla(pagina, nombre, rect):
-    tapar(pagina, rect)
     w = pymupdf.Widget()
     w.field_name = nombre
     w.field_type = pymupdf.PDF_WIDGET_TYPE_CHECKBOX
@@ -204,7 +222,6 @@ def poner_casilla(pagina, nombre, rect):
 
 def poner_texto(pagina, nombre, rect):
     caja = pymupdf.Rect(rect.x0, rect.y0 - 1.5, rect.x1, rect.y1 + 2)
-    tapar(pagina, caja)
     w = pymupdf.Widget()
     w.field_name = nombre
     w.field_type = pymupdf.PDF_WIDGET_TYPE_TEXT
@@ -220,22 +237,23 @@ def poner_texto(pagina, nombre, rect):
 def preparar(origen: pathlib.Path, destino: pathlib.Path):
     doc = pymupdf.open(origen)
     print(f"\n{origen.name}")
-    n_cas = n_txt = n_fij = 0
 
-    # 1) Texto fijo del plan: se tapa toda la celda de valor y se reescribe.
-    #    Solo dentro de la tabla del Anexo III, porque varias de estas etiquetas
-    #    también aparecen en el articulado.
+    # PRIMERO se localiza TODO, porque los huecos se buscan por su texto y el
+    # borrado se lo lleva por delante. Después se borra de una vez, y solo al
+    # final se colocan los campos: las redacciones eliminan las anotaciones que
+    # pillan por medio, así que los widgets tienen que ir después.
+    plan = {"casillas": [], "textos": [], "fijos": []}
+
     anexo3, _ = buscar_una(doc, "ANEXO III — DESCRIPCIÓN DEL SERVICIO")
     izq, der = bordes_tabla(doc[anexo3])
+
+    # 1) Texto fijo del plan. Solo dentro de la tabla del Anexo III: varias de
+    #    estas etiquetas también aparecen en el articulado.
     for etiqueta, valor in FIJOS:
         pag, r = buscar_una(doc, etiqueta, solo_pagina=anexo3)
-        p = doc[pag]
-        # Se tapa la celda SIN comerse los bordes de la tabla: si el rectángulo
-        # blanco llega hasta la línea, la borra y la tabla queda abierta.
+        # La celda, sin llegar a los bordes: borrarlos dejaría la tabla abierta.
         celda = pymupdf.Rect(izq + 0.8, r.y0 - 2, der - 0.8, r.y1 + 2)
-        tapar(p, celda)
-        p.insert_text((izq + 6, r.y1 - 1), valor, fontsize=9, fontname="helv", color=(0, 0, 0))
-        n_fij += 1
+        plan["fijos"].append((pag, celda, valor, r.y1 - 1))
 
     # 2) Casillas, ancladas a su texto.
     for nombre, ancla, lado in CASILLAS:
@@ -243,8 +261,7 @@ def preparar(origen: pathlib.Path, destino: pathlib.Path):
         caja = caja_junto_a(doc[pag], r, lado)
         if caja is None:
             raise SystemExit(f"  ✗ sin casilla junto a «{ancla}» (campo {nombre})")
-        poner_casilla(doc[pag], nombre, caja)
-        n_cas += 1
+        plan["casillas"].append((pag, nombre, caja))
 
     # 3) Campos de texto sobre las rayas.
     pag_cli, r_cli = buscar_una(doc, "en calidad de CLIENTE")
@@ -257,8 +274,7 @@ def preparar(origen: pathlib.Path, destino: pathlib.Path):
         huecos = rayas_de_linea(doc[pag], r)
         if len(huecos) <= indice:
             raise SystemExit(f"  ✗ «{ancla}» no tiene hueco nº {indice} (campo {nombre})")
-        poner_texto(doc[pag], nombre, huecos[indice])
-        n_txt += 1
+        plan["textos"].append((pag, nombre, huecos[indice]))
 
     # 4) «Firma del Cliente / Fecha» de los tres anexos.
     firmas = [(i, r) for i in range(doc.page_count) for r in doc[i].search_for("Firma del Cliente:")]
@@ -269,19 +285,36 @@ def preparar(origen: pathlib.Path, destino: pathlib.Path):
         huecos = rayas_de_linea(doc[pag], r)
         if len(huecos) < 2:
             raise SystemExit(f"  ✗ el bloque de firma de {prefijo} no tiene sus dos huecos")
-        poner_texto(doc[pag], f"{prefijo}_firma", huecos[0])
-        poner_texto(doc[pag], f"{prefijo}_fecha", huecos[1])
-        n_txt += 2
+        plan["textos"].append((pag, f"{prefijo}_firma", huecos[0]))
+        plan["textos"].append((pag, f"{prefijo}_fecha", huecos[1]))
 
     # 5) «Fecha de inicio»: la celda dice «Fecha de alta en la plataforma…».
-    #    Se sustituye por un campo con la fecha real.
     pag, r = buscar_una(doc, "Fecha de inicio", solo_pagina=anexo3)
-    poner_texto(doc[pag], "fecha_inicio", pymupdf.Rect(izq + 4, r.y0, der - 4, r.y1))
-    n_txt += 1
+    plan["textos"].append((pag, "fecha_inicio", pymupdf.Rect(izq + 4, r.y0, der - 4, r.y1)))
+
+    # --- Borrado de verdad de todo lo que se sustituye ---
+    paginas = set()
+    for pag, celda, _, _ in plan["fijos"]:
+        marcar_borrado(doc[pag], celda); paginas.add(pag)
+    for pag, _, caja in plan["casillas"]:
+        marcar_borrado(doc[pag], caja); paginas.add(pag)
+    for pag, _, hueco in plan["textos"]:
+        marcar_borrado(doc[pag], pymupdf.Rect(hueco.x0, hueco.y0 - 1.5, hueco.x1, hueco.y1 + 2))
+        paginas.add(pag)
+    for pag in paginas:
+        aplicar_borrados(doc[pag])
+
+    # --- Y ahora sí, los campos ---
+    for pag, celda, valor, base in plan["fijos"]:
+        doc[pag].insert_text((izq + 6, base), valor, fontsize=9, fontname="helv", color=(0, 0, 0))
+    for pag, nombre, caja in plan["casillas"]:
+        poner_casilla(doc[pag], nombre, caja)
+    for pag, nombre, hueco in plan["textos"]:
+        poner_texto(doc[pag], nombre, hueco)
 
     doc.save(destino, garbage=3, deflate=True)
     doc.close()
-    print(f"  ✓ {n_cas} casillas · {n_txt} campos de texto · {n_fij} textos fijos")
+    print(f"  ✓ {len(plan['casillas'])} casillas · {len(plan['textos'])} campos de texto · {len(plan['fijos'])} textos fijos")
 
 
 def main():
