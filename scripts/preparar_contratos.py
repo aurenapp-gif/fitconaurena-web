@@ -97,7 +97,7 @@ FIRMAS_ANEXO = ["anexo2", "anexo3b", "anexo4"]
 # Texto fijo del plan, igual para las tres modalidades. Se estampa en vez de
 # dejar un hueco que nadie rellena.
 #
-# El plazo de respuesta es de UNA hora hábil, dentro del horario de atención
+# El plazo de respuesta es de 2,5 horas hábiles, dentro del horario de atención
 # (L-V de 9:00 a 18:00): fuera de ese horario no corre. Es un compromiso
 # contractual exigible, así que se escribe tal cual se ha pactado.
 FIJOS = [
@@ -105,7 +105,7 @@ FIJOS = [
     ("Plan de entrenamiento",   "Incluido  ·  Revisión semanal  ·  Revisión técnica cada 15 días"),
     ("Sesiones de seguimiento", "Sesiones de soporte de 60 minutos  ·  frecuencia semanal"),
     ("Canal de soporte",        "Plataforma fitconaurena.com y WhatsApp  ·  Horario: L-V, 9:00-18:00"),
-    ("Plazo de respuesta",      "1 hora hábil (dentro del horario de atención)"),
+    ("Plazo de respuesta",      "2,5 horas hábiles (dentro del horario de atención)"),
 ]
 
 # --------------------------------------------------------------- utilidades
