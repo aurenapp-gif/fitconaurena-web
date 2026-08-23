@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMembers, isAdmin, adminEmails } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert, sbUpdate, sbDeleteObject } from "@/lib/supabase";
-import { sendCallReminder, sendCheckinReminder, sendCheckinReport, sendPlanUpdateEmail } from "@/lib/mailer";
+import { sendCallReminder, sendCheckinReminder, sendCheckinReport, sendEsperaTerminada, sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 import { periodoDe, tocaAvisar, tocaParteCoach, textoAviso } from "@/lib/revisiones";
 
@@ -144,6 +144,34 @@ export async function GET(req: NextRequest) {
         callSent++;
       } catch (e) { console.error("[cron] call", m.email, e); }
     }
+  }
+
+  // 1b) FIN DEL PLAZO DE ESPERA. A quien eligió la Opción 2 del Anexo II-A se
+  //     le abrió el acceso solo a partir de `access_from`. El día que llega, se
+  //     le avisa de que ya puede entrar. El guard deja de bloquear solo (compara
+  //     la fecha), así que aquí basta con dar la noticia.
+  let esperaAvisada = 0;
+  if (nowHour >= REMINDER_HOUR) try {
+    const listas = await sbSelect<{ email: string; access_from: string | null }>(
+      "profiles",
+      `select=email,access_from&access_from=eq.${today}`
+    );
+    for (const p of listas) {
+      if (isAdmin(p.email)) continue;
+      try {
+        await sendEsperaTerminada(p.email);
+        sendPushToEmail(p.email, {
+          title: "Tu programa arranca hoy 🚀",
+          body: "Ya puedes entrar: tienes tu área lista.",
+          url: "/miembros",
+        }).catch((e) => console.error("[cron] push espera", e));
+        // Se limpia para no volver a avisar si la fecha se recalcula.
+        await sbUpsert("profiles", { email: p.email, access_from: null, updated_at: new Date().toISOString() });
+        esperaAvisada++;
+      } catch (e) { console.error("[cron] espera", p.email, e); }
+    }
+  } catch (e) {
+    console.error("[cron] fin de espera", e);
   }
 
   // 2) Revisiones en FECHAS FIJAS: día 1 y día 15 de cada mes.
@@ -314,5 +342,5 @@ export async function GET(req: NextRequest) {
     console.error("[cron] técnica cleanup", e);
   }
 
-  return NextResponse.json({ ok: true, quincena: periodo.inicio, diaDeQuincena: periodo.dia, callSent, checkinSent, reportSent, habitPushed, planSeqSent, techniqueCleaned });
+  return NextResponse.json({ ok: true, quincena: periodo.inicio, diaDeQuincena: periodo.dia, callSent, esperaAvisada, checkinSent, reportSent, habitPushed, planSeqSent, techniqueCleaned });
 }
