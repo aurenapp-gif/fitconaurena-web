@@ -37,6 +37,15 @@ export const TOOLS: Tool[] = [
     icon: "🏋️",
     hint: "Se abre en ChatGPT. Para que tu coach revise tu técnica en vídeo, usa «Revisión de técnica».",
   },
+  {
+    id: "despensa",
+    name: "No he ido a la compra",
+    description:
+      "¿Nevera vacía y ninguna receta del plan a mano? Hazle una foto a lo que tengas y te monto platos equilibrados con eso, sin saltarte el plan.",
+    url: "https://chatgpt.com/g/g-6a8d9ea3a3d081919feef151c866c52d-no-he-ido-a-la-compra-solucionalo-con-una-foto",
+    icon: "🧊",
+    hint: "Se abre en ChatGPT. Foto a la nevera y a la despensa, cuanto más se vea mejor.",
+  },
 ];
 
 export function findTool(id: string): Tool | undefined {
