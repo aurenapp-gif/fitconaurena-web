@@ -7,6 +7,8 @@ import { plusOneMonthISO } from "@/lib/profile";
 import { sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 import { verifyPath } from "@/lib/token";
+import { validateUpload } from "@/lib/upload";
+import { sbUpload, safePath } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,31 +18,63 @@ export async function POST(req: NextRequest) {
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(me)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  // El archivo YA está en Storage: aquí solo se registra. Antes llegaba dentro
-  // de la petición, y cualquier plan de más de 4,5 MB se quedaba por el camino
-  // (tope de las funciones de Vercel) con un críptico «Error de conexión».
-  let body: { member?: unknown; type?: unknown; title?: unknown; note?: unknown; path?: unknown; pathToken?: unknown };
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+  // DOS CAMINOS, a propósito:
+  //
+  //  · JSON  → el archivo YA está en Storage (subido directo con una URL
+  //    firmada) y aquí solo se registra. Es el camino normal y el único que
+  //    admite planes grandes.
+  //  · FormData → el archivo viaja dentro de la petición, como antes. Se
+  //    conserva SOLO como red de seguridad: si la subida directa falla en el
+  //    navegador de la coach por lo que sea, un plan pequeño sigue subiendo en
+  //    vez de dejarla bloqueada. Aquí sí manda el tope de 4,5 MB de Vercel.
+  const esFormulario = (req.headers.get("content-type") ?? "").includes("multipart/form-data");
 
-  const member = normalizeEmail(typeof body.member === "string" ? body.member : "");
-  const type = typeof body.type === "string" ? body.type : "";
-  const title = (typeof body.title === "string" ? body.title : "").trim().slice(0, 120);
-  const note = (typeof body.note === "string" ? body.note : "").trim().slice(0, 1000);
-  const path = typeof body.path === "string" ? body.path : "";
-  const pathToken = typeof body.pathToken === "string" ? body.pathToken : "";
+  let member = "", type = "", title = "", note = "", path = "";
+  let archivo: File | null = null;
+
+  if (esFormulario) {
+    let form: FormData;
+    try { form = await req.formData(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+    member = normalizeEmail(String(form.get("member") ?? ""));
+    type = String(form.get("type") ?? "");
+    title = String(form.get("title") ?? "").trim().slice(0, 120);
+    note = String(form.get("note") ?? "").trim().slice(0, 1000);
+    const f = form.get("file");
+    if (!(f instanceof File) || f.size === 0) {
+      return NextResponse.json({ error: "Adjunta el archivo del plan." }, { status: 400 });
+    }
+    const invalido = validateUpload(f, "plan");
+    if (invalido) return NextResponse.json({ error: invalido }, { status: 400 });
+    archivo = f;
+  } else {
+    let body: { member?: unknown; type?: unknown; title?: unknown; note?: unknown; path?: unknown; pathToken?: unknown };
+    try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+    member = normalizeEmail(typeof body.member === "string" ? body.member : "");
+    type = typeof body.type === "string" ? body.type : "";
+    title = (typeof body.title === "string" ? body.title : "").trim().slice(0, 120);
+    note = (typeof body.note === "string" ? body.note : "").trim().slice(0, 1000);
+    path = typeof body.path === "string" ? body.path : "";
+    const pathToken = typeof body.pathToken === "string" ? body.pathToken : "";
+    // La ruta tiene que ser una emitida por /sign: si no, cualquiera con sesión
+    // de coach podría registrar como plan un archivo arbitrario del almacén.
+    if (!path || !verifyPath(path, pathToken)) {
+      return NextResponse.json({ error: "La subida no es válida. Vuelve a intentarlo." }, { status: 400 });
+    }
+  }
 
   if (!isValidEmail(member)) return NextResponse.json({ error: "Clienta no válida." }, { status: 400 });
   if (type !== "nutricion" && type !== "entrenamiento")
     return NextResponse.json({ error: "Tipo no válido." }, { status: 400 });
-  // La ruta tiene que ser una emitida por /sign: si no, cualquiera con sesión de
-  // coach podría registrar como plan un archivo arbitrario del almacenamiento.
-  if (!path || !verifyPath(path, pathToken)) {
-    return NextResponse.json({ error: "La subida no es válida. Vuelve a intentarlo." }, { status: 400 });
-  }
 
   const kind = type === "nutricion" ? "nutrición" : "entrenamiento";
 
   try {
+    // Por el camino de respaldo el archivo llega aquí y se sube desde el
+    // servidor; por el normal ya está en Storage y solo falta guardarlo.
+    if (archivo) {
+      path = safePath(`${type}-${archivo.name || "plan"}`);
+      await sbUpload("planes", path, await archivo.arrayBuffer(), archivo.type || "application/octet-stream");
+    }
     const row = { member_email: member, type, title: title || null, file_path: path };
     try {
       await sbInsert("plans", { ...row, note: note || null });

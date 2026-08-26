@@ -52,6 +52,32 @@ export default function PlanUpload({ member }: { member: string }) {
     if (!file) { setStatus("error"); setMsg("Adjunta el archivo."); return; }
     if (file.size > MAX_MB * MB) return; // ya avisado al elegirlo
 
+    /**
+     * Red de seguridad: si la subida directa no sale, se reintenta mandando el
+     * archivo dentro de la petición, como se hacía antes. Solo sirve por debajo
+     * del tope del servidor, así que se limita a archivos pequeños; para los
+     * grandes no hay alternativa y más vale decirlo que fingir que se reintenta.
+     * Devuelve true si consiguió guardarlo.
+     */
+    async function respaldo(): Promise<boolean> {
+      if (!file || file.size > 4 * MB) return false;
+      try {
+        const fd = new FormData();
+        fd.append("member", member); fd.append("type", type);
+        fd.append("title", title); fd.append("note", note); fd.append("file", file);
+        const res = await fetch("/api/miembros/clientas/plan", { method: "POST", body: fd });
+        if (!res.ok) return false;
+        setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg("");
+        formRef.current?.reset();
+        router.refresh();
+        return true;
+      } catch { return false; }
+    }
+
+    // El paso en curso viaja en el mensaje de error. Un «Error de conexión» a
+    // secas obliga a adivinar; sabiendo en cuál de los tres pasos ha fallado y
+    // con qué código, el problema se identifica a la primera.
+    let paso = "1/3 preparar";
     setStatus("subiendo"); setMsg("");
     try {
       // 1) Permiso de subida directa.
@@ -61,21 +87,30 @@ export default function PlanUpload({ member }: { member: string }) {
         body: JSON.stringify({ filename: file.name, type }),
       });
       const datos = await permiso.json().catch(() => ({}));
-      if (!permiso.ok) { setStatus("error"); setMsg(datos.error ?? "No se pudo preparar la subida."); return; }
+      if (!permiso.ok) {
+        if (await respaldo()) return;
+        setStatus("error");
+        setMsg(`${datos.error ?? "No se pudo preparar la subida"} (paso 1/3, código ${permiso.status})`);
+        return;
+      }
 
       // 2) El archivo va directo al almacenamiento, sin pasar por el servidor.
+      paso = "2/3 almacenamiento";
       const subida = await fetch(datos.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream" },
         body: file,
       });
       if (!subida.ok) {
+        const detalle = await subida.text().catch(() => "");
+        if (await respaldo()) return;
         setStatus("error");
-        setMsg("Falló la subida del archivo. Revisa tu conexión y vuelve a intentarlo.");
+        setMsg(`No se pudo guardar el archivo (paso 2/3, código ${subida.status}). ${detalle.slice(0, 120)}`);
         return;
       }
 
       // 3) Registrar el plan (ya sin el peso del archivo).
+      paso = "3/3 registrar";
       setStatus("guardando");
       const res = await fetch("/api/miembros/clientas/plan", {
         method: "POST",
@@ -84,16 +119,19 @@ export default function PlanUpload({ member }: { member: string }) {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setStatus("error"); setMsg(d.error ?? "No se pudo guardar el plan.");
+        setStatus("error");
+        setMsg(`${d.error ?? "No se pudo guardar el plan"} (paso 3/3, código ${res.status})`);
         return;
       }
 
       setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg("");
       formRef.current?.reset();
       router.refresh();
-    } catch {
+    } catch (e) {
+      if (await respaldo()) return;
       setStatus("error");
-      setMsg("Se ha cortado la subida. Vuelve a intentarlo.");
+      const detalle = e instanceof Error ? e.message : String(e);
+      setMsg(`Se cortó en el paso ${paso}. ${detalle.slice(0, 140)}`);
     }
   }
 
