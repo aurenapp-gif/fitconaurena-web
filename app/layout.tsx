@@ -1,13 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import NavProgress from "@/components/NavProgress";
 
-const inter = Inter({
+/**
+ * Inter servida desde el propio repositorio, no descargada de Google al
+ * compilar.
+ *
+ * `next/font/google` se baja la tipografía durante el build. Cuando la máquina
+ * que compila no puede llegar a fonts.gstatic.com —pasó: tres reintentos y
+ * ETIMEDOUT— el build entero falla por algo que no tiene nada que ver con el
+ * código. Con el archivo dentro del repositorio no hay red de por medio.
+ *
+ * Es la variable, que cubre de 100 a 900 en un solo archivo de 48 KB, menos que
+ * los seis estáticos que se usaban antes. Inter es SIL Open Font License; la
+ * licencia va al lado del archivo.
+ */
+const inter = localFont({
+  src: "./fonts/Inter-Variable.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
