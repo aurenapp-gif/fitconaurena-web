@@ -3,8 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+// Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
+// poder saber de un vistazo qué versión está ejecutando el navegador de la
+// coach en lugar de deducirlo por el texto de un aviso.
+const VERSION = 3;
+
 const MB = 1024 * 1024;
 const MAX_MB = 25;
+// Tope de las funciones de Vercel: por encima de esto, el archivo no puede
+// viajar dentro de la petición y el camino de respaldo deja de servir.
+const MAX_RESPALDO_MB = 4;
 // Mismos tipos que acepta el servidor (lib/upload.ts, regla "plan").
 const TIPOS_OK = [
   "application/pdf",
@@ -60,7 +68,7 @@ export default function PlanUpload({ member }: { member: string }) {
      * Devuelve true si consiguió guardarlo.
      */
     async function respaldo(datos: Blob): Promise<boolean> {
-      if (!file || datos.size > 4 * MB) return false;
+      if (!file || datos.size > MAX_RESPALDO_MB * MB) return false;
       try {
         const fd = new FormData();
         fd.append("member", member); fd.append("type", type);
@@ -147,7 +155,13 @@ export default function PlanUpload({ member }: { member: string }) {
       if (!subida) {
         if (await respaldo(contenido)) return;
         setStatus("error");
-        setMsg(`Se cortó al enviar el archivo tras 3 intentos. ${ultimoFallo.slice(0, 120)}`);
+        setMsg(
+          contenido.size > MAX_RESPALDO_MB * MB
+            ? `Se cortó al enviar el archivo tras 3 intentos, y pesa ${(contenido.size / MB).toFixed(1)} MB: ` +
+              `demasiado para la vía alternativa (máx ${MAX_RESPALDO_MB} MB). Comprime el PDF y vuelve a subirlo. ` +
+              ultimoFallo.slice(0, 80)
+            : `Se cortó al enviar el archivo tras 3 intentos. ${ultimoFallo.slice(0, 120)}`
+        );
         return;
       }
       if (!subida.ok) {
@@ -212,6 +226,10 @@ export default function PlanUpload({ member }: { member: string }) {
         <p className="text-xs text-[#666666]">{file.name} · {(file.size / MB).toFixed(1)} MB</p>
       )}
       {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
+      {/* Marca de versión. Parece un detalle tonto, pero al depurar un fallo que
+          solo ocurre en el navegador de la coach es la diferencia entre saber
+          qué código está ejecutando y adivinarlo por el texto de un aviso. */}
+      <p className="text-[10px] text-[#3A3A3A]">subida v{VERSION}</p>
       <button type="submit" disabled={ocupado} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo el archivo…" : status === "guardando" ? "Guardando…" : "Subir plan"}
       </button>
