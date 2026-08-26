@@ -59,12 +59,12 @@ export default function PlanUpload({ member }: { member: string }) {
      * grandes no hay alternativa y más vale decirlo que fingir que se reintenta.
      * Devuelve true si consiguió guardarlo.
      */
-    async function respaldo(): Promise<boolean> {
-      if (!file || file.size > 4 * MB) return false;
+    async function respaldo(datos: Blob): Promise<boolean> {
+      if (!file || datos.size > 4 * MB) return false;
       try {
         const fd = new FormData();
         fd.append("member", member); fd.append("type", type);
-        fd.append("title", title); fd.append("note", note); fd.append("file", file);
+        fd.append("title", title); fd.append("note", note); fd.append("file", datos, file.name);
         const res = await fetch("/api/miembros/clientas/plan", { method: "POST", body: fd });
         if (!res.ok) return false;
         setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg("");
@@ -74,11 +74,40 @@ export default function PlanUpload({ member }: { member: string }) {
       } catch { return false; }
     }
 
+    // PRIMERO se lee el archivo entero a memoria.
+    //
+    // Enviar el File directamente parece más eficiente, pero el navegador lo lee
+    // MIENTRAS sube, y si por lo que sea no puede (el PDF está en iCloud o Drive
+    // sin descargar del todo, se movió o se renombró después de elegirlo, el
+    // disco externo se desconectó…) la petición revienta a media subida con un
+    // error de red genérico. Eso es indistinguible de un problema de conexión y
+    // manda a mirar el router cuando el problema es el archivo.
+    //
+    // Leyéndolo antes, ese caso se detecta al instante y se explica.
+    let bytes: ArrayBuffer;
+    setStatus("subiendo"); setMsg("");
+    try {
+      bytes = await file.arrayBuffer();
+    } catch {
+      setStatus("error");
+      setMsg(
+        "No se ha podido leer el archivo. Suele pasar cuando está en iCloud o Drive y no está " +
+        "descargado del todo, o si se movió después de elegirlo. Ábrelo una vez, o cópialo al " +
+        "escritorio, y vuelve a seleccionarlo."
+      );
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      setStatus("error");
+      setMsg("El archivo llega vacío. Vuelve a seleccionarlo.");
+      return;
+    }
+    const contenido = new Blob([bytes], { type: file.type || "application/octet-stream" });
+
     // El paso en curso viaja en el mensaje de error. Un «Error de conexión» a
     // secas obliga a adivinar; sabiendo en cuál de los tres pasos ha fallado y
     // con qué código, el problema se identifica a la primera.
     let paso = "1/3 preparar";
-    setStatus("subiendo"); setMsg("");
     try {
       // 1) Permiso de subida directa.
       const permiso = await fetch("/api/miembros/clientas/plan/sign", {
@@ -88,22 +117,42 @@ export default function PlanUpload({ member }: { member: string }) {
       });
       const datos = await permiso.json().catch(() => ({}));
       if (!permiso.ok) {
-        if (await respaldo()) return;
+        if (await respaldo(contenido)) return;
         setStatus("error");
         setMsg(`${datos.error ?? "No se pudo preparar la subida"} (paso 1/3, código ${permiso.status})`);
         return;
       }
 
       // 2) El archivo va directo al almacenamiento, sin pasar por el servidor.
+      //    Se reintenta un par de veces: un corte puntual de red a mitad de una
+      //    subida de varios MB es de lo más normal desde el móvil o un wifi
+      //    flojo, y no tiene sentido darlo por perdido al primer tropiezo.
       paso = "2/3 almacenamiento";
-      const subida = await fetch(datos.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
-      });
+      let subida: Response | null = null;
+      let ultimoFallo = "";
+      for (let intento = 1; intento <= 3; intento++) {
+        try {
+          subida = await fetch(datos.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type || "application/octet-stream" },
+            body: contenido,
+          });
+          break;
+        } catch (e) {
+          ultimoFallo = e instanceof Error ? e.message : String(e);
+          if (intento === 3) break;
+          await new Promise((r) => setTimeout(r, intento * 1200));
+        }
+      }
+      if (!subida) {
+        if (await respaldo(contenido)) return;
+        setStatus("error");
+        setMsg(`Se cortó al enviar el archivo tras 3 intentos. ${ultimoFallo.slice(0, 120)}`);
+        return;
+      }
       if (!subida.ok) {
         const detalle = await subida.text().catch(() => "");
-        if (await respaldo()) return;
+        if (await respaldo(contenido)) return;
         setStatus("error");
         setMsg(`No se pudo guardar el archivo (paso 2/3, código ${subida.status}). ${detalle.slice(0, 120)}`);
         return;
@@ -128,7 +177,7 @@ export default function PlanUpload({ member }: { member: string }) {
       formRef.current?.reset();
       router.refresh();
     } catch (e) {
-      if (await respaldo()) return;
+      if (await respaldo(contenido)) return;
       setStatus("error");
       const detalle = e instanceof Error ? e.message : String(e);
       setMsg(`Se cortó en el paso ${paso}. ${detalle.slice(0, 140)}`);
