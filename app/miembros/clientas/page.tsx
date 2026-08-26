@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import AddClient from "@/components/AddClient";
+import ClientasLista, { type FilaClienta } from "@/components/ClientasLista";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
 import { sbSelect } from "@/lib/supabase";
@@ -16,10 +17,6 @@ type Prof = { email: string; display_name: string | null; renewal_date: string |
 type Row = { member_email: string };
 type CheckInRow = { member_email: string; created_at: string };
 type PlanRow = { member_email: string; created_at: string };
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
-}
 
 export default async function ClientasPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
@@ -98,6 +95,20 @@ export default async function ClientasPage() {
     return A - B;
   });
 
+  // Se aplanan para el componente cliente: solo datos, nada de funciones.
+  const filas: FilaClienta[] = rows.map((r) => ({
+    email: r.email,
+    name: r.name,
+    renewalText: r.renewal.text,
+    renewalUrgent: r.renewal.urgent,
+    pct: r.pct,
+    daysUsed: r.daysUsed,
+    checkins: r.checkins,
+    plans: r.plans,
+    techniques: r.techniques,
+    lastCheckin: r.lastCheckin,
+  }));
+
   return (
     <>
       <Navbar />
@@ -117,61 +128,7 @@ export default async function ClientasPage() {
           {members.length === 0 ? (
             <p className="text-[#A0A0A0]">Aún no tienes clientas dadas de alta (grupo &quot;Miembros&quot; en MailerLite).</p>
           ) : (
-            <div className="grid gap-3">
-              {rows.map((r) => (
-                <Link key={r.email} href={`/miembros/clientas/${encodeURIComponent(r.email)}`}
-                  className="card-dark p-4 !transform-none block">
-                  <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{r.name}</p>
-                      <p className="text-xs text-[#666666] truncate">{r.email}</p>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${r.renewal.urgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
-                      {r.renewal.text}
-                    </span>
-                  </div>
-
-                  {r.pct != null && (
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3]">
-                          Servicio consumido
-                        </span>
-                        <span className="text-xs font-bold text-white tabular-nums">{r.pct}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-[#0A0A0A] overflow-hidden">
-                        <div className="h-full bg-[#1CA0E3]" style={{ width: `${r.pct}%` }} />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div>
-                      <div className="text-lg font-extrabold text-white leading-none">{r.daysUsed}</div>
-                      <div className="text-[9px] text-[#666666] mt-1 leading-tight">días de uso</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-extrabold text-white leading-none">{r.checkins}</div>
-                      <div className="text-[9px] text-[#666666] mt-1 leading-tight">check-ins</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-extrabold text-white leading-none">{r.plans}</div>
-                      <div className="text-[9px] text-[#666666] mt-1 leading-tight">planes</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-extrabold text-white leading-none">{r.techniques}</div>
-                      <div className="text-[9px] text-[#666666] mt-1 leading-tight">vídeos</div>
-                    </div>
-                  </div>
-
-                  {r.lastCheckin && (
-                    <p className="text-[10px] text-[#666666] mt-3">
-                      Último check-in: {fmtDate(r.lastCheckin)}
-                    </p>
-                  )}
-                </Link>
-              ))}
-            </div>
+            <ClientasLista filas={filas} />
           )}
         </div>
       </main>
