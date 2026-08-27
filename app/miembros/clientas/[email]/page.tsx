@@ -17,7 +17,7 @@ import SupplementPlan from "@/components/SupplementPlan";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
 import { type Supplement } from "@/lib/suplementos";
-import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, type Questionnaire } from "@/lib/profile";
+import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, edadDe, fechaLarga, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
@@ -48,6 +48,25 @@ function fmtFull(d: string) {
     timeZone: "Europe/Madrid",
   });
 }
+/**
+ * Fecha de nacimiento tal y como la ve la coach: la fecha exacta y, entre
+ * paréntesis, la edad de hoy ya calculada (que es lo que antes se preguntaba).
+ *
+ * Las clientas que respondieron al cuestionario anterior solo tienen la edad
+ * guardada, y de una edad no se puede deducir la fecha. A ellas se les sigue
+ * mostrando lo que dijeron, marcado para que no se confunda con un dato exacto.
+ */
+function nacimientoTexto(q: Questionnaire): string {
+  const fecha = fechaLarga(q.fecha_nacimiento);
+  if (fecha) {
+    const edad = edadDe(q.fecha_nacimiento);
+    return edad === null ? fecha : `${fecha} · ${edad} años`;
+  }
+  const heredada = (q.edad ?? "").trim();
+  if (heredada) return `${heredada} años (edad del cuestionario anterior)`;
+  return "—";
+}
+
 const ACTION_LABEL: Record<string, string> = {
   acceso: "Entró en la plataforma",
   plan_abierto: "Abrió un documento",
@@ -531,7 +550,11 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 {PROFILE_FIELDS.map((f) => (
                   <div key={f.id}>
                     <p className="text-xs text-[#666666]">{f.label}</p>
-                    <p className="text-sm text-white whitespace-pre-wrap">{q[f.id] || "—"}</p>
+                    {f.id === "fecha_nacimiento" ? (
+                      <p className="text-sm text-white">{nacimientoTexto(q)}</p>
+                    ) : (
+                      <p className="text-sm text-white whitespace-pre-wrap">{q[f.id] || "—"}</p>
+                    )}
                   </div>
                 ))}
               </div>

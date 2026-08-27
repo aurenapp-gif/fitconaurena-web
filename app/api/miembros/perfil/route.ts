@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sanitizeQuestionnaire, questionnaireComplete } from "@/lib/profile";
+import { sanitizeQuestionnaire, questionnaireComplete, errorNacimiento } from "@/lib/profile";
 import { sbUpsert, sbSelect } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -22,6 +22,12 @@ export async function POST(req: NextRequest) {
     typeof body.display_name === "string" ? body.display_name.trim().slice(0, 60) : "";
   const questionnaire = sanitizeQuestionnaire(body.questionnaire);
   const submitted = body.submitted === true;
+
+  // La fecha de nacimiento también se comprueba aquí, no solo en el formulario:
+  // de ella sale la edad que ve la coach, y un dato inventado se leería como
+  // bueno. Vacía se admite (el cuestionario se puede guardar a medias).
+  const errFecha = errorNacimiento(questionnaire.fecha_nacimiento);
+  if (errFecha) return NextResponse.json({ error: errFecha }, { status: 400 });
 
   // El ciclo de avisos del plan SOLO arranca cuando la clienta pulsa
   // "Enviar cuestionario" (submitted: true) y está completo. Guardar sin enviar

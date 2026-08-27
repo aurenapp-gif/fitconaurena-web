@@ -2,7 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PROFILE_FIELDS, REQUIRED_QUESTIONNAIRE, questionnaireComplete, type Questionnaire } from "@/lib/profile";
+import {
+  PROFILE_FIELDS,
+  REQUIRED_QUESTIONNAIRE,
+  questionnaireComplete,
+  errorNacimiento,
+  rangoNacimiento,
+  type Questionnaire,
+} from "@/lib/profile";
 import { resizeImage } from "@/lib/image";
 
 export default function ProfileForm({
@@ -26,7 +33,14 @@ export default function ProfileForm({
   const [photoBusy, setPhotoBusy] = useState(false);
   const [sent, setSent] = useState(submitted);
 
-  const isComplete = questionnaireComplete(q);
+  const errFecha = errorNacimiento(q.fecha_nacimiento);
+  const isComplete = questionnaireComplete(q) && !errFecha;
+  // El navegador ya acota el calendario, pero el `min`/`max` no impide teclear
+  // a mano: la comprobación de arriba es la que manda.
+  const rango = rangoNacimiento();
+  // Las que respondieron al cuestionario anterior solo tienen la edad. Se les
+  // pide la fecha, pero no se les bloquea nada por no ponerla.
+  const pideFecha = !(q.fecha_nacimiento ?? "").trim() && !!(q.edad ?? "").trim();
 
   function set(id: string, v: string) {
     setQ((p) => ({ ...p, [id]: v }));
@@ -48,6 +62,13 @@ export default function ProfileForm({
   // marca el cuestionario como enviado y arranca el ciclo de avisos del plan.
   async function save(submit: boolean) {
     if (status === "saving") return;
+    // Una fecha mal tecleada no se guarda ni como borrador: acabaría en la ficha
+    // de la coach como una edad falsa y con toda la pinta de ser correcta.
+    if (errFecha) {
+      setStatus("error");
+      setMsg(errFecha);
+      return;
+    }
     setStatus("saving");
     setMsg("");
     try {
@@ -127,9 +148,27 @@ export default function ProfileForm({
                 </select>
               ) : f.type === "textarea" ? (
                 <textarea value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} rows={2} className={`${inputCls} resize-none`} />
+              ) : f.type === "date" ? (
+                <input
+                  type="date"
+                  value={q[f.id] ?? ""}
+                  onChange={(e) => set(f.id, e.target.value)}
+                  min={rango.min}
+                  max={rango.max}
+                  className={`${inputCls} [color-scheme:dark]`}
+                />
               ) : (
                 <input type={f.type === "number" ? "number" : "text"} value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} className={inputCls} />
               )}
+              {f.id === "fecha_nacimiento" && errFecha ? (
+                <p className="text-xs text-[#FF6B6B] mt-1">{errFecha}</p>
+              ) : f.id === "fecha_nacimiento" && pideFecha ? (
+                <p className="text-xs text-[#1CA0E3] mt-1">
+                  Antes nos dijiste que tenías {q.edad} años. Pon tu fecha exacta: tu coach ajusta mejor tu plan.
+                </p>
+              ) : f.hint ? (
+                <p className="text-xs text-[#666666] mt-1">{f.hint}</p>
+              ) : null}
             </div>
           ))}
         </div>
