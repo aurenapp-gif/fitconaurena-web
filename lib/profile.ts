@@ -3,12 +3,18 @@
 export type Field = {
   id: string;
   label: string;
-  type: "number" | "text" | "textarea" | "select";
+  type: "number" | "text" | "textarea" | "select" | "date";
   options?: string[];
+  hint?: string;
 };
 
 export const PROFILE_FIELDS: Field[] = [
-  { id: "edad", label: "Edad", type: "number" },
+  {
+    id: "fecha_nacimiento",
+    label: "Fecha de nacimiento",
+    type: "date",
+    hint: "Con la fecha exacta tu coach puede ajustar mejor tu plan que con la edad a secas.",
+  },
   { id: "altura", label: "Altura (cm)", type: "number" },
   { id: "peso_actual", label: "Peso actual (kg) — opcional", type: "number" },
   { id: "peso_objetivo", label: "Peso objetivo (kg) — opcional", type: "number" },
@@ -34,11 +40,22 @@ export type Questionnaire = Record<string, string>;
  * Los pesos NO son obligatorios a propósito: hay clientas que prefieren no
  * pesarse, y deben poder enviar su cuestionario igualmente (pueden seguir su
  * progreso con medidas y fotos). */
-export const REQUIRED_QUESTIONNAIRE = ["edad", "altura", "objetivo"];
+export const REQUIRED_QUESTIONNAIRE = ["fecha_nacimiento", "altura", "objetivo"];
 
-/** ¿Están todos los campos obligatorios rellenos? */
+/**
+ * ¿Están todos los campos obligatorios rellenos?
+ *
+ * La edad del cuestionario antiguo cuenta como fecha de nacimiento a estos
+ * efectos. Si no contara, a las clientas que ya lo rellenaron se les volvería a
+ * abrir el paso «Completa tu cuestionario» en su portada por un cambio nuestro,
+ * como si no lo hubieran hecho nunca. En su perfil sí se les pide la fecha
+ * exacta, pero sin bloquearlas.
+ */
 export function questionnaireComplete(q: Questionnaire): boolean {
-  return REQUIRED_QUESTIONNAIRE.every((k) => (q[k] ?? "").toString().trim() !== "");
+  return REQUIRED_QUESTIONNAIRE.every((k) => {
+    if ((q[k] ?? "").toString().trim() !== "") return true;
+    return k === "fecha_nacimiento" && (q.edad ?? "").trim() !== "";
+  });
 }
 
 /** Fecha (YYYY-MM-DD) un mes después de `from` (por defecto, hoy). */
@@ -122,14 +139,82 @@ export function renewalInfo(date: string | null): { text: string; urgent: boolea
 }
 
 /** Limpia el cuestionario quedándose solo con campos conocidos (string). */
+/**
+ * Campos que ya no se preguntan pero que NO se borran de lo ya guardado.
+ *
+ * El cuestionario pedía «Edad» y ahora pide la fecha de nacimiento, que es
+ * exacta y no caduca. De una edad no se puede deducir la fecha, así que la de
+ * las clientas que ya respondieron se conserva: si se cayera del saneado, la
+ * primera vez que cualquiera de ellas guardase su perfil ese dato desaparecería
+ * sin que nadie se enterara.
+ */
+const CAMPOS_HEREDADOS = ["edad"];
+
 export function sanitizeQuestionnaire(input: unknown): Questionnaire {
   const out: Questionnaire = {};
   if (input && typeof input === "object") {
-    for (const f of PROFILE_FIELDS) {
-      const v = (input as Record<string, unknown>)[f.id];
-      if (typeof v === "string") out[f.id] = v.slice(0, 1000);
-      else if (typeof v === "number") out[f.id] = String(v);
-    }
+    const datos = input as Record<string, unknown>;
+    const copiar = (id: string) => {
+      const v = datos[id];
+      if (typeof v === "string") out[id] = v.slice(0, 1000);
+      else if (typeof v === "number") out[id] = String(v);
+    };
+    for (const f of PROFILE_FIELDS) copiar(f.id);
+    for (const id of CAMPOS_HEREDADOS) copiar(id);
   }
   return out;
+}
+
+/**
+ * Edad a partir de la fecha de nacimiento (YYYY-MM-DD). Null si no hay fecha o
+ * no es válida. Descuenta el año si aún no ha llegado el cumpleaños.
+ */
+export function edadDe(fecha: string | null | undefined): number | null {
+  if (!fecha || !isValidDateISO(fecha)) return null;
+  const hoy = new Date();
+  const n = new Date(fecha + "T00:00:00");
+  let edad = hoy.getFullYear() - n.getFullYear();
+  const cumpleYa =
+    hoy.getMonth() > n.getMonth() ||
+    (hoy.getMonth() === n.getMonth() && hoy.getDate() >= n.getDate());
+  if (!cumpleYa) edad -= 1;
+  return edad >= 0 && edad < 130 ? edad : null;
+}
+
+/** Fecha de nacimiento en castellano: «14 de marzo de 1990». */
+export function fechaLarga(fecha: string | null | undefined): string | null {
+  if (!fecha || !isValidDateISO(fecha)) return null;
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  }).format(new Date(fecha + "T12:00:00Z"));
+}
+
+/**
+ * Margen de edad que se acepta como fecha de nacimiento.
+ *
+ * No es un filtro de admisión —de eso se encarga el formulario de solicitud—
+ * sino un detector de erratas: al teclear la fecha es fácil dejarse el año en
+ * el actual, y entonces la coach vería «0 años» en la ficha sin sospechar que
+ * el dato está mal. Cualquier edad real cabe de sobra en este margen.
+ */
+export const EDAD_MIN = 14;
+export const EDAD_MAX = 100;
+
+/** Fechas límite (YYYY-MM-DD) para el `min`/`max` del selector de fecha. */
+export function rangoNacimiento(now: Date = new Date()): { min: string; max: string } {
+  const limite = (anios: number) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear() - anios, now.getUTCMonth(), now.getUTCDate()));
+    return d.toISOString().slice(0, 10);
+  };
+  return { min: limite(EDAD_MAX), max: limite(EDAD_MIN) };
+}
+
+/** Mensaje de error de la fecha de nacimiento, o null si está bien (o vacía). */
+export function errorNacimiento(v: string | null | undefined): string | null {
+  const s = (v ?? "").trim();
+  if (!s) return null;
+  const edad = edadDe(s);
+  if (edad === null) return "Esa fecha de nacimiento no existe. Revísala.";
+  if (edad < EDAD_MIN || edad > EDAD_MAX) return "Revisa la fecha de nacimiento: el año no parece correcto.";
+  return null;
 }
