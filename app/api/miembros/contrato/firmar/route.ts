@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, adminEmails } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
-import { sbSelect, sbInsert, sbUpload, sbDownload, sbUpdate, sbUpsert, safePath } from "@/lib/supabase";
+import { sbSelect, sbInsert, sbUpload, sbDownload, sbUpdate, sbUpsert, anonPath } from "@/lib/supabase";
 import {
   CONTRACT_BUCKET,
   DIAS_DESISTIMIENTO,
@@ -121,8 +121,11 @@ export async function POST(req: NextRequest) {
       fieldValues: values,
       serviceStart,
     });
-    const sigPath = `firmas/${safePath(`${tpl.kind}-${me}.png`)}`;
-    const pdfPath = `firmados/${safePath(`${tpl.kind}-${me}.pdf`)}`;
+    // Sin el correo de la clienta en el nombre: viaja en la URL firmada y se
+    // queda en el historial del navegador de quien abra el documento. Quién
+    // firmó qué ya consta en `contract_signatures`.
+    const sigPath = `firmas/${anonPath("png")}`;
+    const pdfPath = `firmados/${anonPath("pdf")}`;
     await sbUpload(CONTRACT_BUCKET, sigPath, sigBytes, "image/png");
     await sbUpload(CONTRACT_BUCKET, pdfPath, signedPdf, "application/pdf");
     await sbInsert("contract_signatures", {
