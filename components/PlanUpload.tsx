@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
 // poder saber de un vistazo qué versión está ejecutando el navegador de la
 // coach en lugar de deducirlo por el texto de un aviso.
-const VERSION = 4;
+const VERSION = 5;
 
 const MB = 1024 * 1024;
 const MAX_MB = 25;
@@ -35,6 +35,41 @@ const TIPOS_OK = [
  * registra en el servidor: el problema solo pasa en su navegador y sin ese
  * registro no hay forma de saber qué falla.
  */
+/**
+ * Tipos que se ofrecen en el buscador de archivos.
+ *
+ * Van los tipos MIME Y las extensiones: Safari no entiende las extensiones
+ * sueltas («.pdf»), así que con solo esas no reconocía ningún plan.
+ */
+const ACCEPT = [
+  ...TIPOS_OK,
+  "image/*",
+  ".pdf", ".doc", ".docx",
+].join(",");
+
+/** ¿Este arrastre trae un archivo (y no texto suelto de la propia página)? */
+function traeArchivos(dt: DataTransfer | null): boolean {
+  if (!dt) return false;
+  const tipos = Array.from(dt.types ?? []);
+  return tipos.includes("Files") || tipos.includes("text/uri-list");
+}
+
+/**
+ * Saca el archivo soltado. Se miran las dos listas a propósito: según de dónde
+ * venga el arrastre —la ventana de descargas de Safari, el Finder, otra
+ * pestaña— el navegador lo deja en `files` o solo en `items`.
+ */
+function archivoSoltado(dt: DataTransfer): File | null {
+  const directo = dt.files?.[0];
+  if (directo) return directo;
+  for (const item of Array.from(dt.items ?? [])) {
+    if (item.kind !== "file") continue;
+    const f = item.getAsFile();
+    if (f) return f;
+  }
+  return null;
+}
+
 export default function PlanUpload({ member }: { member: string }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -44,6 +79,22 @@ export default function PlanUpload({ member }: { member: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "subiendo" | "error">("idle");
   const [msg, setMsg] = useState("");
+  const [encima, setEncima] = useState(false);
+  // El arrastre entra y sale también al pasar por los textos de dentro del
+  // recuadro. Contándolos, el recuadro no parpadea mientras se mueve el ratón.
+  const dentro = useRef(0);
+
+  // Si el archivo se suelta FUERA del recuadro, el navegador lo abre y se lleva
+  // por delante lo que hubiera escrito en el formulario. Aquí se queda en nada.
+  useEffect(() => {
+    const tragar = (e: DragEvent) => { if (traeArchivos(e.dataTransfer)) e.preventDefault(); };
+    window.addEventListener("dragover", tragar);
+    window.addEventListener("drop", tragar);
+    return () => {
+      window.removeEventListener("dragover", tragar);
+      window.removeEventListener("drop", tragar);
+    };
+  }, []);
 
   function elegir(f: File | null) {
     setFile(f);
@@ -58,6 +109,19 @@ export default function PlanUpload({ member }: { member: string }) {
       setStatus("error");
       setMsg("Solo se admiten PDF, Word o imagen.");
     }
+  }
+
+  function soltar(e: React.DragEvent) {
+    e.preventDefault();
+    dentro.current = 0;
+    setEncima(false);
+    const f = archivoSoltado(e.dataTransfer);
+    if (!f) {
+      setStatus("error");
+      setMsg("Eso que has soltado no es un archivo. Arrastra el plan desde las descargas o desde una carpeta.");
+      return;
+    }
+    elegir(f);
   }
 
   /** Deja constancia del fallo para poder diagnosticarlo. Nunca estorba. */
@@ -222,12 +286,36 @@ export default function PlanUpload({ member }: { member: string }) {
         aria-label="Comentario para la clienta"
         className={cls}
       />
-      <input type="file" onChange={(e) => elegir(e.target.files?.[0] ?? null)} aria-label="Archivo del plan"
-        accept=".pdf,.doc,.docx,image/*"
-        className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
-      {file && status !== "error" && (
-        <p className="text-xs text-[#666666]">{file.name} · {(file.size / MB).toFixed(1)} MB</p>
-      )}
+      {/* El arrastre lo gestiona el recuadro, no el campo de archivo. Cuando lo
+          gestionaba el campo, Safari comprobaba el `accept` antes de dejar
+          soltar y rechazaba los planes: no reconocía «.pdf» ni «.docx». */}
+      <label
+        htmlFor="plan-archivo"
+        onDragEnter={(e) => { e.preventDefault(); dentro.current += 1; setEncima(true); }}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+        onDragLeave={() => { dentro.current = Math.max(0, dentro.current - 1); if (dentro.current === 0) setEncima(false); }}
+        onDrop={soltar}
+        className={`flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center cursor-pointer transition-colors ${
+          encima ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#3A3A3A] bg-[#0A0A0A] hover:border-[#1CA0E3]/60"
+        }`}
+      >
+        <input
+          id="plan-archivo"
+          type="file"
+          onChange={(e) => elegir(e.target.files?.[0] ?? null)}
+          aria-label="Archivo del plan"
+          accept={ACCEPT}
+          className="sr-only"
+        />
+        <span className="text-sm font-bold text-white break-all">
+          {encima ? "Suelta el plan aquí" : file ? file.name : "Arrastra aquí el plan"}
+        </span>
+        <span className="text-xs text-[#666666]">
+          {file && !encima
+            ? `${(file.size / MB).toFixed(1)} MB · pulsa para cambiarlo`
+            : "o pulsa para buscarlo · PDF, Word o imagen"}
+        </span>
+      </label>
       {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
       <button type="submit" disabled={status === "subiendo"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo…" : "Subir plan"}
