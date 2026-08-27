@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
 // poder saber de un vistazo qué versión está ejecutando el navegador de la
 // coach en lugar de deducirlo por el texto de un aviso.
-const VERSION = 5;
+const VERSION = 6;
 
 const MB = 1024 * 1024;
 const MAX_MB = 25;
@@ -54,20 +54,65 @@ function traeArchivos(dt: DataTransfer | null): boolean {
   return tipos.includes("Files") || tipos.includes("text/uri-list");
 }
 
+type Entrada = { isFile: boolean; file: (ok: (f: File) => void, ko: () => void) => void };
+
 /**
- * Saca el archivo soltado. Se miran las dos listas a propósito: según de dónde
- * venga el arrastre —la ventana de descargas de Safari, el Finder, otra
- * pestaña— el navegador lo deja en `files` o solo en `items`.
+ * Todas las formas de conseguir el archivo que se acaba de soltar, en orden de
+ * preferencia. Son vías DISTINTAS, no la misma repetida, y ahí está la gracia:
+ * un plan arrastrado desde la ventana de descargas de Safari se coge bien por
+ * una y da «The I/O read operation failed» por otra. Se prueban todas hasta
+ * que una dé un archivo que se deje leer de verdad.
+ *
+ * Hay que pedirlas TODAS aquí, sin esperar a nada: en cuanto el manejador de
+ * «soltar» termina, el navegador invalida lo que no se haya recogido.
  */
-function archivoSoltado(dt: DataTransfer): File | null {
-  const directo = dt.files?.[0];
-  if (directo) return directo;
+function viasDelArchivo(dt: DataTransfer): Array<() => Promise<File | null>> {
+  const vias: Array<() => Promise<File | null>> = [];
   for (const item of Array.from(dt.items ?? [])) {
     if (item.kind !== "file") continue;
-    const f = item.getAsFile();
-    if (f) return f;
+    const bruto = item.webkitGetAsEntry?.();
+    if (bruto?.isFile) {
+      const entrada = bruto as unknown as Entrada;
+      vias.push(() => new Promise<File | null>((ok) => entrada.file((f) => ok(f), () => ok(null))));
+    }
+    const directo = item.getAsFile();
+    if (directo) vias.push(() => Promise.resolve(directo));
   }
-  return null;
+  const primero = dt.files?.[0];
+  if (primero) vias.push(() => Promise.resolve(primero));
+  return vias;
+}
+
+/**
+ * Lee el archivo entero a memoria, o devuelve null si no se deja.
+ *
+ * Se intenta por las dos vías porque no siempre funcionan las mismas: Safari
+ * falla con `arrayBuffer()` en archivos que vienen de la ventana de descargas
+ * y en cambio sí los lee con el lector de toda la vida.
+ *
+ * No lanza nunca: que no se pueda leer no es motivo para no intentar subirlo.
+ */
+async function leerEntero(f: File): Promise<Blob | null> {
+  const envolver = (b: ArrayBuffer) =>
+    b.byteLength > 0 ? new Blob([b], { type: f.type || "application/octet-stream" }) : null;
+
+  try {
+    const b = await f.arrayBuffer();
+    const blob = envolver(b);
+    if (blob) return blob;
+  } catch { /* se prueba la otra vía */ }
+
+  try {
+    const b = await new Promise<ArrayBuffer>((ok, ko) => {
+      const lector = new FileReader();
+      lector.onload = () => ok(lector.result as ArrayBuffer);
+      lector.onerror = () => ko(lector.error ?? new Error("lector"));
+      lector.readAsArrayBuffer(f);
+    });
+    return envolver(b);
+  } catch {
+    return null;
+  }
 }
 
 export default function PlanUpload({ member }: { member: string }) {
@@ -80,9 +125,14 @@ export default function PlanUpload({ member }: { member: string }) {
   const [status, setStatus] = useState<"idle" | "subiendo" | "error">("idle");
   const [msg, setMsg] = useState("");
   const [encima, setEncima] = useState(false);
+  const [preparando, setPreparando] = useState(false);
+  // Aviso que NO impide subir (a diferencia de `msg`, que sí señala un error).
+  const [nota, setNota] = useState("");
   // El arrastre entra y sale también al pasar por los textos de dentro del
   // recuadro. Contándolos, el recuadro no parpadea mientras se mueve el ratón.
   const dentro = useRef(0);
+  // Lectura del archivo, lanzada nada más elegirlo (ver `elegir`).
+  const lectura = useRef<Promise<Blob | null> | null>(null);
 
   // Si el archivo se suelta FUERA del recuadro, el navegador lo abre y se lleva
   // por delante lo que hubiera escrito en el formulario. Aquí se queda en nada.
@@ -96,32 +146,75 @@ export default function PlanUpload({ member }: { member: string }) {
     };
   }, []);
 
-  function elegir(f: File | null) {
+  /** ¿Se puede admitir este archivo? Devuelve el motivo si no. */
+  function motivoRechazo(f: File): string | null {
+    if (f.size > MAX_MB * MB)
+      return `Ese archivo pesa ${(f.size / MB).toFixed(1)} MB y el máximo son ${MAX_MB} MB. Comprímelo o divídelo.`;
+    if (f.type && !TIPOS_OK.includes(f.type.toLowerCase()) && !f.type.startsWith("image/"))
+      return "Solo se admiten PDF, Word o imagen.";
+    return null;
+  }
+
+  function elegir(f: File | null, yaLeido?: Blob | null) {
     setFile(f);
     setStatus("idle");
     setMsg("");
+    setNota("");
+    lectura.current = null;
     if (!f) return;
     // Se avisa aquí mismo en vez de dejar que falle a mitad de la subida.
-    if (f.size > MAX_MB * MB) {
-      setStatus("error");
-      setMsg(`Ese archivo pesa ${(f.size / MB).toFixed(1)} MB y el máximo son ${MAX_MB} MB. Comprímelo o divídelo.`);
-    } else if (f.type && !TIPOS_OK.includes(f.type.toLowerCase()) && !f.type.startsWith("image/")) {
-      setStatus("error");
-      setMsg("Solo se admiten PDF, Word o imagen.");
-    }
+    const motivo = motivoRechazo(f);
+    if (motivo) { setStatus("error"); setMsg(motivo); return; }
+    // Se lee YA, no al darle a «Subir plan». Un archivo arrastrado desde la
+    // ventana de descargas deja de poder leerse en cuanto pasa un rato, y para
+    // entonces ya se ha escrito el título y el comentario. Leyéndolo ahora, lo
+    // que se sube es una copia en memoria que nadie puede mover ni cerrar.
+    lectura.current = yaLeido !== undefined ? Promise.resolve(yaLeido) : leerEntero(f);
   }
 
-  function soltar(e: React.DragEvent) {
+  async function soltar(e: React.DragEvent) {
     e.preventDefault();
     dentro.current = 0;
     setEncima(false);
-    const f = archivoSoltado(e.dataTransfer);
-    if (!f) {
+    // Se recogen TODAS las vías antes de cualquier espera: después el navegador
+    // las invalida (ver `viasDelArchivo`).
+    const vias = viasDelArchivo(e.dataTransfer);
+    if (!vias.length) {
       setStatus("error");
       setMsg("Eso que has soltado no es un archivo. Arrastra el plan desde las descargas o desde una carpeta.");
       return;
     }
-    elegir(f);
+
+    setPreparando(true);
+    let primero: File | null = null;
+    try {
+      for (const traer of vias) {
+        const f = await traer();
+        if (!f) continue;
+        const motivo = motivoRechazo(f);
+        if (motivo) { elegir(f); return; }   // `elegir` ya pinta el motivo
+        if (!primero) primero = f;
+        const bytes = await leerEntero(f);
+        if (bytes) { elegir(f, bytes); return; }
+      }
+    } finally {
+      setPreparando(false);
+    }
+
+    // Ninguna vía se dejó leer. NO se bloquea: se queda el archivo elegido y al
+    // darle a «Subir plan» se intentará mandarlo tal cual. Pero se dice ahora,
+    // no después de escribir el título y el comentario.
+    if (primero) {
+      elegir(primero, null);
+      registrar("leer", "ninguna vía del arrastre se dejó leer", "arrastre", primero);
+      setNota(
+        "Este archivo no se ha dejado leer al arrastrarlo. Puedes intentar subirlo igualmente, " +
+        "pero si falla, pulsa el recuadro y búscalo en tus archivos: así siempre funciona."
+      );
+    } else {
+      setStatus("error");
+      setMsg("No se ha podido coger el archivo del arrastre. Pulsa el recuadro y búscalo en tus archivos.");
+    }
   }
 
   /** Deja constancia del fallo para poder diagnosticarlo. Nunca estorba. */
@@ -135,7 +228,8 @@ export default function PlanUpload({ member }: { member: string }) {
   }
 
   function hecho() {
-    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg("");
+    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg(""); setNota("");
+    lectura.current = null;
     formRef.current?.reset();
     router.refresh();
   }
@@ -150,26 +244,14 @@ export default function PlanUpload({ member }: { member: string }) {
     setStatus("subiendo"); setMsg("");
     const fallos: string[] = [];
 
-    // El archivo se lee entero ANTES de empezar. Enviándolo tal cual, el
-    // navegador lo lee mientras sube, y si no puede (está en iCloud sin
-    // descargar, se movió después de elegirlo…) la petición revienta a mitad
-    // con un error de red que parece un problema de conexión.
-    let contenido: Blob;
-    try {
-      const bytes = await f.arrayBuffer();
-      if (bytes.byteLength === 0) throw new Error("archivo vacío");
-      contenido = new Blob([bytes], { type: f.type || "application/octet-stream" });
-    } catch (e) {
-      const detalle = e instanceof Error ? e.message : String(e);
-      registrar("leer", detalle, "n/a", f);
-      setStatus("error");
-      setMsg(
-        "No se ha podido leer el archivo. Suele pasar cuando está en iCloud o Drive y no está " +
-        "descargado del todo, o si se movió después de elegirlo. Ábrelo una vez, o cópialo al " +
-        "escritorio, y vuelve a seleccionarlo."
-      );
-      return;
-    }
+    // Se prefiere la copia en memoria que se hizo al elegir el archivo: sube
+    // más rápido y no depende de que el original siga donde estaba. Pero si no
+    // se ha podido leer, NO se planta: se manda el archivo tal cual y que lo
+    // lea el navegador mientras sube, que es como funcionaba antes y como se
+    // subieron los planes que hay hoy en la app.
+    const leido = await (lectura.current ?? leerEntero(f));
+    const contenido: Blob = leido ?? f;
+    if (!leido) registrar("leer", "no se pudo leer; se envía el archivo tal cual", "n/a", f);
 
     /** Vía del servidor: el archivo viaja dentro de la petición. */
     async function porServidor(): Promise<boolean> {
@@ -262,6 +344,10 @@ export default function PlanUpload({ member }: { member: string }) {
     setStatus("error");
     setMsg(
       `No se ha podido subir (${(contenido.size / MB).toFixed(1)} MB). ` +
+      (leido
+        ? ""
+        : "Además, el archivo no se ha dejado leer: si está en iCloud o Drive, ábrelo una vez " +
+          "para que se descargue del todo, o cópialo al escritorio, y vuelve a arrastrarlo. ") +
       `Queda registrado para revisarlo. Detalle: ${fallos.join(" · ").slice(0, 220)}`
     );
   }
@@ -308,16 +394,17 @@ export default function PlanUpload({ member }: { member: string }) {
           className="sr-only"
         />
         <span className="text-sm font-bold text-white break-all">
-          {encima ? "Suelta el plan aquí" : file ? file.name : "Arrastra aquí el plan"}
+          {preparando ? "Preparando el archivo…" : encima ? "Suelta el plan aquí" : file ? file.name : "Arrastra aquí el plan"}
         </span>
         <span className="text-xs text-[#666666]">
-          {file && !encima
+          {file && !encima && !preparando
             ? `${(file.size / MB).toFixed(1)} MB · pulsa para cambiarlo`
             : "o pulsa para buscarlo · PDF, Word o imagen"}
         </span>
       </label>
       {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
-      <button type="submit" disabled={status === "subiendo"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
+      {status !== "error" && nota && <p className="text-sm text-[#E8B84B]">{nota}</p>}
+      <button type="submit" disabled={status === "subiendo" || preparando} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo…" : "Subir plan"}
       </button>
       <p className="text-[10px] text-[#3A3A3A]">subida v{VERSION}</p>
