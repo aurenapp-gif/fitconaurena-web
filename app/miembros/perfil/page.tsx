@@ -25,7 +25,14 @@ type HabitRow = { day: string; water: number | null; steps: number | null; sleep
 
 /** Todos los planes de un tipo, del más reciente al más antiguo. El primero se
  * marca como "Actual"; los anteriores quedan accesibles debajo (historial). */
-function PlanList({ items, label, empty }: { items: (Plan & { url?: string })[]; label: string; empty: string }) {
+function PlanList({ items, label, empty, fallo }: { items: (Plan & { url?: string })[]; label: string; empty: string; fallo?: boolean }) {
+  // Decirle «tu coach aún no ha subido tu plan» cuando lo que ha pasado es que
+  // no se ha podido consultar sería el peor error posible de esta pantalla.
+  if (fallo) return (
+    <p role="alert" className="text-sm text-[#FF6B6B]">
+      No hemos podido cargar tus planes ahora mismo. Vuelve a entrar en un momento: no se ha perdido nada.
+    </p>
+  );
   if (items.length === 0) return <p className="text-sm text-[#666666]">{empty}</p>;
   return (
     <div className="flex flex-col gap-4">
@@ -90,8 +97,9 @@ export default async function PerfilPage() {
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
-    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=40`)
-      .catch((e) => { console.error("[perfil] plans", e); return [] as Plan[]; }),
+    // null si falla la consulta, para no confundirlo con «no tiene planes».
+    sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=200`)
+      .catch((e) => { console.error("[perfil] plans", e); return null; }),
     admin
       ? Promise.resolve([] as HabitRow[])
       : sbSelect<HabitRow>(
@@ -130,7 +138,7 @@ export default async function PerfilPage() {
 
   // 2ª tanda: URLs firmadas de planes, foto y PDFs de contratos firmados.
   const [planUrls, photoUrl, signedPdfUrls] = await Promise.all([
-    Promise.all(plans.map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
+    Promise.all((plans ?? []).map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     Promise.all(signatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
@@ -142,7 +150,8 @@ export default async function PerfilPage() {
     url: signedPdfUrls[i],
   }));
 
-  const plansWithUrl = plans.map((p, i) => ({ ...p, url: planUrls[i] }));
+  const planesFallo = plans === null;
+  const plansWithUrl = (plans ?? []).map((p, i) => ({ ...p, url: planUrls[i] }));
   const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
   const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");
 
@@ -169,11 +178,11 @@ export default async function PerfilPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-3">🥗 Nutrición</p>
-          <PlanList items={nutPlans} label="Plan de nutrición" empty="Tu coach aún no ha subido tu plan de nutrición." />
+          <PlanList items={nutPlans} label="Plan de nutrición" empty="Tu coach aún no ha subido tu plan de nutrición." fallo={planesFallo} />
         </div>
         <div className="rounded-xl border border-[#252525] p-4">
           <p className="font-bold text-white mb-3">🏋️ Entrenamiento</p>
-          <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." />
+          <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} />
         </div>
       </div>
 

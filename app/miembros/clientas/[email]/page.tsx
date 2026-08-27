@@ -89,8 +89,12 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const [profile, plans, checkins, allTemplates, mySignatures, assignments] = await Promise.all([
     sbSelect<Prof>("profiles", `select=*&email=eq.${encodeURIComponent(member)}`)
       .then((r0) => r0[0] ?? null).catch((e) => { console.error(e); return null; }),
+    // Ojo con el null: si la consulta falla NO se devuelve una lista vacía. Una
+    // lista vacía se pinta igual que «esta clienta no tiene planes», y eso es
+    // mentira justo cuando más asusta —al acabar de subir uno—. Con null la
+    // pantalla puede decir que no ha podido cargarlos.
     sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`)
-      .catch((e) => { console.error(e); return [] as Plan[]; }),
+      .catch((e) => { console.error("[clienta] plans", e); return null; }),
     sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
       .catch((e) => { console.error(e); return [] as CheckIn[]; }),
     sbSelect<ContractTemplate>("contract_templates", "select=*&order=created_at.desc")
@@ -157,9 +161,14 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const firstUse = activeSorted[0] ?? null;
   const lastUse = activeSorted[activeSorted.length - 1] ?? null;
 
+  // null = no se han podido leer. Para todo lo que cuenta y calcula se usa la
+  // lista vacía, pero el apartado de planes lo dice en vez de callárselo.
+  const planesFallo = plans === null;
+  const planes = plans ?? [];
+
   // PORCENTAJE DEL SERVICIO CONSUMIDO — fiel al apartado 6 de los Términos:
   // estrategia y planificación son el 70 %, seguimiento el 30 %.
-  const svc = servicePct(profile?.renewal_date, plans.map((p) => p.created_at));
+  const svc = servicePct(profile?.renewal_date, planes.map((p) => p.created_at));
   const pct = svc?.pct ?? null;
   const cycleFrom = svc?.from ?? null;
   const cycleTo = svc?.to ?? null;
@@ -172,7 +181,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
     { label: "Entró por primera vez", at: logins.length ? logins[logins.length - 1].created_at : null },
     { label: "Completó el cuestionario", at: profile?.questionnaire_completed_at ?? null },
     { label: "Firmó el contrato", at: contractSig?.signed_at ?? null },
-    { label: "Recibió su primer plan", at: plans.length ? plans[plans.length - 1].created_at : null },
+    { label: "Recibió su primer plan", at: planes.length ? planes[planes.length - 1].created_at : null },
     { label: "Abrió un documento por primera vez", at: opened.length ? opened[opened.length - 1].created_at : null },
     { label: "Hizo su primer check-in", at: checkins.length ? checkins[0].created_at : null },
   ].filter((m) => m.at);
@@ -186,7 +195,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
     { v: checkins.length, l: "check-ins" },
     { v: new Set(habitDays.map((h) => h.day)).size, l: "días de hábitos" },
     { v: techniques.length, l: "vídeos de técnica" },
-    { v: plans.length, l: "planes recibidos" },
+    { v: planes.length, l: "planes recibidos" },
     { v: contractSig ? 1 : 0, l: "contrato firmado" },
   ];
 
@@ -205,7 +214,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   // URLs firmadas en paralelo: planes + todos los PDFs de contratos/anexos firmados.
   const [plansWithUrl, signedPdfUrls] = await Promise.all([
-    Promise.all(plans.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
+    Promise.all(planes.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
     Promise.all(mySignatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
   const contratosFirmadosLista = mySignatures.map((s, i) => ({
@@ -312,7 +321,14 @@ export default async function ClientaPage({ params }: { params: { email: string 
           <div className="card-dark p-6 !transform-none mb-6">
             <h2 className="font-bold text-white mb-4">Subir plan</h2>
             <PlanUpload member={member} />
-            {plansWithUrl.length > 0 && (
+            {planesFallo ? (
+              <p role="alert" className="mt-5 rounded-lg border border-[#FF6B6B]/40 bg-[#FF6B6B]/5 px-4 py-3 text-sm text-[#FF6B6B]">
+                No se han podido cargar sus planes ahora mismo. <strong>No se ha borrado nada</strong>: es un
+                fallo al consultarlos. Recarga la página en un momento.
+              </p>
+            ) : plansWithUrl.length === 0 ? (
+              <p className="mt-5 text-xs text-[#666666]">Todavía no le has subido ningún plan.</p>
+            ) : (
               <div className="mt-5 flex flex-col gap-2">
                 <p className="text-xs text-[#A0A0A0]">Planes subidos:</p>
                 {plansWithUrl.map((p) => (
@@ -323,7 +339,12 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         <span className="text-[#666666] text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
                       </span>
                       <span className="flex items-center gap-3 shrink-0">
-                        {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>}
+                        {/* Sin enlace = el archivo no está en el almacén. Antes
+                            simplemente no salía «Ver» y no había forma de saber
+                            que ese plan estaba roto para la clienta. */}
+                        {p.url
+                          ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>
+                          : <span className="text-[#FF6B6B] text-xs" title="El archivo no está disponible. Vuelve a subirlo.">⚠️ sin archivo</span>}
                         <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
                       </span>
                     </div>
