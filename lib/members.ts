@@ -88,25 +88,52 @@ export function isAdmin(email: string | null): boolean {
   return adminEmails().includes(email.toLowerCase());
 }
 
-/** Lista las clientas (suscriptoras del grupo "Miembros"). */
+/**
+ * Lista las clientas (suscriptoras del grupo "Miembros").
+ *
+ * PAGINADO. Antes se pedía una sola página de 200 y ahí se acababa: la clienta
+ * 201 simplemente dejaba de existir para la app —no salía en el panel, no
+ * recibía recordatorios— y sin ningún error que lo delatara. Era un techo
+ * invisible esperando a que el negocio creciera.
+ *
+ * El tope de páginas es una red de seguridad contra un bucle infinito si la API
+ * devolviera siempre un cursor: 25 páginas son 2.500 clientas, muy por encima
+ * de cualquier escenario real, y si algún día se alcanzara conviene enterarse.
+ */
 export async function getMembers(): Promise<{ email: string; name: string }[]> {
   const apiKey = process.env.MAILERLITE_API_KEY;
   const groupId = process.env.MAILERLITE_MEMBERS_GROUP_ID;
   if (!apiKey || !groupId) return [];
+
+  const MAX_PAGINAS = 25;
+  const salida: { email: string; name: string }[] = [];
+  let cursor: string | null = null;
+
   try {
-    const res = await fetchWithTimeout(
-      `https://connect.mailerlite.com/api/groups/${groupId}/subscribers?limit=200`,
-      { headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store" }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data?.data ?? []).map((s: { email: string; fields?: { name?: string } }) => ({
-      email: s.email,
-      name: s.fields?.name || s.email.split("@")[0],
-    }));
+    for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+      const qs = `limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const res: Response = await fetchWithTimeout(
+        `https://connect.mailerlite.com/api/groups/${groupId}/subscribers?${qs}`,
+        { headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store" }
+      );
+      // Si falla a media paginación se devuelve lo ya reunido: media lista es
+      // mejor que ninguna, y quedarse sin nadie rompería el panel entero.
+      if (!res.ok) break;
+      const data = await res.json();
+      const lote: { email: string; fields?: { name?: string } }[] = data?.data ?? [];
+      for (const s of lote) {
+        salida.push({ email: s.email, name: s.fields?.name || s.email.split("@")[0] });
+      }
+      cursor = data?.meta?.next_cursor ?? null;
+      if (!cursor || lote.length === 0) break;
+      if (pagina === MAX_PAGINAS - 1) {
+        console.error(`[members] ${MAX_PAGINAS} páginas y sigue habiendo cursor: revisar la paginación`);
+      }
+    }
   } catch {
-    return [];
+    // Se devuelve lo que se haya podido reunir.
   }
+  return salida;
 }
 
 /** ¿El email pertenece al grupo "Miembros" y está activo en MailerLite? */

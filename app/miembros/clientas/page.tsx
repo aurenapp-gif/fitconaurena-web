@@ -14,9 +14,16 @@ export const metadata: Metadata = { title: "Clientas", robots: { index: false, f
 export const dynamic = "force-dynamic";
 
 type Prof = { email: string; display_name: string | null; renewal_date: string | null };
-type Row = { member_email: string };
-type CheckInRow = { member_email: string; created_at: string };
 type PlanRow = { member_email: string; created_at: string };
+/** Una fila por clienta, ya sumada por la base de datos. */
+type Uso = {
+  member_email: string;
+  checkins: number;
+  ultimo_checkin: string | null;
+  planes: number;
+  videos: number;
+  dias_uso: number;
+};
 
 export default async function ClientasPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
@@ -25,18 +32,26 @@ export default async function ClientasPage() {
 
   // Todo en paralelo. Cada consulta cae por su cuenta para que el listado no se
   // caiga entero si una tabla flaquea.
-  const [members, profiles, checkins, habits, plans, techniques, templates] = await Promise.all([
+  //
+  // Los totales de uso los calcula la BASE DE DATOS (vista `member_usage`), no
+  // esta página. Antes se traía cada fila de check_ins, habit_logs, plans y
+  // technique_reviews para contarlas aquí, y Supabase corta toda respuesta en
+  // 1.000 filas sin avisar: pasado ese punto los números salían más bajos de lo
+  // real y alguna clienta aparecía con un 0 que no le correspondía. Ahora viene
+  // una fila por clienta y el techo desaparece.
+  const [members, profiles, uso, planDates, templates] = await Promise.all([
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email))),
     sbSelect<Prof>("profiles", "select=email,display_name,renewal_date")
       .catch((e) => { console.error("[clientas] profiles", e); return [] as Prof[]; }),
-    sbSelect<CheckInRow>("check_ins", "select=member_email,created_at")
-      .catch(() => [] as CheckInRow[]),
-    sbSelect<Row & { day: string }>("habit_logs", "select=member_email,day")
-      .catch(() => [] as (Row & { day: string })[]),
-    sbSelect<PlanRow>("plans", "select=member_email,created_at")
-      .catch(() => [] as PlanRow[]),
-    sbSelect<Row>("technique_reviews", "select=member_email")
-      .catch(() => [] as Row[]),
+    sbSelect<Uso>("member_usage", "select=*")
+      .catch((e) => { console.error("[clientas] member_usage", e); return [] as Uso[]; }),
+    // Las fechas de los planes del ciclo en curso sí hacen falta en detalle
+    // (el porcentaje de servicio consumido depende de cuándo se entregó cada
+    // uno), pero solo las de los últimos dos meses: el cálculo no mira más atrás.
+    sbSelect<PlanRow>(
+      "plans",
+      `select=member_email,created_at&created_at=gte.${new Date(Date.now() - 62 * 86400000).toISOString()}&order=created_at.desc`
+    ).catch(() => [] as PlanRow[]),
     sbSelect<{ id: string; title: string; kind: string }>(
       "contract_templates", "select=id,title,kind&active=is.true&order=created_at.asc"
     ).catch(() => [] as { id: string; title: string; kind: string }[]),
@@ -44,49 +59,27 @@ export default async function ClientasPage() {
   const contractTpls = templates.filter((t) => t.kind === "contrato").map((t) => ({ id: t.id, title: t.title }));
   const hasAnexo = templates.some((t) => t.kind === "anexo_salud");
 
-  // Indexes por email, para no recorrer las listas por cada clienta.
   const profByEmail = new Map(profiles.map((p) => [p.email, p]));
-  const checkinsByEmail = new Map<string, CheckInRow[]>();
-  for (const c of checkins) {
-    const arr = checkinsByEmail.get(c.member_email) ?? [];
-    arr.push(c); checkinsByEmail.set(c.member_email, arr);
-  }
-  const daysByEmail = new Map<string, Set<string>>();
-  const add = (e: string, d: string) => {
-    const s = daysByEmail.get(e) ?? new Set<string>();
-    s.add(d); daysByEmail.set(e, s);
-  };
-  for (const c of checkins) add(c.member_email, c.created_at.slice(0, 10));
-  for (const h of habits) add(h.member_email, h.day);
-  const countBy = (rows: Row[]) => {
-    const m = new Map<string, number>();
-    for (const r of rows) m.set(r.member_email, (m.get(r.member_email) ?? 0) + 1);
-    return m;
-  };
-  const plansByEmail = countBy(plans);
-  const techByEmail = countBy(techniques);
+  const usoByEmail = new Map(uso.map((u) => [u.member_email, u]));
   const planDatesByEmail = new Map<string, string[]>();
-  for (const p of plans) {
+  for (const p of planDates) {
     const arr = planDatesByEmail.get(p.member_email) ?? [];
     arr.push(p.created_at); planDatesByEmail.set(p.member_email, arr);
   }
 
   const rows = members.map((m) => {
     const p = profByEmail.get(m.email);
-    const cks = checkinsByEmail.get(m.email) ?? [];
-    const last = cks.length
-      ? cks.map((c) => c.created_at).sort().slice(-1)[0]
-      : null;
+    const u = usoByEmail.get(m.email);
     return {
       email: m.email,
       name: p?.display_name || m.name,
       renewal: renewalInfo(p?.renewal_date ?? null),
       pct: servicePct(p?.renewal_date, planDatesByEmail.get(m.email) ?? [])?.pct ?? null,
-      daysUsed: (daysByEmail.get(m.email) ?? new Set()).size,
-      checkins: cks.length,
-      plans: plansByEmail.get(m.email) ?? 0,
-      techniques: techByEmail.get(m.email) ?? 0,
-      lastCheckin: last,
+      daysUsed: u?.dias_uso ?? 0,
+      checkins: u?.checkins ?? 0,
+      plans: u?.planes ?? 0,
+      techniques: u?.videos ?? 0,
+      lastCheckin: u?.ultimo_checkin ?? null,
     };
   });
   // Ordenadas por urgencia de renovación (las que menos días faltan primero).

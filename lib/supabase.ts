@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 /**
  * Acceso a Supabase desde el servidor (PostgREST + Storage) usando la clave
  * secreta. SOLO debe importarse en código de servidor (route handlers / server
@@ -219,4 +221,20 @@ export async function sbSignedThumb(bucket: string, path: string, width = 500, e
 export function safePath(name: string): string {
   const clean = name.normalize("NFKD").replace(/[^\w.\-]+/g, "_").slice(-80);
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${clean}`;
+}
+
+/**
+ * Ruta ANÓNIMA para documentos personales: nombre aleatorio, sin rastro de a
+ * quién pertenecen.
+ *
+ * `safePath` conserva el nombre original, que va bien para un plan
+ * («nutricion-agosto.pdf») pero no para un contrato: ahí se estaba metiendo el
+ * correo de la clienta en el nombre del fichero, y ese nombre viaja en la URL
+ * firmada, aparece en los listados del almacenamiento y se queda en el historial
+ * del navegador de quien lo abra. Es un dato personal donde no hace ninguna
+ * falta: quién firmó qué ya consta en la base.
+ */
+export function anonPath(ext: string): string {
+  const limpio = ext.replace(/[^a-z0-9]/gi, "").slice(0, 5).toLowerCase() || "bin";
+  return `${randomUUID()}.${limpio}`;
 }
