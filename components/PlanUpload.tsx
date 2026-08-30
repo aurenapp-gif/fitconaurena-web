@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
 // poder saber de un vistazo qué versión está ejecutando el navegador de la
 // coach en lugar de deducirlo por el texto de un aviso.
-const VERSION = 8;
+const VERSION = 9;
 
 const MB = 1024 * 1024;
 const MAX_MB = 25;
@@ -132,6 +132,14 @@ export default function PlanUpload({ member }: { member: string }) {
   const dentro = useRef(0);
   // Lectura del archivo, lanzada nada más elegirlo (ver `elegir`).
   const lectura = useRef<Promise<Blob | null> | null>(null);
+  // De dónde salió el archivo, para el registro de incidencias: «campo» = lo
+  // recogió el navegador al soltarlo (o se buscó a mano), «respaldo» = lo tuvo
+  // que sacar la página. Distinguirlos es lo que dice si el arrastre nativo
+  // llegó a funcionar o no.
+  const origen = useRef<"campo" | "respaldo" | "buscador">("buscador");
+  // Momento del último soltar, para saber si un cambio del campo viene de ahí
+  // o de haber buscado el archivo a mano.
+  const soltadoEn = useRef(0);
 
   // Si el archivo se suelta FUERA del recuadro, el navegador lo abre y se lleva
   // por delante lo que hubiera escrito en el formulario. Aquí se queda en nada.
@@ -192,6 +200,7 @@ export default function PlanUpload({ member }: { member: string }) {
   function soltar(e: React.DragEvent) {
     dentro.current = 0;
     setEncima(false);
+    soltadoEn.current = Date.now();
     // Las vías hay que recogerlas AHORA, aunque quizá no se usen: en cuanto
     // termina el manejador, el navegador invalida lo que no se haya cogido.
     const vias = viasDelArchivo(e.dataTransfer);
@@ -205,6 +214,7 @@ export default function PlanUpload({ member }: { member: string }) {
   }
 
   async function aMano(vias: Via[]) {
+    origen.current = "respaldo";
     setPreparando(true);
     let primero: File | null = null;
     const intentos: string[] = [];
@@ -240,10 +250,18 @@ export default function PlanUpload({ member }: { member: string }) {
 
   /** Deja constancia del fallo para poder diagnosticarlo. Nunca estorba. */
   function registrar(paso: string, mensaje: string, via: string, f: File) {
+    // La versión y de dónde salió el archivo van dentro del propio mensaje: sin
+    // eso hay que adivinar qué código corrió por cómo está redactado un aviso,
+    // y ya ha pasado que un fallo de la versión vieja pareciera de la nueva.
+    const cabecera = `[v${VERSION} ${origen.current}]`;
     fetch("/api/miembros/clientas/plan/incidencia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paso, mensaje: mensaje.slice(0, 500), via, bytes: f.size, mime: f.type }),
+      body: JSON.stringify({
+        paso,
+        mensaje: `${cabecera} ${mensaje}`.slice(0, 500),
+        via, bytes: f.size, mime: f.type,
+      }),
       keepalive: true,
     }).catch(() => {});
   }
@@ -297,6 +315,45 @@ export default function PlanUpload({ member }: { member: string }) {
         registrar("servidor", detalle, "servidor", f);
       }
       return false;
+    }
+
+    /**
+     * La misma vía del servidor pero enviada con XHR en vez de con `fetch`.
+     *
+     * No es un capricho: Safari sube los archivos por dentro de forma distinta
+     * según cuál se use, y hay archivos que dan «Load failed» con `fetch` y en
+     * cambio salen con XHR. Solo se intenta cuando las otras ya han fallado,
+     * porque es el último cartucho antes de tener que buscar el archivo a mano.
+     */
+    function porXHR(): Promise<boolean> {
+      if (contenido.size > MAX_SERVIDOR_MB * MB) return Promise.resolve(false);
+      return new Promise<boolean>((listo) => {
+        try {
+          const fd = new FormData();
+          fd.append("member", member); fd.append("type", type);
+          fd.append("title", title); fd.append("note", note);
+          fd.append("file", contenido, f.name);
+          const req = new XMLHttpRequest();
+          req.open("POST", "/api/miembros/clientas/plan");
+          req.onload = () => {
+            if (req.status >= 200 && req.status < 300) return listo(true);
+            fallos.push(`xhr ${req.status}`);
+            registrar("xhr", `${req.status} ${req.responseText.slice(0, 120)}`, "servidor", f);
+            listo(false);
+          };
+          req.onerror = () => {
+            fallos.push("xhr: fallo de red");
+            registrar("xhr", "fallo de red", "servidor", f);
+            listo(false);
+          };
+          req.send(fd);
+        } catch (e) {
+          const detalle = e instanceof Error ? e.message : String(e);
+          fallos.push(`xhr: ${detalle}`);
+          registrar("xhr", detalle, "servidor", f);
+          listo(false);
+        }
+      });
     }
 
     /** Vía directa: permiso, subida a Storage y registro. Con reintentos. */
@@ -361,7 +418,7 @@ export default function PlanUpload({ member }: { member: string }) {
     // Por tamaño: lo pequeño por la vía probada, lo grande por la única posible.
     // Si la primera no sale, se intenta la otra antes de darse por vencido.
     const cabeEnServidor = contenido.size <= MAX_SERVIDOR_MB * MB;
-    const orden = cabeEnServidor ? [porServidor, porDirecta] : [porDirecta, porServidor];
+    const orden = cabeEnServidor ? [porServidor, porDirecta, porXHR] : [porDirecta, porServidor, porXHR];
     for (const via of orden) {
       if (await via()) { hecho(); return; }
     }
@@ -426,7 +483,10 @@ export default function PlanUpload({ member }: { member: string }) {
           id="plan-archivo"
           ref={campoRef}
           type="file"
-          onChange={(e) => elegir(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            origen.current = Date.now() - soltadoEn.current < 1500 ? "campo" : "buscador";
+            elegir(e.target.files?.[0] ?? null);
+          }}
           aria-label="Archivo del plan"
           className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
         />
