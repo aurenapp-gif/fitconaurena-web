@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbDelete, sbUpsert, isMissingTable } from "@/lib/supabase";
-import { safeLink, parseAgua, MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE, MIN_AGUA, MAX_AGUA } from "@/lib/suplementos";
+import { safeLink, parseAgua, parsePasos, MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE, MIN_AGUA, MAX_AGUA, MIN_PASOS, MAX_PASOS } from "@/lib/suplementos";
 
 export const runtime = "nodejs";
 
@@ -11,14 +11,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * Pauta de agua y suplementación de una clienta. Solo la coach.
  *
- * Dos cosas por el mismo sitio porque van juntas en la misma tarjeta de la
- * ficha: `agua` fija los litros al día; sin `agua`, se añade un suplemento.
+ * Tres cosas por el mismo sitio porque van juntas en la misma tarjeta de la
+ * ficha: `agua` fija los litros al día, `pasos` los pasos diarios, y sin
+ * ninguna de las dos se añade un suplemento.
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let data: { member?: unknown; agua?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown };
+  let data: { member?: unknown; agua?: unknown; pasos?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const member = typeof data.member === "string" ? normalizeEmail(data.member) : "";
@@ -40,6 +41,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo guardar el agua." }, { status: 500 });
     }
     return NextResponse.json({ ok: true, agua: litros });
+  }
+
+  // --- Objetivo de pasos ---------------------------------------------------
+  if (data.pasos !== undefined) {
+    // Cadena vacía = quitarle el objetivo.
+    const vacia = typeof data.pasos === "string" && data.pasos.trim() === "";
+    const diarios = vacia ? null : parsePasos(data.pasos);
+    if (!vacia && diarios === null) {
+      return NextResponse.json({ error: `Pon los pasos al día, entre ${MIN_PASOS} y ${MAX_PASOS}.` }, { status: 400 });
+    }
+    try {
+      await sbUpsert("profiles", { email: member, steps_target: diarios, updated_at: new Date().toISOString() });
+    } catch (err) {
+      console.error("[clientas/suplementos] pasos", err);
+      if (isMissingTable(err)) return NextResponse.json({ error: "Falta crear la columna.", setup: true }, { status: 400 });
+      return NextResponse.json({ error: "No se pudo guardar los pasos." }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, pasos: diarios });
   }
 
   // --- Suplemento nuevo ----------------------------------------------------

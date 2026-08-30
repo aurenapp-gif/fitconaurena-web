@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { litros, vasos } from "@/lib/suplementos";
+import { litros, vasos, pasos as fmtPasos } from "@/lib/suplementos";
 
 type Today = { water: number | null; steps: number | null; sleep: number | null };
 
@@ -11,12 +11,15 @@ export default function HabitsTracker({
   streak,
   last7,
   aguaObjetivo,
+  pasosObjetivo,
 }: {
   initial: Today;
   streak: number;
   last7: { label: string; done: boolean }[];
   /** Litros al día que le ha puesto su coach, si le ha puesto alguno. */
   aguaObjetivo?: number | null;
+  /** Pasos al día que le ha puesto su coach, si le ha puesto alguno. */
+  pasosObjetivo?: number | null;
 }) {
   const router = useRouter();
   const [water, setWater] = useState<number>(initial.water ?? 0);
@@ -94,8 +97,23 @@ export default function HabitsTracker({
 
         <div className="grid gap-4 sm:grid-cols-2 mb-5">
           <div>
-            <label className="block text-xs text-[#A0A0A0] mb-1">👟 Pasos</label>
-            <input type="number" inputMode="numeric" value={steps} onChange={(e) => setSteps(e.target.value)} placeholder="Ej. 8000" className={inputCls} />
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label className="block text-xs text-[#A0A0A0]">👟 Pasos</label>
+              {pasosObjetivo != null && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  Number(steps) >= pasosObjetivo ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0]"
+                }`}>
+                  {Number(steps) >= pasosObjetivo ? "Objetivo cumplido ✓" : `de ${pasosObjetivo.toLocaleString("es-ES")}`}
+                </span>
+              )}
+            </div>
+            <input type="number" inputMode="numeric" value={steps} onChange={(e) => setSteps(e.target.value)}
+              placeholder={pasosObjetivo != null ? `Ej. ${pasosObjetivo}` : "Ej. 8000"} className={inputCls} />
+            {pasosObjetivo != null && (
+              <p className="text-xs text-[#666666] mt-1.5">
+                Tu coach te ha puesto <strong className="text-white">{fmtPasos(pasosObjetivo)} al día</strong>.
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs text-[#A0A0A0] mb-1">😴 Sueño (horas)</label>

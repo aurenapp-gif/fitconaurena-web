@@ -19,7 +19,7 @@ import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null; water_target_l?: number | null };
+type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null; water_target_l?: number | null; steps_target?: number | null };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
 
@@ -243,7 +243,7 @@ export default async function PerfilPage() {
             <PerfilTabs
               tabs={[
                 { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
-                { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} aguaObjetivo={profile?.water_target_l ?? null} /> },
+                { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} aguaObjetivo={profile?.water_target_l ?? null} pasosObjetivo={profile?.steps_target ?? null} /> },
                 { id: "llamadas", icon: "📞", label: "Llamadas", node: (
                   <div className="card-dark p-6 !transform-none">
                     <h2 className="font-bold text-white mb-1">Mis llamadas estratégicas</h2>

@@ -32,7 +32,7 @@ type Prof = {
   created_at?: string | null; terms_accepted_at?: string | null; terms_version?: string | null;
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
-  contracts_exempt?: boolean | null; water_target_l?: number | null;
+  contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
 type CheckIn = { weight: number | null; created_at: string };
@@ -355,10 +355,10 @@ export default async function ClientaPage({ params }: { params: { email: string 
             )}
           </div>
 
-          {/* Agua y suplementación: lo que tiene que tomar cada día */}
+          {/* Pauta diaria: agua, pasos y suplementación */}
           <div className="card-dark p-6 !transform-none mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-              <h2 className="font-bold text-white">Agua y suplementación</h2>
+              <h2 className="font-bold text-white">Agua, pasos y suplementación</h2>
               {supplements.length > 0 && (
                 <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#1CA0E3] text-white">
                   💊 {supplements.length} {supplements.length === 1 ? "suplemento" : "suplementos"}
@@ -366,9 +366,9 @@ export default async function ClientaPage({ params }: { params: { email: string 
               )}
             </div>
             <p className="text-xs text-[#666666] mb-5">
-              Le aparece en su perfil: el agua junto a sus hábitos y los suplementos junto a su plan.
+              Le aparece en su perfil: el agua y los pasos junto a sus hábitos, y los suplementos junto a su plan.
             </p>
-            <SupplementPlan member={member} agua={profile?.water_target_l ?? null} items={supplements} />
+            <SupplementPlan member={member} agua={profile?.water_target_l ?? null} pasosObjetivo={profile?.steps_target ?? null} items={supplements} />
           </div>
 
           {/* Llamadas estratégicas: el enlace de la grabación de cada una */}
