@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
 // poder saber de un vistazo qué versión está ejecutando el navegador de la
 // coach en lugar de deducirlo por el texto de un aviso.
-const VERSION = 7;
+const VERSION = 8;
 
 const MB = 1024 * 1024;
 const MAX_MB = 25;
@@ -19,33 +19,6 @@ const TIPOS_OK = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
-
-/**
- * Subida del plan de una clienta. Dos vías, y se elige por tamaño:
- *
- *  · Hasta 4 MB → POR EL SERVIDOR. Es la vía que lleva funcionando desde
- *    siempre y la que subió los planes que hay hoy en la app. Se intenta
- *    PRIMERO precisamente por eso: ante un fallo que no se reproduce fuera del
- *    navegador de la coach, manda lo que está demostrado que funciona.
- *  · Más de 4 MB → DIRECTA a Storage. No cabe por el servidor (la petición se
- *    corta antes de llegar y el navegador solo ve un error de red genérico, que
- *    fue el famoso «Error de conexión»).
- *
- * Si la vía elegida falla, se prueba la otra. Y si fallan las dos, el error se
- * registra en el servidor: el problema solo pasa en su navegador y sin ese
- * registro no hay forma de saber qué falla.
- */
-/**
- * Tipos que se ofrecen en el buscador de archivos.
- *
- * Van los tipos MIME Y las extensiones: Safari no entiende las extensiones
- * sueltas («.pdf»), así que con solo esas no reconocía ningún plan.
- */
-const ACCEPT = [
-  ...TIPOS_OK,
-  "image/*",
-  ".pdf", ".doc", ".docx",
-].join(",");
 
 /** ¿Este arrastre trae un archivo (y no texto suelto de la propia página)? */
 function traeArchivos(dt: DataTransfer | null): boolean {
@@ -68,22 +41,8 @@ type Via = { nombre: string; traer: () => Promise<File | null> };
  * Hay que pedirlas TODAS aquí, sin esperar a nada: en cuanto el manejador de
  * «soltar» termina, el navegador invalida lo que no se haya recogido.
  */
-function viasDelArchivo(dt: DataTransfer, campo: HTMLInputElement | null): Via[] {
+function viasDelArchivo(dt: DataTransfer): Via[] {
   const vias: Via[] = [];
-
-  // LA PRIMERA ES LA IMPORTANTE. Se le entrega la lista de archivos al campo
-  // `<input type="file">` de verdad y se recoge de ahí. Así el archivo entra
-  // por el mismo sitio por el que entra cuando se busca a mano en los archivos
-  // —el camino que a la coach nunca le ha fallado— en vez de por el del
-  // arrastre, que en Safari devuelve un archivo que luego no se deja leer.
-  if (campo && dt.files?.length) {
-    try {
-      campo.files = dt.files;
-      const delCampo = campo.files?.[0] ?? null;
-      if (delCampo) vias.push({ nombre: "campo", traer: () => Promise.resolve(delCampo) });
-    } catch { /* si el navegador no deja asignarlo, quedan las demás */ }
-  }
-
   for (const item of Array.from(dt.items ?? [])) {
     if (item.kind !== "file") continue;
     const bruto = item.webkitGetAsEntry?.();
@@ -142,10 +101,24 @@ async function leerEntero(f: File): Promise<{ blob: Blob; via: string } | null> 
   return null;
 }
 
+/**
+ * Subida del plan de una clienta. Dos vías para enviarlo, y se elige por tamaño:
+ *
+ *  · Hasta 4 MB → POR EL SERVIDOR. Es la vía que lleva funcionando desde
+ *    siempre y la que subió los planes que hay hoy en la app.
+ *  · Más de 4 MB → DIRECTA a Storage. No cabe por el servidor (la petición se
+ *    corta antes de llegar y el navegador solo ve un error de red genérico, que
+ *    fue el famoso «Error de conexión»).
+ *
+ * Si la elegida falla se prueba la otra, y si fallan las dos el error se
+ * registra en el servidor: el problema solo se da en el navegador de la coach y
+ * sin ese registro no hay forma de saber qué falla.
+ */
 export default function PlanUpload({ member }: { member: string }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const campoRef = useRef<HTMLInputElement>(null);
+  const zonaRef = useRef<HTMLDivElement>(null);
   const [type, setType] = useState("nutricion");
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
@@ -162,8 +135,16 @@ export default function PlanUpload({ member }: { member: string }) {
 
   // Si el archivo se suelta FUERA del recuadro, el navegador lo abre y se lleva
   // por delante lo que hubiera escrito en el formulario. Aquí se queda en nada.
+  //
+  // DENTRO del recuadro, en cambio, no se toca: el soltar sube hasta aquí desde
+  // el campo de archivo, y anularlo ahora cancelaría la recogida del navegador
+  // —que es justo lo que le da al archivo permiso de lectura—.
   useEffect(() => {
-    const tragar = (e: DragEvent) => { if (traeArchivos(e.dataTransfer)) e.preventDefault(); };
+    const tragar = (e: DragEvent) => {
+      const donde = e.target as Node | null;
+      if (donde && zonaRef.current?.contains(donde)) return;
+      if (traeArchivos(e.dataTransfer)) e.preventDefault();
+    };
     window.addEventListener("dragover", tragar);
     window.addEventListener("drop", tragar);
     return () => {
@@ -199,19 +180,31 @@ export default function PlanUpload({ member }: { member: string }) {
       : leerEntero(f).then((r) => r?.blob ?? null);
   }
 
-  async function soltar(e: React.DragEvent) {
-    e.preventDefault();
+  /**
+   * Red de seguridad del arrastre.
+   *
+   * OJO: aquí NO se llama a preventDefault. Del soltar se encarga el campo de
+   * archivo que hay debajo, y esta función solo mira, un instante después, si
+   * el campo se ha quedado con algo. Si sí —lo normal—, no hace nada. Si no
+   * —porque el navegador rechazó el arrastre—, entonces sí se intenta sacar el
+   * archivo a mano, que es mejor que dejarla sin nada.
+   */
+  function soltar(e: React.DragEvent) {
     dentro.current = 0;
     setEncima(false);
-    // Se recogen TODAS las vías antes de cualquier espera: después el navegador
-    // las invalida (ver `viasDelArchivo`).
-    const vias = viasDelArchivo(e.dataTransfer, campoRef.current);
-    if (!vias.length) {
-      setStatus("error");
-      setMsg("Eso que has soltado no es un archivo. Arrastra el plan desde las descargas o desde una carpeta.");
-      return;
-    }
+    // Las vías hay que recogerlas AHORA, aunque quizá no se usen: en cuanto
+    // termina el manejador, el navegador invalida lo que no se haya cogido.
+    const vias = viasDelArchivo(e.dataTransfer);
+    const antes = campoRef.current?.files?.[0] ?? null;
+    if (!vias.length) return;
+    window.setTimeout(() => {
+      const ahora = campoRef.current?.files?.[0] ?? null;
+      if (ahora && ahora !== antes) return;  // lo cogió el navegador: perfecto
+      void aMano(vias);
+    }, 700);
+  }
 
+  async function aMano(vias: Via[]) {
     setPreparando(true);
     let primero: File | null = null;
     const intentos: string[] = [];
@@ -235,17 +228,14 @@ export default function PlanUpload({ member }: { member: string }) {
       setPreparando(false);
     }
 
-    // Ninguna vía se dejó leer AQUÍ. No se dice nada todavía: el archivo se
-    // queda elegido y al darle a «Subir plan» se manda tal cual, que es como
-    // funcionaba antes de que existiera esta lectura previa. Avisar ahora sería
-    // mandarla al buscador de archivos sin haberlo intentado siquiera.
-    if (primero) {
-      elegir(primero, null);
-      registrar("leer", `sin lectura previa (${intentos.join(",")}); se subirá tal cual`, "arrastre", primero);
-    } else {
-      setStatus("error");
-      setMsg("No se ha podido coger el archivo del arrastre. Pulsa el recuadro y búscalo en tus archivos.");
-    }
+    // Si se llega aquí es que el navegador no recogió el archivo y a mano
+    // tampoco hay forma de leerlo. Un archivo así tampoco se puede enviar: la
+    // subida se queda en «Load failed» a mitad. Se dice ya, en vez de hacerle
+    // escribir el título y el comentario para acabar en el mismo sitio.
+    if (primero) elegir(primero, null);
+    registrar("leer", `arrastre sin permiso de lectura (${intentos.join(",")})`, "arrastre", primero ?? new File([], "?"));
+    setStatus("error");
+    setMsg("Tu navegador no ha dejado coger este archivo del arrastre. Pulsa el recuadro y búscalo en tus archivos: por ahí entra siempre.");
   }
 
   /** Deja constancia del fallo para poder diagnosticarlo. Nunca estorba. */
@@ -407,37 +397,48 @@ export default function PlanUpload({ member }: { member: string }) {
         aria-label="Comentario para la clienta"
         className={cls}
       />
-      {/* El arrastre lo gestiona el recuadro, no el campo de archivo. Cuando lo
-          gestionaba el campo, Safari comprobaba el `accept` antes de dejar
-          soltar y rechazaba los planes: no reconocía «.pdf» ni «.docx». */}
-      <label
-        htmlFor="plan-archivo"
-        onDragEnter={(e) => { e.preventDefault(); dentro.current += 1; setEncima(true); }}
-        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+      {/*
+        EL SOLTAR LO ATIENDE EL CAMPO DE ARCHIVO, NO ESTE RECUADRO.
+
+        El campo está estirado por encima de todo el recuadro, invisible. Así el
+        archivo cae sobre él y es el navegador quien lo recoge, no esta página.
+        La diferencia no es cosmética: cuando lo recoge el navegador, le da al
+        archivo permiso de lectura; cuando lo interceptábamos nosotros, el
+        archivo llegaba sin ese permiso y después no había forma de leerlo ni de
+        enviarlo («The I/O read operation failed» primero y «Load failed» al
+        intentar subirlo tal cual).
+
+        Por eso aquí NO se llama a preventDefault en «arrastrar por encima» ni
+        en «soltar»: hacerlo anularía justo lo que tiene que ocurrir.
+      */}
+      <div
+        ref={zonaRef}
+        onDragEnter={() => { dentro.current += 1; setEncima(true); }}
         onDragLeave={() => { dentro.current = Math.max(0, dentro.current - 1); if (dentro.current === 0) setEncima(false); }}
         onDrop={soltar}
-        className={`flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center cursor-pointer transition-colors ${
+        className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center transition-colors ${
           encima ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#3A3A3A] bg-[#0A0A0A] hover:border-[#1CA0E3]/60"
         }`}
       >
+        {/* Sin `accept`: es lo que hacía que Safari rechazara el arrastre de los
+            planes. El tipo se comprueba igual aquí abajo y en el servidor. */}
         <input
           id="plan-archivo"
           ref={campoRef}
           type="file"
           onChange={(e) => elegir(e.target.files?.[0] ?? null)}
           aria-label="Archivo del plan"
-          accept={ACCEPT}
-          className="sr-only"
+          className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
         />
-        <span className="text-sm font-bold text-white break-all">
+        <span className="text-sm font-bold text-white break-all pointer-events-none">
           {preparando ? "Preparando el archivo…" : encima ? "Suelta el plan aquí" : file ? file.name : "Arrastra aquí el plan"}
         </span>
-        <span className="text-xs text-[#666666]">
+        <span className="text-xs text-[#666666] pointer-events-none">
           {file && !encima && !preparando
             ? `${(file.size / MB).toFixed(1)} MB · pulsa para cambiarlo`
             : "o pulsa para buscarlo · PDF, Word o imagen"}
         </span>
-      </label>
+      </div>
       {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
       <button type="submit" disabled={status === "subiendo" || preparando} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo…" : "Subir plan"}
