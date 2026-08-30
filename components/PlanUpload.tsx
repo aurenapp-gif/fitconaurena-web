@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
 // poder saber de un vistazo qué versión está ejecutando el navegador de la
 // coach en lugar de deducirlo por el texto de un aviso.
-const VERSION = 9;
+const VERSION = 10;
 
 const MB = 1024 * 1024;
 const MAX_MB = 25;
@@ -27,36 +27,24 @@ function traeArchivos(dt: DataTransfer | null): boolean {
   return tipos.includes("Files") || tipos.includes("text/uri-list");
 }
 
-type Entrada = { isFile: boolean; file: (ok: (f: File) => void, ko: () => void) => void };
-
-type Via = { nombre: string; traer: () => Promise<File | null> };
-
 /**
- * Todas las formas de conseguir el archivo que se acaba de soltar, en orden de
- * preferencia. Son vías DISTINTAS, no la misma repetida, y ahí está la gracia:
- * un plan arrastrado desde la ventana de descargas de Safari se coge bien por
- * una y da «The I/O read operation failed» por otra. Se prueban todas hasta
- * que una dé un archivo que se deje leer de verdad.
+ * ¿Se puede leer este archivo? Devuelve null si sí, o el motivo si no.
  *
- * Hay que pedirlas TODAS aquí, sin esperar a nada: en cuanto el manejador de
- * «soltar» termina, el navegador invalida lo que no se haya recogido.
+ * Con UN byte basta: el permiso se concede o se deniega para el archivo entero,
+ * no hay un caso intermedio. Así se sabe en el acto lo que antes costaba leer
+ * 127 KB por tres vías distintas para acabar sabiendo lo mismo.
+ *
+ * El NOMBRE del error importa y hasta ahora se tiraba a la basura:
+ * «NotReadableError» es permiso denegado o error de disco; «NotFoundError» es
+ * que la ruta ya no existe. Son causas distintas y piden arreglos distintos.
  */
-function viasDelArchivo(dt: DataTransfer): Via[] {
-  const vias: Via[] = [];
-  for (const item of Array.from(dt.items ?? [])) {
-    if (item.kind !== "file") continue;
-    const bruto = item.webkitGetAsEntry?.();
-    if (bruto?.isFile) {
-      const entrada = bruto as unknown as Entrada;
-      vias.push({ nombre: "entrada", traer: () => new Promise<File | null>((ok) => entrada.file((f) => ok(f), () => ok(null))) });
-    }
-    const directo = item.getAsFile();
-    if (directo) vias.push({ nombre: "item", traer: () => Promise.resolve(directo) });
+async function sondaDeLectura(f: File): Promise<string | null> {
+  try {
+    await f.slice(0, 1).arrayBuffer();
+    return null;
+  } catch (e) {
+    return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
   }
-
-  const primero = dt.files?.[0];
-  if (primero) vias.push({ nombre: "files", traer: () => Promise.resolve(primero) });
-  return vias;
 }
 
 /**
@@ -96,7 +84,12 @@ async function leerEntero(f: File): Promise<{ blob: Blob; via: string } | null> 
     const blob = await res.blob();
     if (blob.size > 0) return { blob: blob.type ? blob : new Blob([blob], { type: tipo }), via: "objectURL" };
   } catch { /* nada más que probar */ }
-  finally { if (url) URL.revokeObjectURL(url); }
+  finally {
+    // Con retraso a propósito: revocarla aquí mismo puede retirarle al File el
+    // permiso de lectura, y entonces lo envenenaríamos para todo lo que venga
+    // después. Se suelta cuando ya no hay nada en vuelo.
+    if (url) { const u = url; setTimeout(() => URL.revokeObjectURL(u), 0); }
+  }
 
   return null;
 }
@@ -127,6 +120,10 @@ export default function PlanUpload({ member }: { member: string }) {
   const [msg, setMsg] = useState("");
   const [encima, setEncima] = useState(false);
   const [preparando, setPreparando] = useState(false);
+  // El archivo llegó sin permiso de lectura. No se puede subir de ninguna
+  // manera, así que en vez de dejarla intentarlo se le ofrece el botón que sí
+  // funciona siempre.
+  const [ilegible, setIlegible] = useState(false);
   // El arrastre entra y sale también al pasar por los textos de dentro del
   // recuadro. Contándolos, el recuadro no parpadea mientras se mueve el ratón.
   const dentro = useRef(0);
@@ -170,82 +167,56 @@ export default function PlanUpload({ member }: { member: string }) {
     return null;
   }
 
-  function elegir(f: File | null, yaLeido?: Blob | null) {
+  function elegir(f: File | null) {
     setFile(f);
     setStatus("idle");
     setMsg("");
+    setIlegible(false);
     lectura.current = null;
     if (!f) return;
-    // Se avisa aquí mismo en vez de dejar que falle a mitad de la subida.
     const motivo = motivoRechazo(f);
     if (motivo) { setStatus("error"); setMsg(motivo); return; }
-    // Se lee YA, no al darle a «Subir plan». Un archivo arrastrado desde la
-    // ventana de descargas deja de poder leerse en cuanto pasa un rato, y para
-    // entonces ya se ha escrito el título y el comentario. Leyéndolo ahora, lo
-    // que se sube es una copia en memoria que nadie puede mover ni cerrar.
-    lectura.current = yaLeido !== undefined
-      ? Promise.resolve(yaLeido)
-      : leerEntero(f).then((r) => r?.blob ?? null);
+
+    // Primero la sonda, que es instantánea. Si el archivo no se deja leer no
+    // hay nada que hacer: tampoco se podrá ENVIAR, porque leer y enviar usan el
+    // mismo permiso (lo lee el navegador por dentro para armar la petición).
+    // Antes se intentaban las tres vías de subida igualmente y ella esperaba
+    // cinco segundos para acabar en el mismo sitio.
+    setPreparando(true);
+    void sondaDeLectura(f).then((fallo) => {
+      setPreparando(false);
+      if (fallo) {
+        registrar("sonda", `${fallo} · ${f.name} · mod ${f.lastModified}`, "arrastre", f);
+        setFile(null);          // que el recuadro no aparente tener un plan puesto
+        setIlegible(true);
+        setStatus("error");
+        setMsg(
+          "Safari no ha dado permiso para leer este archivo al arrastrarlo desde su ventana " +
+          "de descargas. Es cosa suya, no del plan: el mismo archivo entra bien por el botón de abajo."
+        );
+        return;
+      }
+      // Se lee entero YA, no al pulsar «Subir plan»: así lo que se sube es una
+      // copia en memoria que nadie puede mover ni cerrar por el camino.
+      lectura.current = leerEntero(f).then((r) => r?.blob ?? null);
+    });
   }
 
   /**
-   * Red de seguridad del arrastre.
+   * Del soltar se encarga ENTERO el campo de archivo que hay debajo.
    *
-   * OJO: aquí NO se llama a preventDefault. Del soltar se encarga el campo de
-   * archivo que hay debajo, y esta función solo mira, un instante después, si
-   * el campo se ha quedado con algo. Si sí —lo normal—, no hace nada. Si no
-   * —porque el navegador rechazó el arrastre—, entonces sí se intenta sacar el
-   * archivo a mano, que es mejor que dejarla sin nada.
+   * Aquí solo se apaga el resaltado. No se llama a preventDefault y —sobre todo—
+   * no se toca `e.dataTransfer`: un archivo arrastrado desde la ventana de
+   * descargas de Safari viaja como promesa, y hurgar en ella desde la página
+   * antes de que el navegador la recoja puede dejarla consumida. El registro
+   * confirma que el campo se queda con el archivo él solo (todas las filas
+   * dicen «campo»), así que la extracción a mano que había aquí no llegaba a
+   * ejecutarse nunca y solo aportaba riesgo.
    */
-  function soltar(e: React.DragEvent) {
+  function soltar() {
     dentro.current = 0;
     setEncima(false);
     soltadoEn.current = Date.now();
-    // Las vías hay que recogerlas AHORA, aunque quizá no se usen: en cuanto
-    // termina el manejador, el navegador invalida lo que no se haya cogido.
-    const vias = viasDelArchivo(e.dataTransfer);
-    const antes = campoRef.current?.files?.[0] ?? null;
-    if (!vias.length) return;
-    window.setTimeout(() => {
-      const ahora = campoRef.current?.files?.[0] ?? null;
-      if (ahora && ahora !== antes) return;  // lo cogió el navegador: perfecto
-      void aMano(vias);
-    }, 700);
-  }
-
-  async function aMano(vias: Via[]) {
-    origen.current = "respaldo";
-    setPreparando(true);
-    let primero: File | null = null;
-    const intentos: string[] = [];
-    try {
-      for (const via of vias) {
-        const f = await via.traer();
-        if (!f) { intentos.push(`${via.nombre}:vacía`); continue; }
-        const motivo = motivoRechazo(f);
-        if (motivo) { elegir(f); return; }   // `elegir` ya pinta el motivo
-        if (!primero) primero = f;
-        const leido = await leerEntero(f);
-        if (leido) {
-          elegir(f, leido.blob);
-          // Solo interesa saberlo cuando hizo falta más de un intento.
-          if (intentos.length) registrar("leer", `bien por ${via.nombre}/${leido.via} tras ${intentos.join(",")}`, "arrastre", f);
-          return;
-        }
-        intentos.push(`${via.nombre}:ilegible`);
-      }
-    } finally {
-      setPreparando(false);
-    }
-
-    // Si se llega aquí es que el navegador no recogió el archivo y a mano
-    // tampoco hay forma de leerlo. Un archivo así tampoco se puede enviar: la
-    // subida se queda en «Load failed» a mitad. Se dice ya, en vez de hacerle
-    // escribir el título y el comentario para acabar en el mismo sitio.
-    if (primero) elegir(primero, null);
-    registrar("leer", `arrastre sin permiso de lectura (${intentos.join(",")})`, "arrastre", primero ?? new File([], "?"));
-    setStatus("error");
-    setMsg("Tu navegador no ha dejado coger este archivo del arrastre. Pulsa el recuadro y búscalo en tus archivos: por ahí entra siempre.");
   }
 
   /** Deja constancia del fallo para poder diagnosticarlo. Nunca estorba. */
@@ -267,7 +238,7 @@ export default function PlanUpload({ member }: { member: string }) {
   }
 
   function hecho() {
-    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg("");
+    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg(""); setIlegible(false);
     lectura.current = null;
     formRef.current?.reset();
     router.refresh();
@@ -283,18 +254,25 @@ export default function PlanUpload({ member }: { member: string }) {
     setStatus("subiendo"); setMsg("");
     const fallos: string[] = [];
 
-    // Se prefiere la copia en memoria que se hizo al elegir el archivo: sube
-    // más rápido y no depende de que el original siga donde estaba. Pero si no
-    // se ha podido leer, NO se planta: se manda el archivo tal cual y que lo
-    // lea el navegador mientras sube, que es como funcionaba antes y como se
-    // subieron los planes que hay hoy en la app.
-    let leido = await (lectura.current ?? leerEntero(f).then((r) => r?.blob ?? null));
-    // Segundo intento en el momento de subir. No es redundante: entre soltar el
-    // archivo y pulsar el botón pasa un rato, y a veces lo que no se dejaba
-    // leer al principio sí se deja ahora.
-    if (!leido) leido = await leerEntero(f).then((r) => r?.blob ?? null);
-    const contenido: Blob = leido ?? f;
-    if (!leido) registrar("leer", "no se pudo leer; se envía el archivo tal cual", "n/a", f);
+    // Copia en memoria hecha al elegir el archivo. Si no la hay se lee ahora.
+    const leido = await (lectura.current ?? leerEntero(f).then((r) => r?.blob ?? null));
+
+    // Sin bytes no se intenta subir. Leer y enviar comparten permiso —el
+    // navegador lee el archivo por dentro para armar el cuerpo de la petición—,
+    // así que si no se ha podido leer, ninguna de las tres vías puede salir.
+    // Antes se probaban las tres igualmente: cinco segundos de espera para
+    // acabar en el mismo error, y el aviso útil no llegaba a verse.
+    if (!leido) {
+      registrar("leer", "sin bytes; no se intenta subir", "n/a", f);
+      setIlegible(true);
+      setStatus("error");
+      setMsg(
+        "No se ha podido leer este archivo, así que tampoco se puede subir. " +
+        "Búscalo con el botón de abajo: por ahí entra siempre."
+      );
+      return;
+    }
+    const contenido: Blob = leido;
 
     /** Vía del servidor: el archivo viaja dentro de la petición. */
     async function porServidor(): Promise<boolean> {
@@ -499,8 +477,25 @@ export default function PlanUpload({ member }: { member: string }) {
             : "o pulsa para buscarlo · PDF, Word o imagen"}
         </span>
       </div>
+      {/* Arrastrar desde la ventanita de descargas de Safari es justo el gesto
+          que falla: ese archivo lo entrega Safari y llega sin permiso de
+          lectura. Desde el Dock o el Finder lo entrega el sistema y sí entra. */}
+      <p className="text-[11px] text-[#666666] -mt-1">
+        Si arrastras desde la ventana de descargas de Safari y no funciona, prueba desde la
+        pila <strong className="text-[#A0A0A0]">Descargas del Dock</strong> o desde el Finder:
+        esos sí entran.
+      </p>
       {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
-      <button type="submit" disabled={status === "subiendo" || preparando} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
+      {ilegible && (
+        <button
+          type="button"
+          onClick={() => { setIlegible(false); setStatus("idle"); setMsg(""); campoRef.current?.click(); }}
+          className="btn-brand text-sm px-6 py-3 self-start"
+        >
+          Buscar el plan en mis archivos
+        </button>
+      )}
+      <button type="submit" disabled={status === "subiendo" || preparando || ilegible} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo…" : "Subir plan"}
       </button>
       <p className="text-[10px] text-[#3A3A3A]">subida v{VERSION}</p>
