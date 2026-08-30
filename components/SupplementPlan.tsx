@@ -3,19 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  litros, vasos, pauta, MIN_AGUA, MAX_AGUA, MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE,
+  litros, vasos, pauta, pasos, MIN_AGUA, MAX_AGUA, MIN_PASOS, MAX_PASOS,
+  MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE,
   type Supplement,
 } from "@/lib/suplementos";
 
 /**
- * Pauta de agua y suplementación de una clienta, para la coach.
+ * Pauta diaria de una clienta, para la coach: agua, pasos y suplementación.
  *
  * Van juntos porque se rellenan de una vez, al montarle el plan: cuánta agua
- * bebe al día y qué se toma, con la dosis, el momento y dónde comprarlo.
+ * bebe, cuánto anda y qué se toma, con la dosis, el momento y dónde comprarlo.
  */
 export default function SupplementPlan({
-  member, agua, items,
-}: { member: string; agua: number | null; items: Supplement[] }) {
+  member, agua, pasosObjetivo, items,
+}: { member: string; agua: number | null; pasosObjetivo: number | null; items: Supplement[] }) {
   const router = useRouter();
   const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
 
@@ -37,6 +38,26 @@ export default function SupplementPlan({
       if (!res.ok) { setAguaEstado("error"); setAguaMsg(d.error ?? "No se pudo guardar."); return; }
       setAguaEstado("saved"); router.refresh();
     } catch { setAguaEstado("error"); setAguaMsg("Error de conexión."); }
+  }
+
+  // --- Pasos ---------------------------------------------------------------
+  const [pasosTxt, setPasosTxt] = useState(pasosObjetivo != null ? String(pasosObjetivo) : "");
+  const [pasosEstado, setPasosEstado] = useState<"idle" | "loading" | "saved" | "error">("idle");
+  const [pasosMsg, setPasosMsg] = useState("");
+
+  async function guardarPasos() {
+    if (pasosEstado === "loading") return;
+    setPasosEstado("loading"); setPasosMsg("");
+    try {
+      const res = await fetch("/api/miembros/clientas/suplementos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member, pasos: pasosTxt }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setPasosEstado("error"); setPasosMsg(d.error ?? "No se pudo guardar."); return; }
+      setPasosEstado("saved"); router.refresh();
+    } catch { setPasosEstado("error"); setPasosMsg("Error de conexión."); }
   }
 
   // --- Suplemento nuevo ----------------------------------------------------
@@ -106,6 +127,36 @@ export default function SupplementPlan({
         <p className="text-xs text-[#666666] mt-1.5">
           {agua != null
             ? `Ahora tiene ${litros(agua)} al día (unos ${vasos(agua)} vasos). Ella registra el agua en vasos, así que se le enseñan las dos cosas.`
+            : "Sin objetivo puesto. Déjalo en blanco y guarda para quitárselo."}
+        </p>
+      </div>
+
+      {/* Pasos */}
+      <div>
+        <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">👟 Pasos al día</p>
+        <div className="flex items-end gap-2 flex-wrap">
+          <div>
+            <label className="block text-xs text-[#A0A0A0] mb-1">
+              Pasos (entre {MIN_PASOS.toLocaleString("es-ES")} y {MAX_PASOS.toLocaleString("es-ES")})
+            </label>
+            <input
+              value={pasosTxt}
+              onChange={(e) => setPasosTxt(e.target.value)}
+              inputMode="numeric"
+              placeholder="Ej. 8000"
+              aria-label="Pasos al día"
+              className={`${cls} w-32`}
+            />
+          </div>
+          <button type="button" onClick={guardarPasos} disabled={pasosEstado === "loading"} className="btn-brand text-sm px-5 py-3 disabled:opacity-60">
+            {pasosEstado === "loading" ? "…" : "Guardar"}
+          </button>
+          {pasosEstado === "saved" && <span className="text-sm text-[#1CA0E3] pb-3">✓</span>}
+        </div>
+        {pasosMsg && <p className="text-sm text-[#FF6B6B] mt-1">{pasosMsg}</p>}
+        <p className="text-xs text-[#666666] mt-1.5">
+          {pasosObjetivo != null
+            ? `Ahora tiene ${pasos(pasosObjetivo)} al día. Le sale al registrar sus hábitos, junto a los pasos que lleva.`
             : "Sin objetivo puesto. Déjalo en blanco y guarda para quitárselo."}
         </p>
       </div>

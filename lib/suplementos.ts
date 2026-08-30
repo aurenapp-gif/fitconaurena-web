@@ -49,6 +49,29 @@ export function parseAgua(v: unknown): number | null {
   return r >= MIN_AGUA && r <= MAX_AGUA ? r : null;
 }
 
+/**
+ * Pasos al día que se pueden prescribir.
+ *
+ * El mínimo no es un objetivo bajo, es un detector de erratas: quien escribe
+ * «8» queriendo decir 8.000 vería a su clienta cumpliendo el objetivo cada
+ * mañana antes de desayunar. Y por arriba, 40.000 pasos son ya una barbaridad.
+ */
+export const MIN_PASOS = 1000;
+export const MAX_PASOS = 40000;
+
+/** Pasos válidos (entero dentro del rango) o null. */
+export function parsePasos(v: unknown): number | null {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/[.\s]/g, ""));
+  if (!Number.isFinite(n)) return null;
+  const r = Math.round(n);
+  return r >= MIN_PASOS && r <= MAX_PASOS ? r : null;
+}
+
+/** «8.000 pasos» — con el punto de los miles, como se escribe en español. */
+export function pasos(n: number): string {
+  return `${n.toLocaleString("es-ES")} pasos`;
+}
+
 /** «2,5 L» — con coma, que es como se escribe en español. */
 export function litros(n: number): string {
   return `${n.toLocaleString("es-ES", { maximumFractionDigits: 1 })} L`;
