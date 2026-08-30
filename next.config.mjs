@@ -38,7 +38,14 @@ const nextConfig = {
       "font-src 'self' data:",
       "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com https://images.unsplash.com",
       "media-src 'self' blob: https://*.supabase.co",
-      "connect-src 'self' https://*.supabase.co",
+      // `blob:` hace falta para poder LEER un archivo con
+      // `fetch(URL.createObjectURL(f))`. Sin él, esa lectura la cortaba esta
+      // misma política —en cualquier navegador y con cualquier archivo— y
+      // Safari lo reportaba como «Load failed», idéntico a un fallo de red:
+      // parecía cosa del archivo cuando era cosa nuestra. Riesgo cero, una
+      // URL blob: solo la puede crear la propia página, y ya está permitido
+      // en img-src, media-src, frame-src y worker-src.
+      "connect-src 'self' blob: https://*.supabase.co",
       "frame-src 'self' blob: https://*.supabase.co https://www.youtube-nocookie.com https://calendly.com https://*.calendly.com",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
