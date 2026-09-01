@@ -1,19 +1,17 @@
 import { balance, textoDelta, tituloBalance, type Cambio } from "@/lib/progreso";
 
 const TONO = {
-  mejora: { texto: "text-[#1CA0E3]", borde: "border-[#1CA0E3]/40", fondo: "bg-[#1CA0E3]/10" },
-  empeora: { texto: "text-[#FF6B6B]", borde: "border-[#FF6B6B]/40", fondo: "bg-[#FF6B6B]/10" },
+  baja: { texto: "text-[#1CA0E3]", borde: "border-[#1CA0E3]/40", fondo: "bg-[#1CA0E3]/10" },
+  sube: { texto: "text-[#FF6B6B]", borde: "border-[#FF6B6B]/40", fondo: "bg-[#FF6B6B]/10" },
   igual: { texto: "text-[#A0A0A0]", borde: "border-[#252525]", fondo: "bg-[#141414]" },
-  "sin-direccion": { texto: "text-[#A0A0A0]", borde: "border-[#252525]", fondo: "bg-[#141414]" },
 } as const;
 
 /**
  * Las medidas de una revisión con su diferencia respecto a la anterior.
  *
- * Cada medida lleva su número y, si hay con qué comparar, cuánto ha cambiado.
- * El color solo aparece cuando el objetivo de la clienta dice hacia dónde es
- * mejorar; cuando no lo dice, el número sale en gris con su flecha. Ver
- * `direccionDe` en lib/progreso.ts.
+ * Una sola regla, igual para todas las medidas y todas las clientas: lo que
+ * baja se pinta en azul y lo que sube en rojo. Sin excepciones que haya que
+ * recordar al mirarlo.
  */
 export default function ComparativaRevision({
   cambios,
