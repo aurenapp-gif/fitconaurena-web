@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/member
 import { sbInsert, sbDelete, isMissingTable } from "@/lib/supabase";
 import { sendAnnouncementEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
+import { sanearOpciones } from "@/lib/votaciones";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let data: { title?: unknown; body?: unknown; kind?: unknown; link?: unknown; call_date?: unknown; notify?: unknown };
+  let data: { title?: unknown; body?: unknown; kind?: unknown; link?: unknown; call_date?: unknown; notify?: unknown; poll_options?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const isCall = data.kind === "llamada";
@@ -48,6 +49,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Escribe el comunicado." }, { status: 400 });
   }
 
+  // Votación: solo en comunicados. En el diferido de una llamada no pinta nada,
+  // y null es justo lo que significa «comunicado sin votación».
+  const pollOptions = isCall ? null : sanearOpciones(data.poll_options);
+  if (!isCall && data.poll_options !== undefined && data.poll_options !== null && !pollOptions) {
+    return NextResponse.json({ error: "Para votar hacen falta al menos dos opciones distintas." }, { status: 400 });
+  }
+
   // En una llamada el aviso es opcional (puede subirse el diferido sin molestar);
   // en un comunicado siempre se avisa, que es su razón de ser.
   const notify = isCall ? data.notify === true : true;
@@ -63,6 +71,7 @@ export async function POST(req: NextRequest) {
       kind: isCall ? "llamada" : "comunicado",
       link,
       call_date: callDate,
+      poll_options: pollOptions,
       created_by: me,
     });
   } catch (err) {
