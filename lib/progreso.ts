@@ -1,9 +1,12 @@
 /**
- * Comparativa entre revisiones de una clienta: qué mejora y qué empeora.
+ * Comparativa entre revisiones de una clienta: qué baja y qué sube.
  *
- * Vive aparte del componente para poder probarlo sin montar React, porque la
- * parte delicada no es pintar flechas sino DECIDIR qué es mejorar, y eso
- * depende del objetivo de cada clienta.
+ * Regla única y sin excepciones: BAJAR SE PINTA EN AZUL, subir en rojo. No se
+ * mira el objetivo del cuestionario ni se intenta adivinar qué conviene a cada
+ * una; la lectura la hace la coach. Una regla que siempre significa lo mismo se
+ * lee de un vistazo, que es justo para lo que sirve esta pantalla.
+ *
+ * Vive aparte del componente para poder probarlo sin montar React.
  */
 
 export type ClaveMedida =
@@ -23,41 +26,7 @@ export const MEDIDAS: Medida[] = [
   { key: "thigh", label: "Cuádriceps", unidad: "cm" },
 ];
 
-/** Hacia dónde es mejorar: bajando, subiendo, o no está claro. */
-export type Direccion = "baja" | "sube" | "neutra";
-
-/**
- * ¿Qué es mejorar en esta medida para esta clienta?
- *
- * Solo se moja donde la respuesta es defendible. Que a una clienta que quiere
- * perder grasa le baje el glúteo NO es una mejora, y pintarlo en verde sería
- * mentirle a la coach; por eso ahí la dirección es «neutra»: el número se
- * enseña igual, pero sin veredicto. Más vale un hueco honesto que un color
- * inventado, que es lo que luego se mira de un vistazo y se da por bueno.
- */
-export function direccionDe(key: ClaveMedida, objetivo?: string | null): Direccion {
-  const o = (objetivo ?? "").trim();
-
-  if (o === "Perder grasa") {
-    if (key === "weight" || key === "waist" || key === "hips") return "baja";
-    return "neutra";
-  }
-  if (o === "Tonificar") {
-    if (key === "waist") return "baja";
-    if (key === "glute" || key === "arm" || key === "chest" || key === "back") return "sube";
-    return "neutra";
-  }
-  if (o === "Ganar músculo") {
-    if (key === "waist") return "neutra";
-    return "sube"; // peso y todos los perímetros
-  }
-  if (o === "Salud y hábitos") {
-    return key === "waist" ? "baja" : "neutra";
-  }
-  return "neutra"; // sin objetivo en el cuestionario, no se opina
-}
-
-export type Veredicto = "mejora" | "empeora" | "igual" | "sin-direccion";
+export type Veredicto = "baja" | "sube" | "igual";
 
 export type Cambio = {
   key: ClaveMedida;
@@ -66,7 +35,6 @@ export type Cambio = {
   valor: number;
   /** Diferencia con la revisión de referencia. null si no hay con qué comparar. */
   delta: number | null;
-  direccion: Direccion;
   veredicto: Veredicto;
 };
 
@@ -93,8 +61,7 @@ function num(v: unknown): number | null {
  */
 export function comparar(
   actual: Record<string, unknown>,
-  referencia: Record<string, unknown> | null,
-  objetivo?: string | null
+  referencia: Record<string, unknown> | null
 ): Cambio[] {
   const salida: Cambio[] = [];
   for (const m of MEDIDAS) {
@@ -102,44 +69,35 @@ export function comparar(
     if (v === null) continue; // esta revisión no trae esta medida
     const antes = referencia ? num(referencia[m.key]) : null;
     const delta = antes === null ? null : Math.round((v - antes) * 10) / 10;
-    const direccion = direccionDe(m.key, objetivo);
-    let veredicto: Veredicto = "sin-direccion";
-    if (delta !== null) {
-      if (delta === 0) veredicto = "igual";
-      else if (direccion === "neutra") veredicto = "sin-direccion";
-      else if ((direccion === "baja" && delta < 0) || (direccion === "sube" && delta > 0)) veredicto = "mejora";
-      else veredicto = "empeora";
-    }
-    salida.push({ key: m.key, label: m.label, unidad: m.unidad, valor: v, delta, direccion, veredicto });
+    const veredicto: Veredicto = delta === null || delta === 0 ? "igual" : delta < 0 ? "baja" : "sube";
+    salida.push({ key: m.key, label: m.label, unidad: m.unidad, valor: v, delta, veredicto });
   }
   return salida;
 }
 
-export type Balance = { mejora: number; empeora: number; igual: number; sinDireccion: number };
+export type Balance = { baja: number; sube: number; igual: number };
 
-/** Cuántas medidas van bien y cuántas mal, para el resumen de la sesión. */
+/** Cuántas medidas bajan, cuántas suben y cuántas siguen igual. */
 export function balance(cambios: Cambio[]): Balance {
-  const b: Balance = { mejora: 0, empeora: 0, igual: 0, sinDireccion: 0 };
+  const b: Balance = { baja: 0, sube: 0, igual: 0 };
   for (const c of cambios) {
     if (c.delta === null) continue;
-    if (c.veredicto === "mejora") b.mejora++;
-    else if (c.veredicto === "empeora") b.empeora++;
-    else if (c.veredicto === "igual") b.igual++;
-    else b.sinDireccion++;
+    if (c.veredicto === "baja") b.baja++;
+    else if (c.veredicto === "sube") b.sube++;
+    else b.igual++;
   }
   return b;
 }
 
 /** Frase de una línea para encabezar la sesión. */
 export function tituloBalance(b: Balance): { texto: string; tono: "bien" | "mal" | "neutro" } {
-  const conVeredicto = b.mejora + b.empeora;
-  if (conVeredicto === 0) {
-    if (b.igual > 0) return { texto: "Sin cambios respecto a la anterior", tono: "neutro" };
-    return { texto: "Sin dirección marcada para su objetivo", tono: "neutro" };
+  const conCambio = b.baja + b.sube;
+  if (conCambio === 0) {
+    return { texto: b.igual > 0 ? "Sin cambios" : "Sin nada que comparar", tono: "neutro" };
   }
-  if (b.empeora === 0) return { texto: `Mejora en ${b.mejora} de ${conVeredicto}`, tono: "bien" };
-  if (b.mejora === 0) return { texto: `Retrocede en ${b.empeora} de ${conVeredicto}`, tono: "mal" };
-  return { texto: `Mejora en ${b.mejora}, retrocede en ${b.empeora}`, tono: b.mejora >= b.empeora ? "bien" : "mal" };
+  if (b.sube === 0) return { texto: `Baja en ${b.baja} de ${conCambio}`, tono: "bien" };
+  if (b.baja === 0) return { texto: `Sube en ${b.sube} de ${conCambio}`, tono: "mal" };
+  return { texto: `Baja en ${b.baja}, sube en ${b.sube}`, tono: b.baja >= b.sube ? "bien" : "mal" };
 }
 
 /** «+1,2 kg» / «−0,5 cm» — con el signo delante y coma decimal. */

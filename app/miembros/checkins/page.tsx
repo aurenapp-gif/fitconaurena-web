@@ -311,7 +311,7 @@ export default async function CheckinsPage({
                   <h2 className="font-bold text-white truncate">{nombreElegida}</h2>
                   <p className="text-xs text-[#666666]">
                     {cronologicas.length} {cronologicas.length === 1 ? "revisión" : "revisiones"}
-                    {objetivo ? ` · objetivo: ${objetivo}` : " · sin objetivo en su cuestionario"}
+                    {objetivo ? ` · objetivo: ${objetivo}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -340,18 +340,15 @@ export default async function CheckinsPage({
                   <ComparativaRevision
                     cambios={comparar(
                       cronologicas[cronologicas.length - 1] as unknown as Record<string, unknown>,
-                      cronologicas[0] as unknown as Record<string, unknown>,
-                      objetivo
+                      cronologicas[0] as unknown as Record<string, unknown>
                     )}
                     etiquetaReferencia="la primera"
                   />
                 </div>
               )}
 
-              <p className="text-[11px] text-[#666666] mt-3 leading-relaxed">
-                {objetivo
-                  ? <>Azul es ir hacia su objetivo (<strong className="text-[#A0A0A0]">{objetivo}</strong>) y rojo alejarse. Las medidas donde ese objetivo no marca una dirección clara salen en gris con su número y su flecha: el dato está, la lectura la pones tú.</>
-                  : <>Sin objetivo en su cuestionario no se pinta ningún veredicto: se enseñan los números y las flechas, sin decidir por ti qué es mejorar.</>}
+              <p className="text-[11px] text-[#666666] mt-3">
+                Azul lo que baja, rojo lo que sube, gris lo que se queda igual. Siempre.
               </p>
             </div>
           )}
@@ -388,8 +385,7 @@ export default async function CheckinsPage({
                         it as unknown as Record<string, unknown>,
                         (posicion.get(it.id) ?? 0) > 0
                           ? (cronologicas[(posicion.get(it.id) ?? 0) - 1] as unknown as Record<string, unknown>)
-                          : null,
-                        objetivo
+                          : null
                       )}
                       etiquetaReferencia="la anterior"
                     />
