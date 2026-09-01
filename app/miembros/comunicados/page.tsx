@@ -204,7 +204,16 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
                 const isCall = a.kind === "llamada";
                 const opciones = Array.isArray(a.poll_options) ? a.poll_options : null;
                 const susVotos = opciones ? votos.filter((v) => v.announcement_id === a.id) : [];
-                const r = opciones ? recuento(opciones, susVotos, (e) => nombres.get(e) ?? e) : null;
+                const bruto = opciones ? recuento(opciones, susVotos, (e) => nombres.get(e) ?? e) : null;
+                // QUIÉN votó qué se le quita a todo el que no sea la coach ANTES
+                // de mandarlo al navegador. No basta con no pintarlo: lo que se
+                // le pasa a un componente cliente viaja en el código de la
+                // página, y ahí lo lee cualquiera. Sin esto, cada clienta
+                // recibía los correos de las demás y su voto.
+                const r = bruto && {
+                  ...bruto,
+                  filas: bruto.filas.map((f) => (admin ? f : { ...f, quienes: [] })),
+                };
                 const yaVotaron = new Set(susVotos.map((v) => v.member_email));
                 return (
                   <article key={a.id} className="card-dark p-5 !transform-none">
