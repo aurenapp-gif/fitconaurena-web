@@ -7,11 +7,12 @@ const nextConfig = {
       allowedOrigins: ["localhost:3000", "fitconaurena.com", "www.fitconaurena.com"],
     },
   },
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-    ],
-  },
+  // SIN configuración de imágenes a propósito. Había un `remotePatterns` que
+  // autorizaba a images.unsplash.com, pero la web no usa `next/image` en
+  // ninguna parte ni carga nada de unsplash: era una puerta abierta que no daba
+  // a ningún sitio. El optimizador de imágenes de Next tiene un aviso de
+  // denegación de servicio que se aprovecha justo por ahí, así que quitándolo
+  // se cierra el vector sin tocar nada que la web use.
   async headers() {
     // Content-Security-Policy: lista blanca de a dónde puede pedir cosas la
     // página. Si algún día se colara código ajeno (por una dependencia, por un

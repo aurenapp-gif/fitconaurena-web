@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "node:crypto";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { isMember, createMagicToken } from "@/lib/members";
 import { sendMagicLink } from "@/lib/mailer";
@@ -33,7 +34,10 @@ export async function POST(req: NextRequest) {
     if (await isMember(email)) {
       const token = createMagicToken(email);
       const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      // `randomInt` y no `Math.random()`: el generador de Math.random es
+      // predecible si se observan bastantes salidas, y esto es la credencial
+      // con la que se entra a la plataforma. Cuesta lo mismo hacerlo bien.
+      const code = String(randomInt(100000, 1000000));
       await sbUpsert("login_codes", {
         email,
         code,
