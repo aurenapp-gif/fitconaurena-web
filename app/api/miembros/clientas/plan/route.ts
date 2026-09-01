@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbInsert, sbUpsert, sbSelect, sbDelete, sbDeleteObject } from "@/lib/supabase";
+import { sbInsert, sbUpsert, sbSelect, sbUpdate, sbDelete, sbDeleteObject } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
 import { sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
@@ -117,6 +117,47 @@ export async function POST(req: NextRequest) {
   }).catch((e) => console.error("[clientas/plan] push", e));
 
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Corrige el TIPO de un plan ya subido. Solo la coach.
+ *
+ * Al subir se elige nutrición o entrenamiento en un desplegable, y equivocarse
+ * es fácil. Sin esto había que borrar el plan y volver a subirlo —con lo que la
+ * clienta recibía otro aviso de «tu plan ya está listo» por un archivo que ya
+ * tenía—, o dejarlo mal clasificado y que las renovaciones contaran mal.
+ *
+ * Solo se toca `type`: el archivo no se mueve ni se renombra (su nombre lleva
+ * el tipo antiguo, pero es solo un nombre) y NO se avisa a la clienta, porque
+ * para ella no cambia nada: el documento es el mismo.
+ */
+export async function PATCH(req: NextRequest) {
+  const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (await isAccessRevoked(me)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
+
+  let data: { id?: unknown; type?: unknown };
+  try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+
+  const id = typeof data.id === "string" ? data.id.trim() : "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return NextResponse.json({ error: "Plan no válido." }, { status: 400 });
+  }
+  const type = data.type;
+  if (type !== "nutricion" && type !== "entrenamiento") {
+    return NextResponse.json({ error: "Tipo no válido." }, { status: 400 });
+  }
+
+  try {
+    const filas = await sbSelect<{ id: string }>("plans", `select=id&id=eq.${id}&limit=1`);
+    if (filas.length === 0) return NextResponse.json({ error: "Ese plan ya no existe." }, { status: 404 });
+    await sbUpdate("plans", `id=eq.${id}`, { type });
+  } catch (err) {
+    console.error("[clientas/plan] cambiar tipo", err);
+    return NextResponse.json({ error: "No se pudo cambiar el tipo." }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, type });
 }
 
 /** Borra un plan subido: primero la fila (deja de verlo la clienta al instante)
