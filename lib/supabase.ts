@@ -77,8 +77,15 @@ export async function sbInsertIgnore(table: string, row: object, onConflict?: st
 }
 
 /** UPSERT (insert o update si choca la PK). */
-export async function sbUpsert(table: string, row: object): Promise<void> {
-  const res = await fetchT(`${URL_BASE}/rest/v1/${table}`, {
+/**
+ * @param onConflict columnas del índice único por el que resolver el choque.
+ *   Sin esto, PostgREST solo mira la CLAVE PRIMARIA: en una tabla cuyo único
+ *   es `(a, b)` y cuya primaria es un uuid propio, cada llamada insertaría una
+ *   fila nueva —o fallaría— en vez de actualizar la que ya está.
+ */
+export async function sbUpsert(table: string, row: object, onConflict?: string): Promise<void> {
+  const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : "";
+  const res = await fetchT(`${URL_BASE}/rest/v1/${table}${q}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
     body: JSON.stringify(row),
