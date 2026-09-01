@@ -14,6 +14,7 @@ import CallAdd from "@/components/CallAdd";
 import CallDelete from "@/components/CallDelete";
 import SetupSql from "@/components/SetupSql";
 import SupplementPlan from "@/components/SupplementPlan";
+import Renovaciones from "@/components/Renovaciones";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
 import { type Supplement } from "@/lib/suplementos";
@@ -22,6 +23,7 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
+import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe } from "@/lib/renovaciones";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -165,6 +167,18 @@ export default async function ClientaPage({ params }: { params: { email: string 
   // lista vacía, pero el apartado de planes lo dice en vez de callárselo.
   const planesFallo = plans === null;
   const planes = plans ?? [];
+
+  // Cuándo toca cambiarle cada planificación. Sale del último plan subido de
+  // cada tipo: no hay fecha que mantener a mano, subir un plan reinicia el ciclo.
+  // `planes` viene de la más reciente a la más antigua, así que el primero de
+  // cada tipo es el último subido.
+  const hoy = hoyMadrid();
+  const ultimoDe = (t: string) => {
+    const p = planes.find((x) => x.type === t);
+    return p ? diaDe(p.created_at) : null;
+  };
+  const renovAlimentacion = renovacionAlimentacion(ultimoDe("nutricion"), hoy);
+  const renovEntrenamiento = renovacionEntrenamiento(ultimoDe("entrenamiento"), hoy);
 
   // PORCENTAJE DEL SERVICIO CONSUMIDO — fiel al apartado 6 de los Términos:
   // estrategia y planificación son el 70 %, seguimiento el 30 %.
@@ -315,6 +329,15 @@ export default async function ClientaPage({ params }: { params: { email: string 
               Nombre de clienta: <span className="font-bold text-white">“{profile?.display_name || member}”</span>
             </p>
             <WeightChart points={points} />
+          </div>
+
+          {/* Renovación de la planificación */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <h2 className="font-bold text-white mb-1">Renovación de la planificación</h2>
+            <p className="text-xs text-[#666666] mb-4">
+              Se cuenta desde el último plan que le subiste. Al subirle uno nuevo, el contador vuelve a empezar solo.
+            </p>
+            <Renovaciones alimentacion={renovAlimentacion} entrenamiento={renovEntrenamiento} />
           </div>
 
           {/* Subir planes */}
