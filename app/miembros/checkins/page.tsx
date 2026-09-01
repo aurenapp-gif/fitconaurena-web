@@ -6,10 +6,14 @@ import AdminCheckinReply from "@/components/AdminCheckinReply";
 import WeightChart from "@/components/WeightChart";
 import ProgressSummary from "@/components/ProgressSummary";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import CheckinsBuscador, { type FichaBusqueda } from "@/components/CheckinsBuscador";
+import ComparativaRevision from "@/components/ComparativaRevision";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, todayMadrid, NORMA } from "@/lib/revisiones";
+import { comparar, objetivoDe } from "@/lib/progreso";
+import { isValidEmail, normalizeEmail } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Check-ins", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -96,13 +100,24 @@ async function withPhoto(rows: CheckIn[]) {
   );
 }
 
-export default async function CheckinsPage() {
+export default async function CheckinsPage({
+  searchParams,
+}: {
+  searchParams?: { clienta?: string };
+}) {
   const email = await requireMember();
   const admin = isAdmin(email);
 
-  // Check-ins y objetivo de peso (cuestionario) en paralelo: son independientes.
+  // Clienta elegida en el buscador (solo la coach). Con una elegida se trae su
+  // historial ENTERO y en orden, que es lo que hace falta para comparar
+  // sesiones; sin elegir, las últimas cincuenta de todas.
+  const elegida = admin && searchParams?.clienta ? normalizeEmail(searchParams.clienta) : "";
+  const filtrada = elegida !== "" && isValidEmail(elegida);
+
   const q = admin
-    ? "select=*&order=created_at.desc&limit=50"
+    ? filtrada
+      ? `select=*&member_email=eq.${encodeURIComponent(elegida)}&order=created_at.asc`
+      : "select=*&order=created_at.desc&limit=50"
     : `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`;
   const [rows, goalWeight] = await Promise.all([
     sbSelect<CheckIn>("check_ins", q).catch((e) => { console.error("[checkins] error", e); return [] as CheckIn[]; }),
@@ -125,24 +140,64 @@ export default async function CheckinsPage() {
 
   let pendientes: string[] = [];
   let alDia: string[] = [];
+  // Nombre de cada clienta, para no enseñarle correos donde puede ir el nombre.
+  const nombres = new Map<string, string>();
+  let fichas: FichaBusqueda[] = [];
+  // Objetivo de la clienta filtrada: es lo que decide qué es mejorar y qué no.
+  let objetivo: string | null = null;
+
   if (admin) {
     try {
-      const [profs, hechas] = await Promise.all([
-        sbSelect<{ email: string; display_name: string | null; access_revoked: boolean | null }>(
-          "profiles", "select=email,display_name,access_revoked"
+      const [profs, hechas, todas] = await Promise.all([
+        sbSelect<{ email: string; display_name: string | null; access_revoked: boolean | null; questionnaire: Record<string, string> | null }>(
+          "profiles", "select=email,display_name,access_revoked,questionnaire"
         ),
         sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${periodo.inicio}T00:00:00`),
+        // Una fila por revisión, solo con correo y fecha: es lo justo para
+        // contar cuántas tiene cada una y cuándo fue la última.
+        sbSelect<{ member_email: string; created_at: string }>("check_ins", "select=member_email,created_at"),
       ]);
       const yaEstan = new Set(hechas.map((h) => h.member_email));
+      const cuenta = new Map<string, { n: number; ultima: string }>();
+      for (const c of todas) {
+        const prev = cuenta.get(c.member_email);
+        if (!prev) cuenta.set(c.member_email, { n: 1, ultima: c.created_at });
+        else cuenta.set(c.member_email, { n: prev.n + 1, ultima: c.created_at > prev.ultima ? c.created_at : prev.ultima });
+      }
       for (const p of profs) {
-        if (p.access_revoked === true || isAdmin(p.email)) continue;
+        if (isAdmin(p.email)) continue;
+        nombres.set(p.email, p.display_name || p.email);
+        if (p.email === elegida) objetivo = objetivoDe(p.questionnaire);
+        if (p.access_revoked === true) continue;
         (yaEstan.has(p.email) ? alDia : pendientes).push(p.display_name || p.email);
+        const c = cuenta.get(p.email);
+        fichas.push({
+          email: p.email,
+          nombre: p.display_name || p.email,
+          revisiones: c?.n ?? 0,
+          ultima: c?.ultima ?? null,
+        });
       }
       pendientes.sort(); alDia.sort();
+      // Primero quien más revisiones tiene: es con quien hay algo que comparar.
+      fichas.sort((a, b) => b.revisiones - a.revisiones || a.nombre.localeCompare(b.nombre, "es"));
     } catch (e) { console.error("[checkins] pendientes", e); }
   }
 
-  const items = await withPhoto(admin ? rows : [...rows].reverse());
+  const nombreElegida = filtrada ? nombres.get(elegida) ?? elegida : "";
+
+  // `rows` de la clienta filtrada viene de la más vieja a la más nueva. Para
+  // enseñarlas se le da la vuelta, pero se guarda el índice cronológico porque
+  // cada una se compara con la que tiene DETRÁS en el tiempo, no en pantalla.
+  const cronologicas = filtrada ? rows : [];
+  const items = await withPhoto(admin ? (filtrada ? [...rows].reverse() : rows) : [...rows].reverse());
+
+  // Peso de la clienta filtrada, para su gráfica.
+  const puntosClienta = filtrada
+    ? cronologicas.map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) })).filter((p) => Number.isFinite(p.weight))
+    : [];
+  // Índice de cada revisión dentro del orden cronológico, por id.
+  const posicion = new Map(cronologicas.map((r, i) => [r.id, i]));
   // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
   const points = (admin ? [] : rows)
     .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
@@ -175,14 +230,14 @@ export default async function CheckinsPage() {
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>
               <span className="section-tag">Área de miembros</span>
-              <h1 className="section-title">{admin ? "Check-ins (todas)" : "Mis check-ins"}</h1>
+              <h1 className="section-title">{admin ? (filtrada ? nombreElegida : "Check-ins (todas)") : "Mis check-ins"}</h1>
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {/* Estado de la quincena en curso. A la clienta le dice si le falta la
               suya; a la coach, quién la ha hecho y quién no. */}
-          {admin ? (
+          {admin && filtrada ? null : admin ? (
             <div className="card-dark p-5 !transform-none mb-8">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                 <h2 className="font-bold text-white">Revisión del {periodo.etiqueta}</h2>
@@ -247,6 +302,60 @@ export default async function CheckinsPage() {
             </>
           )}
 
+          {admin && !filtrada && fichas.length > 0 && <CheckinsBuscador fichas={fichas} />}
+
+          {admin && filtrada && (
+            <div className="card-dark p-6 !transform-none mb-6">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <div className="min-w-0">
+                  <h2 className="font-bold text-white truncate">{nombreElegida}</h2>
+                  <p className="text-xs text-[#666666]">
+                    {cronologicas.length} {cronologicas.length === 1 ? "revisión" : "revisiones"}
+                    {objetivo ? ` · objetivo: ${objetivo}` : " · sin objetivo en su cuestionario"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/miembros/clientas/${encodeURIComponent(elegida)}`} className="btn-outline text-xs px-4 py-2">
+                    Ver su ficha
+                  </Link>
+                  <Link href="/miembros/checkins" className="btn-outline text-xs px-4 py-2">
+                    Quitar filtro
+                  </Link>
+                </div>
+              </div>
+
+              {puntosClienta.length >= 2 && (
+                <div className="mb-5">
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Peso</p>
+                  <WeightChart points={puntosClienta} />
+                </div>
+              )}
+
+              {/* Desde la primera hasta la última: el balance de todo el servicio. */}
+              {cronologicas.length >= 2 && (
+                <div>
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">
+                    Desde su primera revisión ({fmt(cronologicas[0].created_at)})
+                  </p>
+                  <ComparativaRevision
+                    cambios={comparar(
+                      cronologicas[cronologicas.length - 1] as unknown as Record<string, unknown>,
+                      cronologicas[0] as unknown as Record<string, unknown>,
+                      objetivo
+                    )}
+                    etiquetaReferencia="la primera"
+                  />
+                </div>
+              )}
+
+              <p className="text-[11px] text-[#666666] mt-3 leading-relaxed">
+                {objetivo
+                  ? <>Azul es ir hacia su objetivo (<strong className="text-[#A0A0A0]">{objetivo}</strong>) y rojo alejarse. Las medidas donde ese objetivo no marca una dirección clara salen en gris con su número y su flecha: el dato está, la lectura la pones tú.</>
+                  : <>Sin objetivo en su cuestionario no se pinta ningún veredicto: se enseñan los números y las flechas, sin decidir por ti qué es mejorar.</>}
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-4">
             {items.length === 0 ? (
               <p className="text-[#A0A0A0]">{admin ? "Aún no hay check-ins." : "Todavía no has registrado ningún check-in."}</p>
@@ -255,7 +364,17 @@ export default async function CheckinsPage() {
                 <div key={it.id} className="card-dark p-5 !transform-none">
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
                     <div className="flex items-center gap-3">
-                      {admin && <span className="text-sm font-bold text-white">{it.member_email}</span>}
+                      {admin && !filtrada && (
+                        <Link href={`/miembros/checkins?clienta=${encodeURIComponent(it.member_email)}`}
+                          className="text-sm font-bold text-white hover:text-[#1CA0E3]">
+                          {nombres.get(it.member_email) ?? it.member_email}
+                        </Link>
+                      )}
+                      {admin && filtrada && (
+                        <span className="text-xs font-bold text-[#666666]">
+                          Revisión {(posicion.get(it.id) ?? 0) + 1} de {cronologicas.length}
+                        </span>
+                      )}
                       {it.weight != null && (
                         <span className="text-sm font-bold text-[#1CA0E3]">{it.weight} kg</span>
                       )}
@@ -263,7 +382,19 @@ export default async function CheckinsPage() {
                     <span className="text-xs text-[#666666]">{fmt(it.created_at)}</span>
                   </div>
                   {it.note && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap mb-3">{it.note}</p>}
-                  {MEASURE_LABELS.some((m) => it[m.key] != null) && (
+                  {admin && filtrada && (
+                    <ComparativaRevision
+                      cambios={comparar(
+                        it as unknown as Record<string, unknown>,
+                        (posicion.get(it.id) ?? 0) > 0
+                          ? (cronologicas[(posicion.get(it.id) ?? 0) - 1] as unknown as Record<string, unknown>)
+                          : null,
+                        objetivo
+                      )}
+                      etiquetaReferencia="la anterior"
+                    />
+                  )}
+                  {!(admin && filtrada) && MEASURE_LABELS.some((m) => it[m.key] != null) && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => (
                         <span key={m.key} className="text-xs text-[#A0A0A0] rounded-lg border border-[#252525] bg-[#141414] px-2.5 py-1">
