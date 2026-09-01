@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import PlanUpload from "@/components/PlanUpload";
 import PlanDelete from "@/components/PlanDelete";
+import PlanTypeSwitch from "@/components/PlanTypeSwitch";
 import RenewalSetter from "@/components/RenewalSetter";
 import ServiceEndSetter from "@/components/ServiceEndSetter";
 import RemoveClient from "@/components/RemoveClient";
@@ -368,6 +369,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         {p.url
                           ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Ver</a>
                           : <span className="text-[#FF6B6B] text-xs" title="El archivo no está disponible. Vuelve a subirlo.">⚠️ sin archivo</span>}
+                        <PlanTypeSwitch id={p.id} type={p.type} />
                         <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
                       </span>
                     </div>
