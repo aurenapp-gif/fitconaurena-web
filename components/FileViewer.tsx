@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
  * Además siempre se ofrece "Descargar" (Supabase fuerza la descarga con el
  * parámetro `download`, conservando el nombre original del archivo).
  */
-export default function FileViewer({ url, label, buttonText = "Ver plan" }: { url: string; label: string; buttonText?: string }) {
+export default function FileViewer({ url, label, buttonText = "Ver plan", ancho = false }: { url: string; label: string; buttonText?: string; /** Botón a todo lo ancho (tarjeta del plan en móvil). */ ancho?: boolean }) {
   const [open, setOpen] = useState(false);
   // Por defecto asumimos móvil (lo más común entre las clientas): así, si el
   // JS de detección no llega a ejecutarse, el botón abre el visor nativo, que
@@ -49,27 +49,27 @@ export default function FileViewer({ url, label, buttonText = "Ver plan" }: { ur
 
   return (
     <>
-      <div className="flex items-center gap-3 flex-wrap mt-2">
+      <div className={ancho ? "flex flex-col gap-2 mt-1" : "flex items-center gap-3 flex-wrap mt-2"}>
         {canEmbed ? (
-          <button type="button" onClick={() => { track("plan_abierto"); setOpen(true); }} className="btn-brand text-sm px-5 py-2.5 inline-flex">
+          <button type="button" onClick={() => { track("plan_abierto"); setOpen(true); }} className={`btn-brand text-sm px-5 py-2.5 ${ancho ? "w-full" : "inline-flex"}`}>
             {buttonText}
           </button>
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => track("plan_abierto")} className="btn-brand text-sm px-5 py-2.5 inline-flex">
+          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => track("plan_abierto")} className={`btn-brand text-sm px-5 py-2.5 ${ancho ? "w-full" : "inline-flex"}`}>
             {buttonText}
           </a>
         )}
-        <a href={downloadUrl} onClick={() => track("plan_descargado")} className="text-brand text-sm font-semibold">Descargar</a>
+        <a href={downloadUrl} onClick={() => track("plan_descargado")} className={`text-brand text-sm font-semibold ${ancho ? "text-center min-h-[40px] inline-flex items-center justify-center" : ""}`}>Descargar</a>
       </div>
 
       {open && (
         <div onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/90 flex flex-col p-3 sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-3" onClick={(e) => e.stopPropagation()}>
-            <span className="text-ink font-bold text-sm truncate">{label}</span>
+            <span className="text-white font-bold text-sm truncate">{label}</span>
             <div className="flex items-center gap-4 shrink-0">
               <a href={url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold">Abrir en pestaña ↗</a>
               <a href={downloadUrl} className="text-brand text-sm font-semibold">Descargar</a>
-              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-ink/80 hover:text-ink text-3xl leading-none">×</button>
+              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-white/80 hover:text-white text-3xl leading-none">×</button>
             </div>
           </div>
           <iframe

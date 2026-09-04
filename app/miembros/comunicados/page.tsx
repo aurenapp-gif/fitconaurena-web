@@ -142,7 +142,7 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
     <>
       <AppShell admin={admin} />
       <main className="app-main relative min-h-screen">
-        <div className="container-content relative z-10 py-16">
+        <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>
               <span className="section-tag">Tablón</span>

@@ -218,10 +218,11 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const r = renewalInfo(profile?.renewal_date ?? null);
   const fin = serviceEndInfo(profile?.service_ends_at);
 
-  // Gráfica y resumen de peso (solo pesos numéricos válidos).
+  // Gráfica y resumen de peso (solo pesos numéricos válidos). Ojo: una revisión
+  // sin peso trae null, y Number(null) es 0: se descarta antes de convertir.
   const points = checkins
-    .map((c) => ({ date: fmtDate(c.created_at), weight: Number(c.weight) }))
-    .filter((p) => Number.isFinite(p.weight));
+    .filter((c) => c.weight != null && Number(c.weight) > 0)
+    .map((c) => ({ date: fmtDate(c.created_at), weight: Number(c.weight) }));
   const firstWeight = points.length ? points[0].weight : null;
   const lastWeight = points.length ? points[points.length - 1].weight : null;
   // Positivo = kg bajados.
@@ -246,7 +247,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
     <>
       <AppShell admin />
       <main className="app-main relative min-h-screen">
-        <div className="container-content relative z-10 py-16">
+        <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>
               <span className="section-tag">Clienta</span>

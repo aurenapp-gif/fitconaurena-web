@@ -1,60 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { diaLlamada, faltaPara, proximaLlamada } from "@/lib/llamada-grupal";
 
 // La URL de la sala llega como prop desde el servidor (solo para miembros con
 // sesión), así no se incrusta en el bundle del cliente ni queda pública.
-
-/** Desfase de Madrid respecto a UTC (en ms) en un instante dado.
- *
- * Se obtiene leyendo la hora de pared de Madrid con `formatToParts` y
- * comparándola con la de UTC. Es importante NO parsear una fecha con
- * `new Date(cadena)`: eso la interpreta en la zona horaria del móvil de quien
- * mira, y la cuenta atrás salía desplazada (en España marcaba las 19:30 en vez
- * de las 17:30). Así el resultado es el mismo se mire desde donde se mire. */
-function madridOffset(at: number): number {
-  const p = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(at));
-  const g = (t: string) => +p.find((x) => x.type === t)!.value;
-  return Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second")) - at;
-}
-
-function madridWallToUTC(y: number, m: number, d: number, h: number, min: number): number {
-  const wall = Date.UTC(y, m - 1, d, h, min);
-  // Dos pasadas: la primera estima el desfase y la segunda lo corrige si el
-  // cambio de hora (marzo/octubre) cae justo entre medias.
-  let ts = wall - madridOffset(wall);
-  ts = wall - madridOffset(ts);
-  return ts;
-}
-
-// Próximo jueves a las 17:30 (hora de Madrid). Sigue contando como "esta
-// semana" hasta 2h después de empezar.
-function nextCall(now: number): number {
-  for (let i = 0; i < 14; i++) {
-    const base = new Date(now + i * 86400000);
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Madrid",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      weekday: "short",
-    }).formatToParts(base);
-    const get = (t: string) => parts.find((x) => x.type === t)!.value;
-    if (get("weekday") !== "Thu") continue;
-    const t = madridWallToUTC(+get("year"), +get("month"), +get("day"), 17, 30);
-    if (t > now - 2 * 3600000) return t;
-  }
-  return now;
-}
 
 function Box({ value, label }: { value: number; label: string }) {
   return (
@@ -67,7 +17,14 @@ function Box({ value, label }: { value: number; label: string }) {
   );
 }
 
-export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
+/**
+ * Cuenta atrás para la videollamada grupal (jueves, 17:30 de Madrid).
+ *
+ * `variant="fila"` es la versión de una línea para el bloque «Hoy» del inicio:
+ * el día y la hora a la izquierda, lo que falta a la derecha, y el enlace a la
+ * sala solo cuando está en directo.
+ */
+export default function CallCountdown({ callUrl = "", variant = "tarjeta" }: { callUrl?: string; variant?: "tarjeta" | "fila" }) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -75,6 +32,31 @@ export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (variant === "fila") {
+    // Sin montar aún no hay hora fiable: se enseña lo fijo, que ya informa.
+    const target = now === null ? null : proximaLlamada(now);
+    const live = target !== null && now !== null && target <= now;
+    return (
+      <div className="flex items-center justify-between gap-3 py-3">
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-bold text-ink-muted tracking-wide">Llamada grupal</p>
+          <p className="text-base font-extrabold text-ink tracking-tight truncate">
+            {target === null ? "Jueves a las 17:30" : `${diaLlamada(target)} · 17:30`}
+          </p>
+        </div>
+        {live && callUrl ? (
+          <a href={callUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-xs px-4 !min-h-[40px] shrink-0 animate-pulse">
+            Entrar
+          </a>
+        ) : (
+          <span className={`text-xs font-bold shrink-0 ${live ? "text-brand" : "text-ink-muted"}`}>
+            {target === null || now === null ? "" : faltaPara(target, now)}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   // Evita desajuste de hidratación: no renderiza números hasta montar en cliente.
   if (now === null) {
@@ -86,7 +68,7 @@ export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
     );
   }
 
-  const target = nextCall(now);
+  const target = proximaLlamada(now);
   const diff = target - now;
   const live = diff <= 0;
 

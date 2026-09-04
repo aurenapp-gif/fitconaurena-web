@@ -50,6 +50,14 @@ const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
   { key: "thigh", label: "Cuádriceps" },
 ];
 
+/** Un valor numérico de verdad. `Number(null)` es 0 y pasaría por un peso de
+ * cero kilos: una revisión sin peso no puede acabar dibujada como «0,0». */
+function hayNumero(v: unknown): boolean {
+  if (v === null || v === undefined || v === "") return false;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0;
+}
+
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
 }
@@ -194,25 +202,25 @@ export default async function CheckinsPage({
 
   // Peso de la clienta filtrada, para su gráfica.
   const puntosClienta = filtrada
-    ? cronologicas.map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) })).filter((p) => Number.isFinite(p.weight))
+    ? cronologicas.filter((r) => hayNumero(r.weight)).map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
     : [];
   // Índice de cada revisión dentro del orden cronológico, por id.
   const posicion = new Map(cronologicas.map((r, i) => [r.id, i]));
   // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
   const points = (admin ? [] : rows)
-    .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
-    .filter((p) => Number.isFinite(p.weight));
+    .filter((r) => hayNumero(r.weight))
+    .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }));
 
   // Resumen de progreso (solo clienta). rows viene en orden ascendente.
   const mine = admin ? [] : rows;
-  const validWeights = mine.map((r) => Number(r.weight)).filter((w) => Number.isFinite(w));
+  const validWeights = mine.filter((r) => hayNumero(r.weight)).map((r) => Number(r.weight));
   const firstWeight = validWeights.length ? validWeights[0] : null;
   const lastWeight = validWeights.length ? validWeights[validWeights.length - 1] : null;
   const weightDelta =
     firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
   const streak = admin ? 0 : weeklyStreak(mine.map((r) => r.created_at));
   // Cintura: primera vs última medida registrada (medida estrella del progreso).
-  const waists = mine.map((r) => Number(r.waist)).filter((w) => Number.isFinite(w));
+  const waists = mine.filter((r) => hayNumero(r.waist)).map((r) => Number(r.waist));
   const firstWaist = waists.length ? waists[0] : null;
   const lastWaist = waists.length ? waists[waists.length - 1] : null;
   const firstWithFront = mine.find((r) => r.photo_front);
@@ -225,14 +233,15 @@ export default async function CheckinsPage({
   return (
     <>
       <AppShell admin={admin} />
-      <main className="app-main relative overflow-hidden min-h-screen">
-        <div className="container-wide relative z-10 py-16">
-          <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
-            <div>
-              <span className="section-tag">Área de miembros</span>
-              <h1 className="section-title">{admin ? (filtrada ? nombreElegida : "Check-ins (todas)") : "Mis check-ins"}</h1>
-            </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
+      <main className="app-main relative min-h-screen">
+        <div className={`${admin ? "container-wide" : "container-content"} relative z-10 py-6 lg:py-12`}>
+          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+            <h1 className="text-[26px] lg:text-3xl font-extrabold text-ink tracking-tight leading-tight">
+              {admin ? (filtrada ? nombreElegida : "Check-ins") : "Mis check-ins"}
+            </h1>
+            {admin && filtrada && (
+              <Link href="/miembros/checkins" className="btn-outline text-sm px-5 py-2.5">← Todas</Link>
+            )}
           </div>
 
           {/* Estado de la quincena en curso. A la clienta le dice si le falta la
@@ -262,22 +271,22 @@ export default async function CheckinsPage({
               )}
             </div>
           ) : (
-            <div className={`rounded-xl border px-5 py-4 mb-8 ${hechaEstaQuincena ? "border-brand/40 bg-brand/5" : "border-warn/40 bg-warn/5"}`}>
-              <p className={`text-sm font-bold ${hechaEstaQuincena ? "text-brand" : "text-warn"}`}>
+            <div className={`rounded-2xl border px-4 py-3.5 mb-3.5 ${hechaEstaQuincena ? "border-brand/30 bg-brand-soft" : "border-warn/30 bg-warn-soft"}`}>
+              <p className={`text-sm font-extrabold ${hechaEstaQuincena ? "text-brand-dark" : "text-warn"}`}>
                 {hechaEstaQuincena
                   ? `Revisión del ${periodo.etiqueta} hecha ✓`
                   : `Te falta la revisión del ${periodo.etiqueta}`}
               </p>
-              <p className="text-xs text-ink-muted mt-1">
-                {NORMA} {hechaEstaQuincena
-                  ? "La próxima te tocará en la siguiente fecha."
-                  : "Sube tu peso y tus 3 fotos (frente, perfil y espaldas)."}
+              <p className={`text-xs mt-0.5 ${hechaEstaQuincena ? "text-brand-dark/80" : "text-warn/90"}`}>
+                {hechaEstaQuincena
+                  ? "Las revisiones son el día 1 y el día 15 de cada mes."
+                  : "Peso y tres fotos: frente, perfil y espaldas."}
               </p>
             </div>
           )}
 
           {!admin && (
-            <>
+            <div className="flex flex-col gap-3.5 mb-5">
               <ProgressSummary
                 total={mine.length}
                 streak={streak}
@@ -292,14 +301,18 @@ export default async function CheckinsPage({
                 beforeDate={firstWithFront ? fmt(firstWithFront.created_at) : undefined}
                 afterDate={lastWithFront ? fmt(lastWithFront.created_at) : undefined}
               />
-              <div className="grid gap-6 lg:grid-cols-2 mb-8">
-                <CheckinForm />
-                <div className="card-dark p-6 !transform-none">
-                  <h3 className="font-bold text-ink mb-4">Tu progreso (peso)</h3>
+              {points.length >= 2 && (
+                <div className="card-dark !p-4 !transform-none">
+                  <p className="text-[11.5px] font-bold text-ink-muted tracking-wide mb-2">Tu peso</p>
                   <WeightChart points={points} />
                 </div>
-              </div>
-            </>
+              )}
+              <CheckinForm plegado={mine.length > 0} />
+            </div>
+          )}
+
+          {!admin && items.length > 0 && (
+            <p className="text-[11.5px] font-bold text-ink-muted tracking-wide px-0.5 mb-2">Anteriores</p>
           )}
 
           {admin && !filtrada && fichas.length > 0 && <CheckinsBuscador fichas={fichas} />}
@@ -353,12 +366,12 @@ export default async function CheckinsPage({
             </div>
           )}
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {items.length === 0 ? (
-              <p className="text-ink-muted">{admin ? "Aún no hay check-ins." : "Todavía no has registrado ningún check-in."}</p>
+              <p className="text-sm text-ink-muted">{admin ? "Aún no hay check-ins." : "Tu primer check-in aparecerá aquí."}</p>
             ) : (
               items.map((it) => (
-                <div key={it.id} className="card-dark p-5 !transform-none">
+                <div key={it.id} className="card-dark !p-4 !transform-none">
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
                     <div className="flex items-center gap-3">
                       {admin && !filtrada && (
@@ -373,10 +386,10 @@ export default async function CheckinsPage({
                         </span>
                       )}
                       {it.weight != null && (
-                        <span className="text-sm font-bold text-brand">{it.weight} kg</span>
+                        <span className={admin ? "text-sm font-bold text-brand" : "text-base font-extrabold text-ink"}>{it.weight} kg</span>
                       )}
                     </div>
-                    <span className="text-xs text-ink-subtle">{fmt(it.created_at)}</span>
+                    <span className="text-xs text-ink-muted">{fmt(it.created_at)}</span>
                   </div>
                   {it.note && <p className="text-sm text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
                   {admin && filtrada && (
@@ -391,10 +404,10 @@ export default async function CheckinsPage({
                     />
                   )}
                   {!(admin && filtrada) && MEASURE_LABELS.some((m) => it[m.key] != null) && (
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => (
-                        <span key={m.key} className="text-xs text-ink-muted rounded-lg border border-line bg-page px-2.5 py-1">
-                          {m.label}: <span className="text-ink font-semibold">{it[m.key] as number} cm</span>
+                        <span key={m.key} className="text-[11.5px] text-ink-muted rounded-lg bg-page px-2.5 py-1.5">
+                          {m.label} <span className="text-ink font-bold">{it[m.key] as number} cm</span>
                         </span>
                       ))}
                     </div>

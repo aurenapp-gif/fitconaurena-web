@@ -5,7 +5,7 @@ export default function Loading() {
     <>
       <AppShell />
       <main className="app-main relative min-h-screen">
-        <div className="container-wide relative z-10 py-16">
+        <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="h-4 w-32 rounded bg-surface-2 mb-3 animate-pulse" />
           <div className="h-8 w-56 rounded bg-surface-2 mb-10 animate-pulse" />
           <div className="grid gap-5 sm:grid-cols-2">

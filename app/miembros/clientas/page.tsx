@@ -142,7 +142,7 @@ export default async function ClientasPage() {
     <>
       <AppShell admin />
       <main className="app-main relative min-h-screen">
-        <div className="container-wide relative z-10 py-16">
+        <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>
               <span className="section-tag">Solo administración</span>

@@ -21,9 +21,18 @@ const MEASURES = [
   { field: "thigh", label: "Cuádriceps" },
 ] as const;
 
-export default function CheckinForm() {
+/**
+ * Formulario de check-in.
+ *
+ * Con `plegado`, en vez del formulario entero se enseña un solo botón «Subir
+ * check-in» y el formulario aparece al pulsarlo: en móvil, un formulario de
+ * seis campos abierto de entrada empuja el progreso fuera de la pantalla. La
+ * primera vez (sin ningún check-in) va abierto: no hay nada más que ver.
+ */
+export default function CheckinForm({ plegado = false }: { plegado?: boolean }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const [abierto, setAbierto] = useState(!plegado);
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -80,9 +89,30 @@ export default function CheckinForm() {
     }
   }
 
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setAbierto(true);
+          // Que el formulario quede a la vista nada más abrirse.
+          setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }}
+        className="btn-brand text-[15px] w-full !min-h-[50px]"
+      >
+        Subir check-in
+      </button>
+    );
+  }
+
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-brand/30">
-      <h3 className="font-bold text-ink mb-4">Nuevo check-in</h3>
+    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-5 sm:p-6 !transform-none border-brand/30 scroll-mt-20">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h3 className="font-bold text-ink">Nuevo check-in</h3>
+        {plegado && (
+          <button type="button" onClick={() => setAbierto(false)} className="text-sm font-semibold text-ink-muted min-h-[40px] px-2">Cerrar</button>
+        )}
+      </div>
       <div className="flex flex-col gap-3">
         <input
           type="number" step="0.1" inputMode="decimal" value={weight}
@@ -162,7 +192,7 @@ export default function CheckinForm() {
             {celebrate}
           </p>
         )}
-        <button type="submit" disabled={status === "loading"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
+        <button type="submit" disabled={status === "loading"} className="btn-brand text-[15px] w-full !min-h-[50px] disabled:opacity-60">
           {status === "loading" ? "Guardando…" : "Guardar check-in"}
         </button>
       </div>
