@@ -44,7 +44,7 @@ export default function CallAdd({ member }: { member: string }) {
     } catch { setStatus("error"); setMsg("Error de conexión."); }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
@@ -89,9 +89,9 @@ export default function CallAdd({ member }: { member: string }) {
         <button type="submit" disabled={status === "sending"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
           {status === "sending" ? "Guardando…" : "Guardar llamada"}
         </button>
-        {msg && <span className={`text-sm ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</span>}
+        {msg && <span className={`text-sm ${status === "error" ? "text-danger" : "text-brand"}`}>{msg}</span>}
       </div>
-      <p className="text-xs text-[#666666]">
+      <p className="text-xs text-ink-subtle">
         Solo la ve esta clienta. Si el enlace es de Zoom o Drive, comprueba antes que se puede abrir sin pedir permiso,
         porque ella no tiene acceso a tu cuenta.
       </p>

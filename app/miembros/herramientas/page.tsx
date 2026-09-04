@@ -22,7 +22,7 @@ export default async function HerramientasPage() {
             <div>
               <span className="section-tag">Área de miembros</span>
               <h1 className="section-title">Herramientas</h1>
-              <p className="text-sm text-[#A0A0A0] mt-2 max-w-2xl">
+              <p className="text-sm text-ink-muted mt-2 max-w-2xl">
                 Utilidades para ayudarte en el día a día. Úsalas cuando las necesites: están pensadas
                 para que sigas avanzando sin renunciar a tu vida.
               </p>
@@ -32,7 +32,7 @@ export default async function HerramientasPage() {
 
           {TOOLS.length === 0 ? (
             <div className="card-dark p-6 !transform-none">
-              <p className="text-sm text-[#A0A0A0]">Todavía no hay herramientas disponibles. Muy pronto.</p>
+              <p className="text-sm text-ink-muted">Todavía no hay herramientas disponibles. Muy pronto.</p>
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2">
@@ -40,15 +40,15 @@ export default async function HerramientasPage() {
                 <div key={t.id} className="card-dark p-6 !transform-none flex flex-col">
                   <div className="flex items-start gap-3 mb-3">
                     <span
-                      className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#1CA0E3]/10 border border-[#1CA0E3]/30 text-xl shrink-0"
+                      className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-brand/10 border border-brand/30 text-xl shrink-0"
                       aria-hidden="true"
                     >
                       {t.icon}
                     </span>
-                    <h2 className="font-bold text-white text-lg leading-snug pt-1.5">{t.name}</h2>
+                    <h2 className="font-bold text-ink text-lg leading-snug pt-1.5">{t.name}</h2>
                   </div>
-                  <p className="text-sm text-[#A0A0A0] mb-4 flex-1">{t.description}</p>
-                  {t.hint && <p className="text-xs text-[#666666] mb-4">{t.hint}</p>}
+                  <p className="text-sm text-ink-muted mb-4 flex-1">{t.description}</p>
+                  {t.hint && <p className="text-xs text-ink-subtle mb-4">{t.hint}</p>}
                   <ToolLink id={t.id} name={t.name} url={t.url} />
                 </div>
               ))}

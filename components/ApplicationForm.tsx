@@ -100,7 +100,7 @@ export default function ApplicationForm() {
     if (qualified) {
       return (
         <div className="max-w-xl mx-auto text-center py-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#1CA0E3]">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-brand">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" aria-hidden="true">
               <path d="M20 6L9 17l-5-5" />
             </svg>
@@ -109,10 +109,10 @@ export default function ApplicationForm() {
           {CALENDLY_SRC ? (
             <>
               <p className="section-sub max-w-md mx-auto mb-6">
-                Da el último paso: <strong className="text-white">agenda tu llamada gratuita</strong> y
+                Da el último paso: <strong className="text-ink">agenda tu llamada gratuita</strong> y
                 diseñamos tu plan.
               </p>
-              <div className="rounded-2xl overflow-hidden border border-[#252525] bg-[#0A0A0A]">
+              <div className="rounded-2xl overflow-hidden border border-line bg-page">
                 <iframe
                   src={CALENDLY_SRC}
                   title="Agenda tu llamada gratuita"
@@ -126,7 +126,7 @@ export default function ApplicationForm() {
           ) : (
             <>
               <p className="section-sub max-w-md mx-auto mb-8">
-                Da el último paso: agenda tu <strong className="text-white">llamada gratuita</strong> por
+                Da el último paso: agenda tu <strong className="text-ink">llamada gratuita</strong> por
                 WhatsApp y diseñamos tu plan.
               </p>
               <a
@@ -147,22 +147,22 @@ export default function ApplicationForm() {
     }
     return (
       <div className="max-w-xl mx-auto text-center py-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-[#252525] bg-[#161616]">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-line bg-surface">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1CA0E3" strokeWidth="2.5" aria-hidden="true">
             <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z" />
           </svg>
         </div>
         <h2 className="section-title mb-4">Gracias por tu interés</h2>
         <p className="section-sub max-w-md mx-auto mb-6">
-          No es solo una cuestión de <strong className="text-white">tiempo o de inversión
-          económica</strong>: además, trabajamos con un <strong className="text-white">rango de edad
+          No es solo una cuestión de <strong className="text-ink">tiempo o de inversión
+          económica</strong>: además, trabajamos con un <strong className="text-ink">rango de edad
           superior a los 30 años</strong>, ya que nuestro método está diseñado para esa etapa.
           Somos un servicio comprometido al máximo con el cliente: no solo adaptamos una estrategia
           única a la situación de cada persona, también te guiamos a diario para que consigas tu
-          objetivo <strong className="text-white">sí o sí</strong>.
+          objetivo <strong className="text-ink">sí o sí</strong>.
         </p>
         <p className="section-sub max-w-md mx-auto mb-8">
-          Mientras tanto, puedes acceder a nuestro <strong className="text-white">contenido
+          Mientras tanto, puedes acceder a nuestro <strong className="text-ink">contenido
           gratuito</strong> para empezar a llevar tu físico al siguiente nivel.
         </p>
         <a
@@ -198,13 +198,13 @@ export default function ApplicationForm() {
       />
 
       {/* Barra de progreso */}
-      <div className="mb-2 flex items-center justify-between text-xs text-[#666666]">
+      <div className="mb-2 flex items-center justify-between text-xs text-ink-subtle">
         <span>Paso {step + 1} de {TOTAL}</span>
         <span>{progress}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-[#1c1c1c] mb-8 overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-surface-2 mb-8 overflow-hidden">
         <div
-          className="h-full rounded-full bg-[#1CA0E3] transition-all duration-300"
+          className="h-full rounded-full bg-brand transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -215,7 +215,7 @@ export default function ApplicationForm() {
           const q = QUESTIONS[current.index];
           return (
             <div>
-              <h3 className="font-black text-white text-xl md:text-2xl mb-6 leading-snug">
+              <h3 className="font-black text-ink text-xl md:text-2xl mb-6 leading-snug">
                 {q.label}
               </h3>
               <div className="flex flex-col gap-3">
@@ -228,18 +228,18 @@ export default function ApplicationForm() {
                       onClick={() => pick(q.id, o.value)}
                       className={`flex items-center gap-3 rounded-xl border px-4 py-4 text-left transition-colors ${
                         selected
-                          ? "border-[#1CA0E3] bg-[#1CA0E3]/10"
-                          : "border-[#252525] bg-[#0A0A0A] hover:border-[#3a3a3a]"
+                          ? "border-brand bg-brand/10"
+                          : "border-line bg-page hover:border-line-strong"
                       }`}
                     >
                       <span
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selected ? "border-[#1CA0E3]" : "border-[#444]"
+                          selected ? "border-brand" : "border-line-strong"
                         }`}
                       >
-                        {selected && <span className="w-2.5 h-2.5 rounded-full bg-[#1CA0E3]" />}
+                        {selected && <span className="w-2.5 h-2.5 rounded-full bg-brand" />}
                       </span>
-                      <span className={`text-sm ${selected ? "text-white" : "text-[#A0A0A0]"}`}>
+                      <span className={`text-sm ${selected ? "text-ink" : "text-ink-muted"}`}>
                         {o.label}
                       </span>
                     </button>
@@ -252,7 +252,7 @@ export default function ApplicationForm() {
 
         {current.kind === "text" && (
           <div>
-            <h3 className="font-black text-white text-xl md:text-2xl mb-6 leading-snug">
+            <h3 className="font-black text-ink text-xl md:text-2xl mb-6 leading-snug">
               ¿Qué te ha inspirado a empezar tu cambio con nosotros y qué te gustaría conseguir?
             </h3>
             <textarea
@@ -260,7 +260,7 @@ export default function ApplicationForm() {
               onChange={(e) => setMotivacion(e.target.value)}
               rows={5}
               placeholder="Cuéntanos un poco sobre ti y tu objetivo…"
-              className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors resize-none"
+              className="w-full rounded-xl border border-line bg-page px-4 py-3.5 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand transition-colors resize-none"
             />
             <button
               type="button"
@@ -283,27 +283,27 @@ export default function ApplicationForm() {
 
         {current.kind === "contact" && (
           <div>
-            <h3 className="font-black text-white text-xl md:text-2xl mb-2 leading-snug">
+            <h3 className="font-black text-ink text-xl md:text-2xl mb-2 leading-snug">
               Casi está 🎉
             </h3>
-            <p className="text-sm text-[#A0A0A0] mb-6">
+            <p className="text-sm text-ink-muted mb-6">
               Déjanos tus datos y te contactamos si encajas en el programa.
             </p>
             <div className="flex flex-col gap-3">
               <input
                 type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)}
                 placeholder="Tu nombre" aria-label="Tu nombre" autoComplete="name"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
+                className="rounded-xl border border-line bg-page px-4 py-3.5 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand transition-colors"
               />
               <input
                 type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com" aria-label="Tu email" autoComplete="email"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
+                className="rounded-xl border border-line bg-page px-4 py-3.5 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand transition-colors"
               />
               <input
                 type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)}
                 placeholder="Tu WhatsApp / teléfono" aria-label="Tu teléfono o WhatsApp" autoComplete="tel"
-                className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3.5 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
+                className="rounded-xl border border-line bg-page px-4 py-3.5 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand transition-colors"
               />
             </div>
             <button
@@ -319,14 +319,14 @@ export default function ApplicationForm() {
       </div>
 
       {status === "error" && (
-        <p role="alert" className="text-sm text-[#FF6B6B] text-center mt-4">{message}</p>
+        <p role="alert" className="text-sm text-danger text-center mt-4">{message}</p>
       )}
 
       {step > 0 && (
         <button
           type="button"
           onClick={back}
-          className="mt-6 text-sm text-[#666666] hover:text-white transition-colors"
+          className="mt-6 text-sm text-ink-subtle hover:text-ink transition-colors"
         >
           ← Atrás
         </button>

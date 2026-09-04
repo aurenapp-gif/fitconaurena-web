@@ -20,9 +20,9 @@ export default function PwaInstall() {
   }, []);
 
   const Card = ({ active, emoji, title, steps }: { active: boolean; emoji: string; title: string; steps: string[] }) => (
-    <div className={`rounded-xl border p-4 ${active ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#252525]"}`}>
-      <p className="font-bold text-white mb-2">{emoji} {title}{active && <span className="text-[10px] text-[#1CA0E3] ml-2">tu dispositivo</span>}</p>
-      <ol className="list-decimal list-inside text-sm text-[#A0A0A0] space-y-1">
+    <div className={`rounded-xl border p-4 ${active ? "border-brand/40 bg-brand/5" : "border-line"}`}>
+      <p className="font-bold text-ink mb-2">{emoji} {title}{active && <span className="text-[10px] text-brand ml-2">tu dispositivo</span>}</p>
+      <ol className="list-decimal list-inside text-sm text-ink-muted space-y-1">
         {steps.map((s, i) => <li key={i}>{s}</li>)}
       </ol>
     </div>
@@ -30,8 +30,8 @@ export default function PwaInstall() {
 
   return (
     <div className="card-dark p-6 !transform-none">
-      <h3 className="font-bold text-white mb-1">Instala la app</h3>
-      <p className="text-sm text-[#A0A0A0] mb-5">
+      <h3 className="font-bold text-ink mb-1">Instala la app</h3>
+      <p className="text-sm text-ink-muted mb-5">
         {installed
           ? "✅ Ya tienes la app instalada en este dispositivo."
           : "Añade Fit con Aurena a tu pantalla de inicio para abrirla como una app y recibir notificaciones."}

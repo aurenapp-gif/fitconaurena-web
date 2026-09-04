@@ -147,7 +147,7 @@ export default async function ClientasPage() {
             <div>
               <span className="section-tag">Solo administración</span>
               <h1 className="section-title">Clientas</h1>
-              <p className="text-sm text-[#666666] mt-1">{members.length} activa{members.length !== 1 ? "s" : ""}</p>
+              <p className="text-sm text-ink-subtle mt-1">{members.length} activa{members.length !== 1 ? "s" : ""}</p>
             </div>
             <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
@@ -157,7 +157,7 @@ export default async function ClientasPage() {
           {members.length > 0 && <RenovacionesPendientes filas={renovaciones} />}
 
           {members.length === 0 ? (
-            <p className="text-[#A0A0A0]">Aún no tienes clientas dadas de alta (grupo &quot;Miembros&quot; en MailerLite).</p>
+            <p className="text-ink-muted">Aún no tienes clientas dadas de alta (grupo &quot;Miembros&quot; en MailerLite).</p>
           ) : (
             <ClientasLista filas={filas} />
           )}

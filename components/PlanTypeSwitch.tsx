@@ -53,7 +53,7 @@ export default function PlanTypeSwitch({ id, type }: { id: string; type: string 
       onClick={cambiar}
       disabled={enviando}
       title={`Está guardado como ${NOMBRE[type as Tipo]}. Pásalo a ${NOMBRE[destino]}.`}
-      className="text-[#A0A0A0] hover:text-[#1CA0E3] text-xs disabled:opacity-60"
+      className="text-ink-muted hover:text-brand text-xs disabled:opacity-60"
     >
       {enviando ? "…" : `→ ${NOMBRE[destino]}`}
     </button>

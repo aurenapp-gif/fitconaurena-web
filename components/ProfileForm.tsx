@@ -93,13 +93,13 @@ export default function ProfileForm({
   }
 
   const inputCls =
-    "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+    "w-full rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); save(false); }} className="flex flex-col gap-6">
       {/* Foto + nombre */}
       <div className="card-dark p-6 !transform-none flex items-center gap-5 flex-wrap">
-        <div className="w-20 h-20 rounded-full overflow-hidden bg-[#1c1c1c] border border-[#252525] flex items-center justify-center shrink-0">
+        <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-2 border border-line flex items-center justify-center shrink-0">
           {photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoUrl} alt="Tu foto" className="w-full h-full object-cover" />
@@ -108,11 +108,11 @@ export default function ProfileForm({
           )}
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-[#A0A0A0] mb-1">Nombre (cómo te verán en la comunidad)</label>
+          <label className="block text-xs text-ink-muted mb-1">Nombre (cómo te verán en la comunidad)</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className={inputCls} maxLength={60} />
           <div className="flex items-center gap-3 mt-3 flex-wrap">
-            <label className="inline-flex items-center gap-2 text-sm text-[#A0A0A0] cursor-pointer">
-              <span className="rounded-lg bg-[#1CA0E3] text-white font-bold px-3 py-1.5 text-xs">{photoBusy ? "Subiendo…" : "Cambiar foto"}</span>
+            <label className="inline-flex items-center gap-2 text-sm text-ink-muted cursor-pointer">
+              <span className="rounded-lg bg-brand text-white font-bold px-3 py-1.5 text-xs">{photoBusy ? "Subiendo…" : "Cambiar foto"}</span>
               <input type="file" accept="image/*" className="hidden" disabled={photoBusy}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
             </label>
@@ -121,8 +121,8 @@ export default function ProfileForm({
                 <button type="submit" disabled={status === "saving"} className="btn-brand text-xs px-4 py-2 disabled:opacity-60">
                   {status === "saving" ? "Guardando…" : "Guardar nombre"}
                 </button>
-                {status === "saved" && <span className="text-sm text-[#1CA0E3]">Guardado ✓</span>}
-                {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+                {status === "saved" && <span className="text-sm text-brand">Guardado ✓</span>}
+                {status === "error" && <span className="text-sm text-danger">{msg}</span>}
               </>
             )}
           </div>
@@ -132,15 +132,15 @@ export default function ProfileForm({
       {/* Cuestionario (solo clientas) */}
       {!admin && (
       <div className="card-dark p-6 !transform-none">
-        <h3 className="font-bold text-white mb-1">Tu cuestionario</h3>
-        <p className="text-sm text-[#A0A0A0] mb-5">
-          Rellena tus datos y pulsa <strong className="text-white">Enviar cuestionario</strong>. Así tu coach
+        <h3 className="font-bold text-ink mb-1">Tu cuestionario</h3>
+        <p className="text-sm text-ink-muted mb-5">
+          Rellena tus datos y pulsa <strong className="text-ink">Enviar cuestionario</strong>. Así tu coach
           empieza a preparar tu plan personalizado.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {PROFILE_FIELDS.map((f) => (
             <div key={f.id} className={f.type === "textarea" ? "sm:col-span-2" : ""}>
-              <label className="block text-xs text-[#A0A0A0] mb-1">{f.label}</label>
+              <label className="block text-xs text-ink-muted mb-1">{f.label}</label>
               {f.type === "select" ? (
                 <select value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} className={inputCls}>
                   <option value="">Selecciona…</option>
@@ -161,29 +161,29 @@ export default function ProfileForm({
                 <input type={f.type === "number" ? "number" : "text"} value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} className={inputCls} />
               )}
               {f.id === "fecha_nacimiento" && errFecha ? (
-                <p className="text-xs text-[#FF6B6B] mt-1">{errFecha}</p>
+                <p className="text-xs text-danger mt-1">{errFecha}</p>
               ) : f.id === "fecha_nacimiento" && pideFecha ? (
-                <p className="text-xs text-[#1CA0E3] mt-1">
+                <p className="text-xs text-brand mt-1">
                   Antes nos dijiste que tenías {q.edad} años. Pon tu fecha exacta: tu coach ajusta mejor tu plan.
                 </p>
               ) : f.hint ? (
-                <p className="text-xs text-[#666666] mt-1">{f.hint}</p>
+                <p className="text-xs text-ink-subtle mt-1">{f.hint}</p>
               ) : null}
             </div>
           ))}
         </div>
         {sent ? (
-          <div className="mt-5 rounded-xl border border-[#1CA0E3]/40 bg-[#1CA0E3]/5 px-4 py-3">
-            <p className="text-sm font-bold text-[#1CA0E3]">✓ Cuestionario enviado</p>
-            <p className="text-xs text-[#A0A0A0] mt-0.5">
+          <div className="mt-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3">
+            <p className="text-sm font-bold text-brand">✓ Cuestionario enviado</p>
+            <p className="text-xs text-ink-muted mt-0.5">
               Tu coach ya está preparando tu plan. Puedes seguir actualizando tus datos cuando quieras.
             </p>
             <div className="flex items-center gap-3 mt-3">
               <button type="button" onClick={() => save(false)} disabled={status === "saving"} className="btn-outline text-sm px-5 py-2.5 disabled:opacity-60">
                 {status === "saving" ? "Guardando…" : "Guardar cambios"}
               </button>
-              {status === "saved" && <span className="text-sm text-[#1CA0E3]">Guardado ✓</span>}
-              {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+              {status === "saved" && <span className="text-sm text-brand">Guardado ✓</span>}
+              {status === "error" && <span className="text-sm text-danger">{msg}</span>}
             </div>
           </div>
         ) : (
@@ -201,11 +201,11 @@ export default function ProfileForm({
               >
                 {status === "saving" ? "Enviando…" : "Enviar cuestionario"}
               </button>
-              {status === "saved" && <span className="text-sm text-[#1CA0E3]">Guardado ✓</span>}
-              {status === "error" && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+              {status === "saved" && <span className="text-sm text-brand">Guardado ✓</span>}
+              {status === "error" && <span className="text-sm text-danger">{msg}</span>}
             </div>
             {!isComplete && (
-              <p className="text-xs text-[#666666] mt-2">
+              <p className="text-xs text-ink-subtle mt-2">
                 Para enviar, completa: {REQUIRED_QUESTIONNAIRE.map((k) => PROFILE_FIELDS.find((f) => f.id === k)?.label ?? k).join(", ")}.
               </p>
             )}

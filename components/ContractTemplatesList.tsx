@@ -25,29 +25,29 @@ export default function ContractTemplatesList({ templates }: { templates: Contra
   }
 
   if (templates.length === 0) {
-    return <p className="text-sm text-[#666666]">Todavía no hay plantillas. Sube la primera arriba.</p>;
+    return <p className="text-sm text-ink-subtle">Todavía no hay plantillas. Sube la primera arriba.</p>;
   }
 
   return (
     <div className="flex flex-col gap-2">
       {templates.map((t) => (
-        <div key={t.id} className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${t.active ? "border-[#252525]" : "border-[#252525] opacity-60"}`}>
+        <div key={t.id} className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${t.active ? "border-line" : "border-line opacity-60"}`}>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.kind === "anexo_salud" ? "bg-[#FFB800] text-black" : "bg-[#1CA0E3] text-white"}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.kind === "anexo_salud" ? "bg-warn text-black" : "bg-brand text-white"}`}>
                 {t.kind === "anexo_salud" ? "Anexo salud" : "Contrato"}
               </span>
-              {!t.active && <span className="text-[10px] text-[#666666]">desactivada</span>}
+              {!t.active && <span className="text-[10px] text-ink-subtle">desactivada</span>}
             </div>
-            <p className="text-sm font-bold text-white truncate mt-1">{t.title}</p>
+            <p className="text-sm font-bold text-ink truncate mt-1">{t.title}</p>
           </div>
           <button type="button" onClick={() => remove(t.id, t.title)} disabled={pending === t.id}
-            className="text-xs text-[#FF6B6B] font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
+            className="text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
             {pending === t.id ? "Eliminando…" : "Eliminar"}
           </button>
         </div>
       ))}
-      {err && <p className="text-xs text-[#FF6B6B]">{err}</p>}
+      {err && <p className="text-xs text-danger">{err}</p>}
     </div>
   );
 }

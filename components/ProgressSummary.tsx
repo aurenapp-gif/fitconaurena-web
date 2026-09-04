@@ -20,9 +20,9 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center px-3 py-4 rounded-xl bg-[#141414] border border-[#252525]">
-      <div className="text-2xl font-extrabold text-[#1CA0E3] leading-none">{value}</div>
-      <div className="text-xs text-[#A0A0A0] mt-1.5">{label}</div>
+    <div className="text-center px-3 py-4 rounded-xl bg-page border border-line">
+      <div className="text-2xl font-extrabold text-brand leading-none">{value}</div>
+      <div className="text-xs text-ink-muted mt-1.5">{label}</div>
     </div>
   );
 }
@@ -36,7 +36,7 @@ export default function ProgressSummary({
   const deltaTxt =
     weightDelta == null ? "—" : `${weightDelta > 0 ? "+" : ""}${weightDelta} kg`;
   const deltaColor =
-    weightDelta == null ? "text-[#A0A0A0]" : weightDelta < 0 ? "text-[#1CA0E3]" : "text-white";
+    weightDelta == null ? "text-ink-muted" : weightDelta < 0 ? "text-brand" : "text-ink";
 
   // Barra de progreso hacia el objetivo de peso.
   let goal: null | { pct: number; reached: boolean; remaining: number } = null;
@@ -55,9 +55,9 @@ export default function ProgressSummary({
   return (
     <div className="card-dark p-6 !transform-none mb-6">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
-        <h3 className="font-bold text-white">Tu progreso</h3>
+        <h3 className="font-bold text-ink">Tu progreso</h3>
         {streak >= 2 && (
-          <span className="text-xs font-bold text-[#1CA0E3] bg-[#1CA0E3]/10 border border-[#1CA0E3]/30 rounded-full px-3 py-1">
+          <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/30 rounded-full px-3 py-1">
             🔥 {streak} semanas seguidas
           </span>
         )}
@@ -66,13 +66,13 @@ export default function ProgressSummary({
       {goal && (
         <div className="mb-5">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs text-[#A0A0A0]">
+            <span className="text-xs text-ink-muted">
               {goal.reached ? "¡Objetivo alcanzado! 🏆" : `Te quedan ${goal.remaining} kg para tu meta de ${goalWeight} kg`}
             </span>
-            <span className="text-xs font-bold text-[#1CA0E3]">{Math.round(goal.pct)}%</span>
+            <span className="text-xs font-bold text-brand">{Math.round(goal.pct)}%</span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-[#1c1c1c] overflow-hidden">
-            <div className="h-full rounded-full bg-[#1CA0E3] transition-all duration-500" style={{ width: `${goal.pct}%` }} />
+          <div className="h-2.5 w-full rounded-full bg-surface-2 overflow-hidden">
+            <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${goal.pct}%` }} />
           </div>
         </div>
       )}
@@ -80,18 +80,18 @@ export default function ProgressSummary({
       <div className="grid grid-cols-3 gap-3 mb-2">
         <Stat value={String(total)} label={total === 1 ? "check-in" : "check-ins"} />
         <Stat value={`${streak}`} label={streak === 1 ? "semana seguida" : "semanas seguidas"} />
-        <div className="text-center px-3 py-4 rounded-xl bg-[#141414] border border-[#252525]">
+        <div className="text-center px-3 py-4 rounded-xl bg-page border border-line">
           <div className={`text-2xl font-extrabold leading-none ${deltaColor}`}>{deltaTxt}</div>
-          <div className="text-xs text-[#A0A0A0] mt-1.5">
+          <div className="text-xs text-ink-muted mt-1.5">
             {firstWeight != null && lastWeight != null ? `${firstWeight} → ${lastWeight} kg` : "cambio de peso"}
           </div>
         </div>
       </div>
 
       {waistDelta != null && (
-        <p className="text-xs text-[#A0A0A0] mt-2">
-          Cintura: <span className="text-white font-semibold">{firstWaist} → {lastWaist} cm</span>{" "}
-          <span className={waistDelta < 0 ? "text-[#1CA0E3] font-bold" : "text-[#A0A0A0]"}>
+        <p className="text-xs text-ink-muted mt-2">
+          Cintura: <span className="text-ink font-semibold">{firstWaist} → {lastWaist} cm</span>{" "}
+          <span className={waistDelta < 0 ? "text-brand font-bold" : "text-ink-muted"}>
             ({waistDelta > 0 ? "+" : ""}{waistDelta} cm)
           </span>
         </p>
@@ -99,17 +99,17 @@ export default function ProgressSummary({
 
       {beforePhoto && afterPhoto && beforePhoto !== afterPhoto && (
         <div className="mt-5">
-          <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-3">Antes / Ahora</p>
+          <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-3">Antes / Ahora</p>
           <div className="grid grid-cols-2 gap-3">
             <figure className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={beforePhoto} alt="Antes" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#252525]" />
-              <figcaption className="text-[10px] text-[#666666] mt-1">Antes{beforeDate ? ` · ${beforeDate}` : ""}</figcaption>
+              <img src={beforePhoto} alt="Antes" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-line" />
+              <figcaption className="text-[10px] text-ink-subtle mt-1">Antes{beforeDate ? ` · ${beforeDate}` : ""}</figcaption>
             </figure>
             <figure className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={afterPhoto} alt="Ahora" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-[#1CA0E3]/40" />
-              <figcaption className="text-[10px] text-[#1CA0E3] mt-1">Ahora{afterDate ? ` · ${afterDate}` : ""}</figcaption>
+              <img src={afterPhoto} alt="Ahora" loading="lazy" decoding="async" className="w-full h-56 object-cover rounded-lg border border-brand/40" />
+              <figcaption className="text-[10px] text-brand mt-1">Ahora{afterDate ? ` · ${afterDate}` : ""}</figcaption>
             </figure>
           </div>
         </div>

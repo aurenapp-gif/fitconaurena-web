@@ -35,25 +35,25 @@ export default function ContractTemplateUpload() {
     } catch { setStatus("error"); setMsg("Error de conexión."); }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <div>
-        <label className="block text-xs text-[#A0A0A0] mb-1.5">Tipo</label>
+        <label className="block text-xs text-ink-muted mb-1.5">Tipo</label>
         <div className="flex gap-2">
           <button type="button" onClick={() => setKind("contrato")}
-            className={`px-4 py-2 text-xs font-bold rounded-lg border ${kind === "contrato" ? "bg-[#1CA0E3] border-[#1CA0E3] text-white" : "border-[#252525] text-[#A0A0A0]"}`}>Contrato</button>
+            className={`px-4 py-2 text-xs font-bold rounded-lg border ${kind === "contrato" ? "bg-brand border-brand text-white" : "border-line text-ink-muted"}`}>Contrato</button>
           <button type="button" onClick={() => setKind("anexo_salud")}
-            className={`px-4 py-2 text-xs font-bold rounded-lg border ${kind === "anexo_salud" ? "bg-[#1CA0E3] border-[#1CA0E3] text-white" : "border-[#252525] text-[#A0A0A0]"}`}>Anexo de salud</button>
+            className={`px-4 py-2 text-xs font-bold rounded-lg border ${kind === "anexo_salud" ? "bg-brand border-brand text-white" : "border-line text-ink-muted"}`}>Anexo de salud</button>
         </div>
       </div>
       <input value={title} onChange={(e) => setTitle(e.target.value)}
         placeholder={kind === "anexo_salud" ? "Anexo de salud 2026" : "Contrato Programa 1497"}
         className={cls} />
       <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="PDF de la plantilla"
-        className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
-      {status === "error" && <p className="text-sm text-[#FF6B6B]">{msg}</p>}
+        className="text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-bold file:text-white" />
+      {status === "error" && <p className="text-sm text-danger">{msg}</p>}
       <button type="submit" disabled={status === "loading"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
         {status === "loading" ? "Subiendo…" : "Subir plantilla"}
       </button>

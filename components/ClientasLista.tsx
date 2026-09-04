@@ -42,10 +42,10 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar clienta por nombre o correo…"
           aria-label="Buscar clienta"
-          className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] pl-11 pr-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
+          className="w-full rounded-xl border border-line bg-page pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
         />
         <svg
-          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="2"
+          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"
           aria-hidden="true"
           className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
         >
@@ -55,7 +55,7 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
       </div>
 
       {busca.trim() && (
-        <p className="text-xs text-[#666666] mb-3">
+        <p className="text-xs text-ink-subtle mb-3">
           {visibles.length === 0
             ? "Ninguna clienta coincide."
             : `${visibles.length} de ${filas.length}`}
@@ -71,10 +71,10 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
           >
             <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">{r.name}</p>
-                <p className="text-xs text-[#666666] truncate">{r.email}</p>
+                <p className="text-sm font-bold text-ink truncate">{r.name}</p>
+                <p className="text-xs text-ink-subtle truncate">{r.email}</p>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${r.renewalUrgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${r.renewalUrgent ? "bg-danger text-white" : "border border-line text-ink-muted"}`}>
                 {r.renewalText}
               </span>
             </div>
@@ -82,13 +82,13 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
             {r.pct != null && (
               <div className="mb-3">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3]">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-brand">
                     Servicio consumido
                   </span>
-                  <span className="text-xs font-bold text-white tabular-nums">{r.pct}%</span>
+                  <span className="text-xs font-bold text-ink tabular-nums">{r.pct}%</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[#0A0A0A] overflow-hidden">
-                  <div className="h-full bg-[#1CA0E3]" style={{ width: `${r.pct}%` }} />
+                <div className="h-1.5 rounded-full bg-page overflow-hidden">
+                  <div className="h-full bg-brand" style={{ width: `${r.pct}%` }} />
                 </div>
               </div>
             )}
@@ -101,14 +101,14 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
                 { v: r.techniques, l: "vídeos" },
               ].map((c) => (
                 <div key={c.l}>
-                  <div className="text-lg font-extrabold text-white leading-none">{c.v}</div>
-                  <div className="text-[9px] text-[#666666] mt-1 leading-tight">{c.l}</div>
+                  <div className="text-lg font-extrabold text-ink leading-none">{c.v}</div>
+                  <div className="text-[9px] text-ink-subtle mt-1 leading-tight">{c.l}</div>
                 </div>
               ))}
             </div>
 
             {r.lastCheckin && (
-              <p className="text-[10px] text-[#666666] mt-3">Último check-in: {fmtFecha(r.lastCheckin)}</p>
+              <p className="text-[10px] text-ink-subtle mt-3">Último check-in: {fmtFecha(r.lastCheckin)}</p>
             )}
           </Link>
         ))}

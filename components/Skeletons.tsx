@@ -3,10 +3,10 @@
 import Navbar from "@/components/Navbar";
 
 export function Bar({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
-  return <div style={style} className={`rounded bg-[#161616] animate-pulse ${className}`} />;
+  return <div style={style} className={`rounded bg-surface animate-pulse ${className}`} />;
 }
 export function Block({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
-  return <div style={style} className={`rounded-xl bg-[#1c1c1c] animate-pulse ${className}`} />;
+  return <div style={style} className={`rounded-xl bg-surface-2 animate-pulse ${className}`} />;
 }
 
 export function SkeletonCard() {

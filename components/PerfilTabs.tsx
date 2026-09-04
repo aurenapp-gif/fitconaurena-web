@@ -29,11 +29,11 @@ export default function PerfilTabs({ tabs }: { tabs: Tab[] }) {
               aria-controls={`panel-${t.id}`}
               onClick={() => setActive(t.id)}
               className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 transition-all ${
-                on ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#141414] hover:border-[#1CA0E3]/40"
+                on ? "border-brand bg-brand/10" : "border-line bg-page hover:border-brand/40"
               }`}
             >
               <span className="text-xl">{t.icon}</span>
-              <span className={`text-[11px] sm:text-xs font-bold ${on ? "text-[#1CA0E3]" : "text-[#A0A0A0]"}`}>{t.label}</span>
+              <span className={`text-[11px] sm:text-xs font-bold ${on ? "text-brand" : "text-ink-muted"}`}>{t.label}</span>
             </button>
           );
         })}

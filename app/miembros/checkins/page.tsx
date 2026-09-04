@@ -240,35 +240,35 @@ export default async function CheckinsPage({
           {admin && filtrada ? null : admin ? (
             <div className="card-dark p-5 !transform-none mb-8">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-                <h2 className="font-bold text-white">Revisión del {periodo.etiqueta}</h2>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${pendientes.length === 0 ? "bg-[#1CA0E3] text-white" : "bg-[#FFB800]/20 text-[#FFB800] border border-[#FFB800]/40"}`}>
+                <h2 className="font-bold text-ink">Revisión del {periodo.etiqueta}</h2>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${pendientes.length === 0 ? "bg-brand text-white" : "bg-warn/20 text-warn border border-warn/40"}`}>
                   {alDia.length} de {alDia.length + pendientes.length} hechas
                 </span>
               </div>
-              <p className="text-xs text-[#666666] mb-3">{NORMA}</p>
+              <p className="text-xs text-ink-subtle mb-3">{NORMA}</p>
               {pendientes.length === 0 ? (
-                <p className="text-sm text-[#1CA0E3]">Todas al día ✓</p>
+                <p className="text-sm text-brand">Todas al día ✓</p>
               ) : (
                 <>
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
-                  <p className="text-sm text-white mb-3">{pendientes.join(" · ")}</p>
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
+                  <p className="text-sm text-ink mb-3">{pendientes.join(" · ")}</p>
                 </>
               )}
               {alDia.length > 0 && (
                 <>
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-1.5">Hechas ({alDia.length})</p>
-                  <p className="text-sm text-[#A0A0A0]">{alDia.join(" · ")}</p>
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-1.5">Hechas ({alDia.length})</p>
+                  <p className="text-sm text-ink-muted">{alDia.join(" · ")}</p>
                 </>
               )}
             </div>
           ) : (
-            <div className={`rounded-xl border px-5 py-4 mb-8 ${hechaEstaQuincena ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#FFB800]/40 bg-[#FFB800]/5"}`}>
-              <p className={`text-sm font-bold ${hechaEstaQuincena ? "text-[#1CA0E3]" : "text-[#FFB800]"}`}>
+            <div className={`rounded-xl border px-5 py-4 mb-8 ${hechaEstaQuincena ? "border-brand/40 bg-brand/5" : "border-warn/40 bg-warn/5"}`}>
+              <p className={`text-sm font-bold ${hechaEstaQuincena ? "text-brand" : "text-warn"}`}>
                 {hechaEstaQuincena
                   ? `Revisión del ${periodo.etiqueta} hecha ✓`
                   : `Te falta la revisión del ${periodo.etiqueta}`}
               </p>
-              <p className="text-xs text-[#A0A0A0] mt-1">
+              <p className="text-xs text-ink-muted mt-1">
                 {NORMA} {hechaEstaQuincena
                   ? "La próxima te tocará en la siguiente fecha."
                   : "Sube tu peso y tus 3 fotos (frente, perfil y espaldas)."}
@@ -295,7 +295,7 @@ export default async function CheckinsPage({
               <div className="grid gap-6 lg:grid-cols-2 mb-8">
                 <CheckinForm />
                 <div className="card-dark p-6 !transform-none">
-                  <h3 className="font-bold text-white mb-4">Tu progreso (peso)</h3>
+                  <h3 className="font-bold text-ink mb-4">Tu progreso (peso)</h3>
                   <WeightChart points={points} />
                 </div>
               </div>
@@ -308,8 +308,8 @@ export default async function CheckinsPage({
             <div className="card-dark p-6 !transform-none mb-6">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
                 <div className="min-w-0">
-                  <h2 className="font-bold text-white truncate">{nombreElegida}</h2>
-                  <p className="text-xs text-[#666666]">
+                  <h2 className="font-bold text-ink truncate">{nombreElegida}</h2>
+                  <p className="text-xs text-ink-subtle">
                     {cronologicas.length} {cronologicas.length === 1 ? "revisión" : "revisiones"}
                     {objetivo ? ` · objetivo: ${objetivo}` : ""}
                   </p>
@@ -326,7 +326,7 @@ export default async function CheckinsPage({
 
               {puntosClienta.length >= 2 && (
                 <div className="mb-5">
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Peso</p>
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Peso</p>
                   <WeightChart points={puntosClienta} />
                 </div>
               )}
@@ -334,7 +334,7 @@ export default async function CheckinsPage({
               {/* Desde la primera hasta la última: el balance de todo el servicio. */}
               {cronologicas.length >= 2 && (
                 <div>
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">
                     Desde su primera revisión ({fmt(cronologicas[0].created_at)})
                   </p>
                   <ComparativaRevision
@@ -347,7 +347,7 @@ export default async function CheckinsPage({
                 </div>
               )}
 
-              <p className="text-[11px] text-[#666666] mt-3">
+              <p className="text-[11px] text-ink-subtle mt-3">
                 Azul lo que baja, rojo lo que sube, gris lo que se queda igual. Siempre.
               </p>
             </div>
@@ -355,7 +355,7 @@ export default async function CheckinsPage({
 
           <div className="flex flex-col gap-4">
             {items.length === 0 ? (
-              <p className="text-[#A0A0A0]">{admin ? "Aún no hay check-ins." : "Todavía no has registrado ningún check-in."}</p>
+              <p className="text-ink-muted">{admin ? "Aún no hay check-ins." : "Todavía no has registrado ningún check-in."}</p>
             ) : (
               items.map((it) => (
                 <div key={it.id} className="card-dark p-5 !transform-none">
@@ -363,22 +363,22 @@ export default async function CheckinsPage({
                     <div className="flex items-center gap-3">
                       {admin && !filtrada && (
                         <Link href={`/miembros/checkins?clienta=${encodeURIComponent(it.member_email)}`}
-                          className="text-sm font-bold text-white hover:text-[#1CA0E3]">
+                          className="text-sm font-bold text-ink hover:text-brand">
                           {nombres.get(it.member_email) ?? it.member_email}
                         </Link>
                       )}
                       {admin && filtrada && (
-                        <span className="text-xs font-bold text-[#666666]">
+                        <span className="text-xs font-bold text-ink-subtle">
                           Revisión {(posicion.get(it.id) ?? 0) + 1} de {cronologicas.length}
                         </span>
                       )}
                       {it.weight != null && (
-                        <span className="text-sm font-bold text-[#1CA0E3]">{it.weight} kg</span>
+                        <span className="text-sm font-bold text-brand">{it.weight} kg</span>
                       )}
                     </div>
-                    <span className="text-xs text-[#666666]">{fmt(it.created_at)}</span>
+                    <span className="text-xs text-ink-subtle">{fmt(it.created_at)}</span>
                   </div>
-                  {it.note && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap mb-3">{it.note}</p>}
+                  {it.note && <p className="text-sm text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
                   {admin && filtrada && (
                     <ComparativaRevision
                       cambios={comparar(
@@ -393,17 +393,17 @@ export default async function CheckinsPage({
                   {!(admin && filtrada) && MEASURE_LABELS.some((m) => it[m.key] != null) && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => (
-                        <span key={m.key} className="text-xs text-[#A0A0A0] rounded-lg border border-[#252525] bg-[#141414] px-2.5 py-1">
-                          {m.label}: <span className="text-white font-semibold">{it[m.key] as number} cm</span>
+                        <span key={m.key} className="text-xs text-ink-muted rounded-lg border border-line bg-page px-2.5 py-1">
+                          {m.label}: <span className="text-ink font-semibold">{it[m.key] as number} cm</span>
                         </span>
                       ))}
                     </div>
                   )}
                   {it.photos.length > 0 && <PhotoLightbox photos={it.photos} />}
                   {it.coach_reply ? (
-                    <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-4 py-3">
-                      <p className="text-xs font-bold text-[#1CA0E3] mb-1">Respuesta de tu coach</p>
-                      <p className="text-sm text-white whitespace-pre-wrap">{it.coach_reply}</p>
+                    <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 px-4 py-3">
+                      <p className="text-xs font-bold text-brand mb-1">Respuesta de tu coach</p>
+                      <p className="text-sm text-ink whitespace-pre-wrap">{it.coach_reply}</p>
                     </div>
                   ) : (
                     admin && <AdminCheckinReply id={it.id} />

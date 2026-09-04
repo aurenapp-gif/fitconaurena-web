@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * EL TEMA ENTERO ESTÁ AQUÍ.
+ *
+ * Cada color se guarda como sus tres componentes RGB sin envolver («246 247
+ * 249», no «rgb(246,247,249)») para que Tailwind pueda aplicarles opacidad
+ * (`bg-brand/10`). Los nombres dicen para qué sirve cada uno, no cómo es: si
+ * mañana hiciera falta un modo oscuro, sería otro bloque como este y ni una
+ * pantalla más.
+ */
+:root {
+  /* Superficies, de fondo a primer plano. Blancos y grises FRÍOS, apenas
+     teñidos: un blanco puro de página cansa; un gris cálido se ve sucio. */
+  --c-page: 246 247 249;        /* #F6F7F9 */
+  --c-surface: 255 255 255;     /* #FFFFFF */
+  --c-surface-2: 238 240 243;   /* #EEF0F3 */
+  /* Bordes. */
+  --c-line: 230 232 236;        /* #E6E8EC */
+  --c-line-strong: 203 213 225; /* #CBD5E1 */
+  /* Texto, de más a menos presente. Nunca negro puro. */
+  --c-ink: 15 23 42;            /* #0F172A */
+  --c-ink-muted: 100 116 139;   /* #64748B */
+  --c-ink-subtle: 148 163 184;  /* #94A3B8 */
+  /* Marca. El azul de siempre; el «soft» es su tinte para fondos. */
+  --c-brand: 28 160 227;        /* #1CA0E3 */
+  --c-brand-dark: 20 136 201;   /* #1488C9 */
+  --c-brand-soft: 232 245 252;  /* #E8F5FC */
+  /* Estados. Los de texto son más oscuros que sus «soft» de fondo para que
+     el contraste aguante sobre blanco. */
+  --c-danger: 220 38 38;        /* #DC2626 */
+  --c-danger-soft: 254 226 226; /* #FEE2E2 */
+  --c-warn: 180 83 9;           /* #B45309 */
+  --c-warn-soft: 254 243 199;   /* #FEF3C7 */
+  --c-success: 21 128 61;       /* #15803D */
+  --c-success-soft: 220 252 231;/* #DCFCE7 */
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -10,30 +46,32 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
 }
 
 body {
-  background-color: #0A0A0A;
-  color: #ffffff;
-  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: rgb(var(--c-page));
+  color: rgb(var(--c-ink));
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background-color: rgba(28, 160, 227, 0.25);
-  color: #ffffff;
+  background-color: rgb(var(--c-brand) / 0.2);
+  color: rgb(var(--c-ink));
 }
 
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #0A0A0A; }
-::-webkit-scrollbar-thumb { background: #252525; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #1CA0E3; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-line-strong)); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-brand)); }
 
 :focus-visible {
-  outline: 2px solid #1CA0E3;
+  outline: 2px solid rgb(var(--c-brand));
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 @layer components {
@@ -50,68 +88,77 @@ body {
     max-width: 680px;
   }
 
+  /* Botón principal: uno por pantalla, la acción que importa. Mínimo 44 px
+     de alto para que se pulse bien con el dedo. */
   .btn-brand {
-    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 cursor-pointer;
-    background-color: #1CA0E3;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer;
+    min-height: 44px;
+    background-color: rgb(var(--c-brand));
     color: #ffffff;
   }
   .btn-brand:hover {
-    background-color: #48B5EA;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(28, 160, 227, 0.3);
+    background-color: rgb(var(--c-brand-dark));
+    box-shadow: 0 8px 24px rgb(var(--c-brand) / 0.28);
   }
-  .btn-brand:active { transform: translateY(0); }
+  .btn-brand:disabled { box-shadow: none; }
 
+  /* Botón secundario: borde, sin relleno. */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all duration-200 cursor-pointer;
-    background: transparent;
-    color: #ffffff;
-    border: 1px solid #252525;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-150 cursor-pointer;
+    min-height: 44px;
+    background: rgb(var(--c-surface));
+    color: rgb(var(--c-ink));
+    border: 1px solid rgb(var(--c-line));
   }
   .btn-outline:hover {
-    border-color: #1CA0E3;
-    color: #1CA0E3;
+    border-color: rgb(var(--c-brand));
+    color: rgb(var(--c-brand));
   }
 
   .section-tag {
-    @apply inline-block text-xs font-bold tracking-widest uppercase mb-4;
-    color: #1CA0E3;
+    @apply inline-block text-xs font-bold tracking-widest uppercase mb-3;
+    color: rgb(var(--c-brand));
   }
 
   .section-title {
-    @apply font-black text-white leading-tight;
-    font-size: clamp(1.8rem, 3.5vw, 3rem);
+    @apply font-extrabold leading-tight;
+    color: rgb(var(--c-ink));
+    letter-spacing: -0.025em;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
   }
 
   .section-sub {
     @apply leading-relaxed;
-    color: #A0A0A0;
-    font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+    color: rgb(var(--c-ink-muted));
+    font-size: clamp(0.95rem, 1.3vw, 1.05rem);
   }
 
-  .card-dark {
-    @apply rounded-2xl p-6 transition-all duration-300;
-    background: #161616;
-    border: 1px solid #252525;
+  /* Tarjeta: blanca, con borde fino y sin sombra. Quieta al pasar por encima:
+     el movimiento se reserva para lo que de verdad se puede pulsar. */
+  .card {
+    @apply rounded-2xl p-6;
+    background: rgb(var(--c-surface));
+    border: 1px solid rgb(var(--c-line));
   }
-  .card-dark:hover {
-    border-color: rgba(28, 160, 227, 0.3);
-    transform: translateY(-2px);
+  /* Nombre heredado del tema oscuro. Se mantiene para no tocar ochenta
+     pantallas de golpe; significa exactamente lo mismo que `.card`. */
+  .card-dark {
+    @apply rounded-2xl p-6;
+    background: rgb(var(--c-surface));
+    border: 1px solid rgb(var(--c-line));
   }
 }
 
-/* Micro-interacciones: feedback táctil, estados y movimiento accesible.
-   Fuera de @layer para tener prioridad sobre los :active de los botones. */
+/* Feedback táctil al pulsar. Fuera de @layer para ganar a los :active de
+   los botones. */
 .btn-brand:active,
 .btn-outline:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 button:disabled,
 a[aria-disabled="true"] {
   cursor: not-allowed;
-}
-html {
-  scroll-behavior: smooth;
+  opacity: 0.6;
 }
 
 /* Carrusel horizontal de casos de éxito (dos filas en sentidos opuestos).

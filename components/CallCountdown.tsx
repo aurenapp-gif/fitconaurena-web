@@ -59,10 +59,10 @@ function nextCall(now: number): number {
 function Box({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-black text-white tabular-nums" style={{ fontSize: "clamp(1.6rem,5vw,2.4rem)" }}>
+      <span className="font-black text-ink tabular-nums" style={{ fontSize: "clamp(1.6rem,5vw,2.4rem)" }}>
         {String(value).padStart(2, "0")}
       </span>
-      <span className="text-[10px] uppercase tracking-widest text-[#666666]">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-ink-subtle">{label}</span>
     </div>
   );
 }
@@ -80,8 +80,8 @@ export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
   if (now === null) {
     return (
       <div className="card-dark p-6 !transform-none">
-        <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
-        <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 17:30 (hora de Madrid).</p>
+        <h3 className="font-bold text-ink mb-1">Videollamada grupal</h3>
+        <p className="text-sm text-ink-muted">Todos los jueves a las 17:30 (hora de Madrid).</p>
       </div>
     );
   }
@@ -97,12 +97,12 @@ export default function CallCountdown({ callUrl = "" }: { callUrl?: string }) {
   const secs = s % 60;
 
   return (
-    <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30">
-      <h3 className="font-bold text-white mb-1">Videollamada grupal</h3>
-      <p className="text-sm text-[#A0A0A0]">Todos los jueves a las 17:30 (hora de Madrid).</p>
+    <div className="card-dark p-6 !transform-none border-brand/30">
+      <h3 className="font-bold text-ink mb-1">Videollamada grupal</h3>
+      <p className="text-sm text-ink-muted">Todos los jueves a las 17:30 (hora de Madrid).</p>
 
       {live ? (
-        <p className="mt-5 font-black text-[#1CA0E3] text-xl">¡En directo ahora! 🔴</p>
+        <p className="mt-5 font-black text-brand text-xl">¡En directo ahora! 🔴</p>
       ) : (
         <div className="mt-5 flex gap-5">
           <Box value={days} label="días" />

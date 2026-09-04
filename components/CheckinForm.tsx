@@ -81,29 +81,29 @@ export default function CheckinForm() {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-[#1CA0E3]/30">
-      <h3 className="font-bold text-white mb-4">Nuevo check-in</h3>
+    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-brand/30">
+      <h3 className="font-bold text-ink mb-4">Nuevo check-in</h3>
       <div className="flex flex-col gap-3">
         <input
           type="number" step="0.1" inputMode="decimal" value={weight}
           onChange={(e) => setWeight(e.target.value)} placeholder="Peso (kg) — opcional" aria-label="Peso en kg (opcional)"
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
+          className="rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
         />
-        <p className="text-xs text-[#A0A0A0] -mt-1">
-          ¿Prefieres no pesarte? <strong className="text-white">Déjalo en blanco</strong> y envía tu check-in igualmente
+        <p className="text-xs text-ink-muted -mt-1">
+          ¿Prefieres no pesarte? <strong className="text-ink">Déjalo en blanco</strong> y envía tu check-in igualmente
           con tus fotos, tus medidas o una nota. Tu progreso se sigue viendo.
         </p>
 
-        <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4">
-          <p className="text-sm font-semibold text-white mb-1">📸 Sube 3 fotos: frente, perfil y espaldas</p>
-          <p className="text-xs text-[#A0A0A0] mb-4">
-            Hazlas siempre en el <strong className="text-white">mismo sitio</strong> y con la <strong className="text-white">misma luz</strong> (natural o artificial).
+        <div className="rounded-xl border border-line bg-page p-4">
+          <p className="text-sm font-semibold text-ink mb-1">📸 Sube 3 fotos: frente, perfil y espaldas</p>
+          <p className="text-xs text-ink-muted mb-4">
+            Hazlas siempre en el <strong className="text-ink">mismo sitio</strong> y con la <strong className="text-ink">misma luz</strong> (natural o artificial).
           </p>
           <div className="grid grid-cols-3 gap-3">
             {PHOTOS.map((p) => (
               <label key={p.field} className="flex flex-col items-center gap-2 cursor-pointer text-center">
-                <span className="text-xs font-semibold text-white">{p.label}</span>
-                <span className={`w-full rounded-lg border px-2 py-3 text-[11px] ${files[p.field] ? "border-[#1CA0E3] text-[#1CA0E3] bg-[#1CA0E3]/5" : "border-[#252525] text-[#666666]"}`}>
+                <span className="text-xs font-semibold text-ink">{p.label}</span>
+                <span className={`w-full rounded-lg border px-2 py-3 text-[11px] ${files[p.field] ? "border-brand text-brand bg-brand/5" : "border-line text-ink-subtle"}`}>
                   {files[p.field] ? "✓ Lista" : "Elegir"}
                 </span>
                 <input type="file" accept="image/*" className="hidden"
@@ -113,30 +113,30 @@ export default function CheckinForm() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] p-4">
+        <div className="rounded-xl border border-line bg-page p-4">
           <button
             type="button"
             onClick={() => setShowMeasures((s) => !s)}
             className="w-full flex items-center justify-between gap-2 text-left"
           >
-            <span className="text-sm font-semibold text-white">📏 Medidas (cm) — opcional</span>
-            <span className="text-[#666666] text-sm">{showMeasures ? "Ocultar −" : "Añadir +"}</span>
+            <span className="text-sm font-semibold text-ink">📏 Medidas (cm) — opcional</span>
+            <span className="text-ink-subtle text-sm">{showMeasures ? "Ocultar −" : "Añadir +"}</span>
           </button>
           {showMeasures && (
             <>
-              <p className="text-xs text-[#A0A0A0] mt-1 mb-3">
+              <p className="text-xs text-ink-muted mt-1 mb-3">
                 Cuando la báscula no se mueve, las medidas demuestran que sí avanzas. Mídete relajada y siempre igual.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {MEASURES.map((m) => (
                   <label key={m.field} className="flex flex-col gap-1">
-                    <span className="text-[11px] text-[#A0A0A0]">{m.label}</span>
+                    <span className="text-[11px] text-ink-muted">{m.label}</span>
                     <input
                       type="number" step="0.1" inputMode="decimal"
                       value={measures[m.field] ?? ""}
                       onChange={(e) => setMeasures((v) => ({ ...v, [m.field]: e.target.value }))}
                       placeholder="cm" aria-label={`${m.label} en cm`}
-                      className="rounded-lg border border-[#252525] bg-[#141414] px-3 py-2 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
+                      className="rounded-lg border border-line bg-page px-3 py-2 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
                     />
                   </label>
                 ))}
@@ -145,20 +145,20 @@ export default function CheckinForm() {
           )}
         </div>
 
-        <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
-          <p className="text-xs text-[#A0A0A0]">
-            ⚖️ Si te pesas, hazlo <strong className="text-white">en ayunas</strong>, después de la primera orina de la mañana.
+        <div className="rounded-xl border border-line bg-page px-4 py-3">
+          <p className="text-xs text-ink-muted">
+            ⚖️ Si te pesas, hazlo <strong className="text-ink">en ayunas</strong>, después de la primera orina de la mañana.
           </p>
         </div>
 
         <textarea
           value={note} onChange={(e) => setNote(e.target.value)} rows={3}
           placeholder="¿Cómo te has sentido esta semana? (opcional)" aria-label="Nota"
-          className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] resize-none"
+          className="rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand resize-none"
         />
-        {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{message}</p>}
+        {status === "error" && <p role="alert" className="text-sm text-danger">{message}</p>}
         {celebrate && (
-          <p className="text-sm font-bold text-[#1CA0E3] bg-[#1CA0E3]/10 border border-[#1CA0E3]/30 rounded-lg px-4 py-3">
+          <p className="text-sm font-bold text-brand bg-brand/10 border border-brand/30 rounded-lg px-4 py-3">
             {celebrate}
           </p>
         )}

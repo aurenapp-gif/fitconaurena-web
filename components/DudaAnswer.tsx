@@ -62,7 +62,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
     }
   }
 
-  const cls = "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "w-full rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   if (!open) {
     return (
@@ -73,7 +73,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-[#1CA0E3]/30 bg-[#0A0A0A] p-4 flex flex-col gap-3">
+    <div className="mt-3 rounded-xl border border-brand/30 bg-page p-4 flex flex-col gap-3">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -92,7 +92,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-[#666666]">Marcar como:</span>
+        <span className="text-xs text-ink-subtle">Marcar como:</span>
         {STATUSES.map((s) => (
           <button
             key={s.id}
@@ -100,7 +100,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
             disabled={busy}
             onClick={() => send({ status: s.id })}
             className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors disabled:opacity-60 ${
-              status === s.id ? "text-white" : "border-[#252525] text-[#A0A0A0] hover:text-white"
+              status === s.id ? "text-ink" : "border-line text-ink-muted hover:text-ink"
             }`}
             style={status === s.id ? { borderColor: s.color, background: `${s.color}22`, color: s.color } : undefined}
           >
@@ -109,7 +109,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
         ))}
       </div>
 
-      {msg && <p className="text-sm text-[#1CA0E3]">{msg}</p>}
+      {msg && <p className="text-sm text-brand">{msg}</p>}
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -135,7 +135,7 @@ export default function DudaAnswer({ id, answer, answerUrl, status, hidden }: Pr
           type="button"
           disabled={busy}
           onClick={remove}
-          className="text-xs font-bold text-[#FF6B6B] px-4 py-2.5 disabled:opacity-60"
+          className="text-xs font-bold text-danger px-4 py-2.5 disabled:opacity-60"
         >
           Borrar
         </button>

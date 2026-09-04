@@ -18,8 +18,8 @@ type Profile = { display_name: string | null; photo_path: string | null; questio
 function Card({ title, desc, children }: { title: string; desc: string; children?: React.ReactNode }) {
   return (
     <div className="card-dark p-6 !transform-none flex flex-col">
-      <h3 className="font-bold text-white mb-2">{title}</h3>
-      <p className="text-sm text-[#A0A0A0] mb-4 flex-1">{desc}</p>
+      <h3 className="font-bold text-ink mb-2">{title}</h3>
+      <p className="text-sm text-ink-muted mb-4 flex-1">{desc}</p>
       {children}
     </div>
   );
@@ -69,17 +69,17 @@ export default async function MiembrosPage() {
           {/* Saludo personalizado */}
           <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full overflow-hidden bg-[#161616] border border-[#252525] flex items-center justify-center shrink-0">
+              <div className="w-14 h-14 rounded-full overflow-hidden bg-surface border border-line flex items-center justify-center shrink-0">
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-xl font-black text-[#666666]">{name.charAt(0).toUpperCase()}</span>
+                  <span className="text-xl font-black text-ink-subtle">{name.charAt(0).toUpperCase()}</span>
                 )}
               </div>
               <div>
                 <h1 className="section-title leading-tight">Hola, {name} 👋</h1>
-                <p className="text-sm text-[#666666] mt-0.5">{admin ? "Panel de coach" : "Bienvenida a tu área privada"}</p>
+                <p className="text-sm text-ink-subtle mt-0.5">{admin ? "Panel de coach" : "Bienvenida a tu área privada"}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -91,13 +91,13 @@ export default async function MiembrosPage() {
           {/* Documentos pendientes de firma. Solo lo ven las clientas exentas:
               a las nuevas el guard ya las lleva directamente a firmarlos. */}
           {pendingDocs > 0 && (
-            <div className="card-dark p-6 !transform-none border-[#FFB800]/40 bg-[#FFB800]/5 mb-5">
+            <div className="card-dark p-6 !transform-none border-warn/40 bg-warn/5 mb-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                  <h3 className="font-bold text-white mb-1">
+                  <h3 className="font-bold text-ink mb-1">
                     ✍️ Tienes {pendingDocs} documento{pendingDocs === 1 ? "" : "s"} pendiente{pendingDocs === 1 ? "" : "s"} de firma
                   </h3>
-                  <p className="text-sm text-[#A0A0A0] max-w-xl">
+                  <p className="text-sm text-ink-muted max-w-xl">
                     Tu coach te ha dejado {pendingDocs === 1 ? "un documento" : "unos documentos"} para rellenar y firmar. Solo te llevará un par de minutos.
                   </p>
                 </div>
@@ -110,24 +110,24 @@ export default async function MiembrosPage() {
 
           {/* Checklist de primeros pasos (desaparece al completarse) */}
           {showChecklist && (
-            <div className="card-dark p-6 !transform-none border-[#1CA0E3]/30 mb-5">
-              <h3 className="font-bold text-white mb-1">Tus primeros pasos</h3>
-              <p className="text-sm text-[#A0A0A0] mb-4">
+            <div className="card-dark p-6 !transform-none border-brand/30 mb-5">
+              <h3 className="font-bold text-ink mb-1">Tus primeros pasos</h3>
+              <p className="text-sm text-ink-muted mb-4">
                 Completa estos pasos para empezar con buen pie. {steps.filter((s) => s.done).length}/{steps.length} hechos.
               </p>
               <div className="flex flex-col gap-2">
                 {steps.map((s) => (
-                  <div key={s.label} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${s.done ? "border-[#252525] bg-[#0F0F0F]" : "border-[#252525] bg-[#0A0A0A]"}`}>
+                  <div key={s.label} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${s.done ? "border-line bg-page" : "border-line bg-page"}`}>
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${s.done ? "bg-[#1CA0E3]" : "border-2 border-[#444]"}`}>
+                      <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${s.done ? "bg-brand" : "border-2 border-line-strong"}`}>
                         {s.done && (
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
                         )}
                       </span>
-                      <span className={`text-sm ${s.done ? "text-[#666666] line-through" : "text-white"}`}>{s.label}</span>
+                      <span className={`text-sm ${s.done ? "text-ink-subtle line-through" : "text-ink"}`}>{s.label}</span>
                     </div>
                     {!s.done && (
-                      <Link href={s.href} className="text-[#1CA0E3] text-sm font-semibold shrink-0">Hacerlo →</Link>
+                      <Link href={s.href} className="text-brand text-sm font-semibold shrink-0">Hacerlo →</Link>
                     )}
                   </div>
                 ))}

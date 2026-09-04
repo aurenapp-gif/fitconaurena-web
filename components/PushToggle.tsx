@@ -96,8 +96,8 @@ export default function PushToggle() {
   return (
     <div className="card-dark p-5 !transform-none mb-5 flex items-center justify-between gap-4 flex-wrap">
       <div className="min-w-0">
-        <h3 className="font-bold text-white mb-0.5">Notificaciones</h3>
-        <p className="text-sm text-[#A0A0A0]">
+        <h3 className="font-bold text-ink mb-0.5">Notificaciones</h3>
+        <p className="text-sm text-ink-muted">
           {state === "on"
             ? "Activadas: te avisaremos de las respuestas de tu coach."
             : state === "denied"
@@ -106,7 +106,7 @@ export default function PushToggle() {
             ? "En iPhone: añade la app a tu pantalla de inicio para recibir avisos."
             : "Recibe un aviso cuando tu coach te responda."}
         </p>
-        {msg && <p className="text-sm text-[#FF6B6B] mt-1">{msg}</p>}
+        {msg && <p className="text-sm text-danger mt-1">{msg}</p>}
       </div>
       {state === "on" ? (
         <button onClick={disable} className="btn-outline text-sm px-5 py-2.5 shrink-0">Desactivar</button>

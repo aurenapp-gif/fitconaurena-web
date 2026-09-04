@@ -55,11 +55,11 @@ export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; h
     }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
-    <form onSubmit={submit} className="card-dark p-5 !transform-none border-[#1CA0E3]/30 mb-6">
-      <h3 className="font-bold text-white mb-3">Añadir clienta</h3>
+    <form onSubmit={submit} className="card-dark p-5 !transform-none border-brand/30 mb-6">
+      <h3 className="font-bold text-ink mb-3">Añadir clienta</h3>
       <div className="flex gap-3 flex-wrap">
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email de la clienta" className={`${cls} flex-1 min-w-[200px]`} />
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="nombre (opcional)" className={cls} />
@@ -82,25 +82,25 @@ export default function AddClient({ contracts, hasAnexo }: { contracts: Tpl[]; h
         </button>
       </div>
 
-      {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
+      {msg && <p className={`text-sm mt-3 ${status === "error" ? "text-danger" : "text-brand"}`}>{msg}</p>}
       {enviadoA && (
-        <div className="mt-2 rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
-          <p className="text-xs text-[#A0A0A0]">
-            Enviado a <strong className="text-white break-all">{enviadoA}</strong>
+        <div className="mt-2 rounded-xl border border-line bg-page px-4 py-3">
+          <p className="text-xs text-ink-muted">
+            Enviado a <strong className="text-ink break-all">{enviadoA}</strong>
           </p>
-          <p className="text-[11px] text-[#666666] mt-1">
+          <p className="text-[11px] text-ink-subtle mt-1">
             Comprueba que la dirección es exactamente la suya, letra por letra. Si sobra o falta una
             letra el correo no llega a ningún sitio y no hay forma de saberlo. Dile también que mire
             en spam o correo no deseado la primera vez.
           </p>
         </div>
       )}
-      <p className="text-xs text-[#666666] mt-2">
+      <p className="text-xs text-ink-subtle mt-2">
         Recibe un email de bienvenida con su enlace de acceso. Si eliges contrato, al entrar por primera vez tendrá que poner su nombre y foto, aceptar las condiciones y firmar el contrato
         {hasAnexo ? " junto con el anexo de salud" : ""} antes de poder usar la app.
       </p>
       {contracts.length === 0 && (
-        <p className="text-xs text-[#FFB800] mt-1">No hay plantillas de contrato subidas todavía. Súbelas desde el Panel de la coach.</p>
+        <p className="text-xs text-warn mt-1">No hay plantillas de contrato subidas todavía. Súbelas desde el Panel de la coach.</p>
       )}
     </form>
   );

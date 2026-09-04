@@ -59,24 +59,24 @@ export default function FileViewer({ url, label, buttonText = "Ver plan" }: { ur
             {buttonText}
           </a>
         )}
-        <a href={downloadUrl} onClick={() => track("plan_descargado")} className="text-[#1CA0E3] text-sm font-semibold">Descargar</a>
+        <a href={downloadUrl} onClick={() => track("plan_descargado")} className="text-brand text-sm font-semibold">Descargar</a>
       </div>
 
       {open && (
         <div onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/90 flex flex-col p-3 sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-3" onClick={(e) => e.stopPropagation()}>
-            <span className="text-white font-bold text-sm truncate">{label}</span>
+            <span className="text-ink font-bold text-sm truncate">{label}</span>
             <div className="flex items-center gap-4 shrink-0">
-              <a href={url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold">Abrir en pestaña ↗</a>
-              <a href={downloadUrl} className="text-[#1CA0E3] text-sm font-semibold">Descargar</a>
-              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-white/80 hover:text-white text-3xl leading-none">×</button>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold">Abrir en pestaña ↗</a>
+              <a href={downloadUrl} className="text-brand text-sm font-semibold">Descargar</a>
+              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="text-ink/80 hover:text-ink text-3xl leading-none">×</button>
             </div>
           </div>
           <iframe
             onClick={(e) => e.stopPropagation()}
             src={url}
             title={label}
-            className="flex-1 w-full rounded-lg bg-white"
+            className="flex-1 w-full rounded-lg bg-surface"
           />
         </div>
       )}

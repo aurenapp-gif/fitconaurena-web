@@ -13,24 +13,24 @@ export default function LegalLayout({ title, updated, children }: { title: strin
           <div className="max-w-2xl">
             <span className="section-tag">Aviso legal</span>
             <h1 className="section-title">{title}</h1>
-            <p className="text-xs text-[#666666] mt-2 mb-8">
+            <p className="text-xs text-ink-subtle mt-2 mb-8">
               Última actualización: {updated} · Versión {TERMS_VERSION}
             </p>
 
-            <article className="prose-legal flex flex-col gap-4 text-sm text-[#A0A0A0] leading-relaxed">
+            <article className="prose-legal flex flex-col gap-4 text-sm text-ink-muted leading-relaxed">
               {children}
             </article>
 
-            <div className="mt-10 pt-6 border-t border-[#252525] text-xs text-[#666666]">
+            <div className="mt-10 pt-6 border-t border-line text-xs text-ink-subtle">
               <p className="mb-1">Responsable del tratamiento:</p>
-              <p className="text-white">{COMPANY.name}</p>
+              <p className="text-ink">{COMPANY.name}</p>
               <p>{companyLine().replace(COMPANY.name + ", ", "")}</p>
-              <p>Contacto: <a href={`mailto:${COMPANY.email}`} className="text-[#1CA0E3]">{COMPANY.email}</a></p>
+              <p>Contacto: <a href={`mailto:${COMPANY.email}`} className="text-brand">{COMPANY.email}</a></p>
 
               <nav className="flex gap-4 flex-wrap mt-6">
-                <Link href="/legal/privacidad" className="text-[#1CA0E3] hover:underline">Privacidad</Link>
-                <Link href="/legal/terminos" className="text-[#1CA0E3] hover:underline">Términos</Link>
-                <Link href="/legal/cookies" className="text-[#1CA0E3] hover:underline">Cookies</Link>
+                <Link href="/legal/privacidad" className="text-brand hover:underline">Privacidad</Link>
+                <Link href="/legal/terminos" className="text-brand hover:underline">Términos</Link>
+                <Link href="/legal/cookies" className="text-brand hover:underline">Cookies</Link>
               </nav>
             </div>
           </div>

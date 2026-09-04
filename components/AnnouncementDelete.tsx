@@ -25,7 +25,7 @@ export default function AnnouncementDelete({ id }: { id: string }) {
 
   return (
     <button type="button" onClick={handleDelete} disabled={busy}
-      className="text-xs font-semibold text-[#FF6B6B] hover:underline disabled:opacity-50 shrink-0">
+      className="text-xs font-semibold text-danger hover:underline disabled:opacity-50 shrink-0">
       {busy ? "Borrando…" : "✕ Borrar"}
     </button>
   );

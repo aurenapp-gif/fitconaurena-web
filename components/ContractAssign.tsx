@@ -79,20 +79,20 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
   }
 
   const exemptBanner = (
-    <div className={`rounded-xl border p-4 ${exempt ? "border-[#252525] bg-[#141414]" : "border-[#1CA0E3]/30 bg-[#1CA0E3]/5"}`}>
+    <div className={`rounded-xl border p-4 ${exempt ? "border-line bg-page" : "border-brand/30 bg-brand/5"}`}>
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-white">
+          <p className="text-sm font-bold text-ink">
             {exempt ? "Exenta de firma obligatoria" : "Firma obligatoria activada"}
           </p>
-          <p className="text-xs text-[#A0A0A0] mt-0.5 max-w-lg">
+          <p className="text-xs text-ink-muted mt-0.5 max-w-lg">
             {exempt
               ? "Ya estaba dada de alta antes de implantar la firma. Entra a su área privada sin firmar nada; si le asignas un contrato podrá firmarlo, pero de forma voluntaria."
               : "No podrá usar la app hasta firmar los documentos que le asignes."}
           </p>
         </div>
         <button type="button" onClick={() => setExempt(!exempt)} disabled={busy}
-          className="text-xs font-bold px-4 py-2 rounded-lg border border-[#252525] text-[#A0A0A0] hover:border-[#1CA0E3]/40 hover:text-white transition-colors shrink-0 disabled:opacity-40">
+          className="text-xs font-bold px-4 py-2 rounded-lg border border-line text-ink-muted hover:border-brand/40 hover:text-ink transition-colors shrink-0 disabled:opacity-40">
           {exempt ? "Exigir firma" : "Eximir"}
         </button>
       </div>
@@ -103,12 +103,12 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
     return (
       <div className="flex flex-col gap-4">
         {exemptBanner}
-        <div className="rounded-xl border border-[#252525] bg-[#141414] p-4">
-          <p className="text-sm text-[#A0A0A0]">
-            Aún no has subido ninguna plantilla de contrato. Súbelas desde el <strong className="text-white">Panel de la coach</strong> para poder asignarlas.
+        <div className="rounded-xl border border-line bg-page p-4">
+          <p className="text-sm text-ink-muted">
+            Aún no has subido ninguna plantilla de contrato. Súbelas desde el <strong className="text-ink">Panel de la coach</strong> para poder asignarlas.
           </p>
         </div>
-        {err && <p className="text-xs text-[#FF6B6B]">{err}</p>}
+        {err && <p className="text-xs text-danger">{err}</p>}
       </div>
     );
   }
@@ -117,12 +117,12 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
     <div className="flex flex-col gap-4">
       {exemptBanner}
       <div>
-        <label className="block text-xs text-[#A0A0A0] mb-1.5">Contrato asignado</label>
+        <label className="block text-xs text-ink-muted mb-1.5">Contrato asignado</label>
         <div className="flex gap-2 flex-wrap">
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="flex-1 min-w-[200px] rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white outline-none focus:border-[#1CA0E3]"
+            className="flex-1 min-w-[200px] rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink outline-none focus:border-brand"
           >
             <option value="">— Elige un contrato —</option>
             {contratos.map((c) => (
@@ -140,18 +140,18 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
         </div>
 
         {contratoAsignado && contratoAssignment && (
-          <div className="mt-3 rounded-lg border border-[#252525] px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="mt-3 rounded-lg border border-line px-4 py-2.5 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm text-white">
+              <p className="text-sm text-ink">
                 <span className="font-bold">{contratoAsignado.title}</span>
-                <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${contratoAssignment.status === "firmado" ? "bg-[#1CA0E3] text-white" : "bg-[#FFB800]/20 text-[#FFB800] border border-[#FFB800]/40"}`}>
+                <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${contratoAssignment.status === "firmado" ? "bg-brand text-white" : "bg-warn/20 text-warn border border-warn/40"}`}>
                   {contratoAssignment.status === "firmado" ? "✍️ firmado" : "⏳ pendiente"}
                 </span>
               </p>
             </div>
             {contratoAssignment.status === "pendiente" && (
               <button type="button" onClick={() => unassign(contratoAssignment.id)} disabled={busy}
-                className="text-xs text-[#FF6B6B] font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
+                className="text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
                 Retirar
               </button>
             )}
@@ -161,21 +161,21 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
 
       {anexo && (
         <div>
-          <label className="block text-xs text-[#A0A0A0] mb-1.5">Anexo de salud (común a todas)</label>
-          <div className="rounded-lg border border-[#252525] px-4 py-2.5 flex items-center justify-between gap-3">
-            <p className="text-sm text-white min-w-0">
+          <label className="block text-xs text-ink-muted mb-1.5">Anexo de salud (común a todas)</label>
+          <div className="rounded-lg border border-line px-4 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-sm text-ink min-w-0">
               <span className="font-bold">{anexo.title}</span>
               {anexoAssignment ? (
-                <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${anexoAssignment.status === "firmado" ? "bg-[#1CA0E3] text-white" : "bg-[#FFB800]/20 text-[#FFB800] border border-[#FFB800]/40"}`}>
+                <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${anexoAssignment.status === "firmado" ? "bg-brand text-white" : "bg-warn/20 text-warn border border-warn/40"}`}>
                   {anexoAssignment.status === "firmado" ? "✍️ firmado" : "⏳ pendiente"}
                 </span>
               ) : (
-                <span className="ml-2 text-[10px] text-[#666666]">se asigna al asignar cualquier contrato</span>
+                <span className="ml-2 text-[10px] text-ink-subtle">se asigna al asignar cualquier contrato</span>
               )}
             </p>
             {anexoAssignment?.status === "pendiente" && (
               <button type="button" onClick={() => unassign(anexoAssignment.id)} disabled={busy}
-                className="text-xs text-[#FF6B6B] font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
+                className="text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
                 Retirar
               </button>
             )}
@@ -184,12 +184,12 @@ export default function ContractAssign({ memberEmail, templates, assignments, ex
       )}
 
       {!anexo && (
-        <p className="text-xs text-[#FFB800]">
+        <p className="text-xs text-warn">
           Aún no has subido la plantilla del anexo de salud. Súbela desde el panel de la coach para que se asigne automáticamente.
         </p>
       )}
 
-      {err && <p className="text-xs text-[#FF6B6B]">{err}</p>}
+      {err && <p className="text-xs text-danger">{err}</p>}
     </div>
   );
 }

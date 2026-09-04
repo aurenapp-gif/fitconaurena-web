@@ -33,10 +33,10 @@ export default function RemoveClient({ email }: { email: string }) {
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <button onClick={remove} disabled={busy}
-        className="text-sm font-semibold rounded-xl border border-[#FF6B6B]/40 text-[#FF6B6B] px-5 py-2.5 hover:bg-[#FF6B6B]/10 transition-colors disabled:opacity-60">
+        className="text-sm font-semibold rounded-xl border border-danger/40 text-danger px-5 py-2.5 hover:bg-danger/10 transition-colors disabled:opacity-60">
         {busy ? "Eliminando…" : "Eliminar clienta (quitar acceso)"}
       </button>
-      {err && <span className="text-sm text-[#FF6B6B]">{err}</span>}
+      {err && <span className="text-sm text-danger">{err}</span>}
     </div>
   );
 }

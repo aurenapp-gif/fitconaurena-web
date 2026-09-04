@@ -13,17 +13,17 @@ export default function CookiesPage() {
         consentimiento previo para su instalación.
       </p>
 
-      <h2 className="text-white font-bold text-base mt-4">Cookies utilizadas</h2>
+      <h2 className="text-ink font-bold text-base mt-4">Cookies utilizadas</h2>
       <ul className="list-disc pl-5 flex flex-col gap-1">
         <li>
-          <strong className="text-white">Cookie de sesión de miembros.</strong>{" "}
+          <strong className="text-ink">Cookie de sesión de miembros.</strong>{" "}
           Cookie propia, técnica y esencial: mantiene la sesión iniciada tras el acceso
           por email. Sin ella no puedes usar el área privada. Se elimina al cerrar sesión
           y caduca automáticamente pasado el tiempo de vida configurado.
         </li>
       </ul>
 
-      <h2 className="text-white font-bold text-base mt-4">Notificaciones push (opcionales)</h2>
+      <h2 className="text-ink font-bold text-base mt-4">Notificaciones push (opcionales)</h2>
       <p>
         Si activas las notificaciones desde tu perfil, tu navegador guarda una
         suscripción para poder enviártelas (recordatorios de check-in, aviso de
@@ -31,7 +31,7 @@ export default function CookiesPage() {
         desde la configuración del navegador o del sistema.
       </p>
 
-      <h2 className="text-white font-bold text-base mt-4">Servicios de terceros</h2>
+      <h2 className="text-ink font-bold text-base mt-4">Servicios de terceros</h2>
       <p>
         La plataforma se apoya en Vercel (alojamiento) y Supabase (base de
         datos y almacenamiento). Ninguno de ellos coloca cookies en tu
@@ -39,7 +39,7 @@ export default function CookiesPage() {
         Puedes consultar sus políticas de privacidad en sus sitios web.
       </p>
 
-      <h2 className="text-white font-bold text-base mt-4">Actualización</h2>
+      <h2 className="text-ink font-bold text-base mt-4">Actualización</h2>
       <p>
         Si en el futuro incorporásemos cookies no esenciales (por ejemplo,
         analítica), se requerirá tu consentimiento previo mediante un banner

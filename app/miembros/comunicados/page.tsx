@@ -135,7 +135,7 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
 
   const tabCls = (active: boolean) =>
     `px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
-      active ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0] hover:text-white"
+      active ? "bg-brand text-white" : "border border-line text-ink-muted hover:text-ink"
     }`;
 
   return (
@@ -147,7 +147,7 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
             <div>
               <span className="section-tag">Tablón</span>
               <h1 className="section-title">Comunicados</h1>
-              <p className="text-sm text-[#666666] mt-1">
+              <p className="text-sm text-ink-subtle mt-1">
                 {tab === "llamadas"
                   ? admin
                     ? "Sube aquí la grabación de la llamada de cada semana."
@@ -177,8 +177,8 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
           )}
 
           {admin && (
-            <div className="card-dark p-6 !transform-none mb-6 border-[#1CA0E3]/30">
-              <h2 className="font-bold text-white mb-4">
+            <div className="card-dark p-6 !transform-none mb-6 border-brand/30">
+              <h2 className="font-bold text-ink mb-4">
                 {tab === "llamadas" ? "Subir grabación de la llamada" : "Nuevo comunicado"}
               </h2>
               {tab === "llamadas" ? <GroupCallForm /> : <AnnouncementForm />}
@@ -187,7 +187,7 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
 
           {list.length === 0 ? (
             <div className="card-dark p-6 !transform-none">
-              <p className="text-sm text-[#A0A0A0]">
+              <p className="text-sm text-ink-muted">
                 {tab === "llamadas"
                   ? admin
                     ? "Aún no has subido ninguna grabación. Sube la de esta semana con su fecha y quedará aquí para quien no pudiera asistir."
@@ -221,17 +221,17 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {isNew && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">Nuevo</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white">Nuevo</span>
                           )}
-                          <span className="text-xs text-[#666666]">
+                          <span className="text-xs text-ink-subtle">
                             {isCall && a.call_date ? fmtDay(a.call_date) : fmt(a.created_at)}
                           </span>
                         </div>
-                        {a.title && <h2 className="font-bold text-white">{a.title}</h2>}
+                        {a.title && <h2 className="font-bold text-ink">{a.title}</h2>}
                       </div>
                       {admin && <AnnouncementDelete id={a.id} />}
                     </div>
-                    {a.body && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{a.body}</p>}
+                    {a.body && <p className="text-sm text-ink-muted whitespace-pre-wrap">{a.body}</p>}
                     {isCall && a.link && (
                       <a href={a.link} target="_blank" rel="noopener noreferrer"
                         className="btn-brand text-sm px-5 py-2.5 mt-3 inline-flex">

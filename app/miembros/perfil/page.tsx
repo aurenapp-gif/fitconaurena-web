@@ -29,28 +29,28 @@ function PlanList({ items, label, empty, fallo }: { items: (Plan & { url?: strin
   // Decirle «tu coach aún no ha subido tu plan» cuando lo que ha pasado es que
   // no se ha podido consultar sería el peor error posible de esta pantalla.
   if (fallo) return (
-    <p role="alert" className="text-sm text-[#FF6B6B]">
+    <p role="alert" className="text-sm text-danger">
       No hemos podido cargar tus planes ahora mismo. Vuelve a entrar en un momento: no se ha perdido nada.
     </p>
   );
-  if (items.length === 0) return <p className="text-sm text-[#666666]">{empty}</p>;
+  if (items.length === 0) return <p className="text-sm text-ink-subtle">{empty}</p>;
   return (
     <div className="flex flex-col gap-4">
       {items.map((p, i) => (
-        <div key={p.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
+        <div key={p.id} className={i > 0 ? "border-t border-line pt-4" : ""}>
           <div className="flex items-center gap-2 flex-wrap mb-1">
             {i === 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">Actual</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white">Actual</span>
             )}
-            <span className="text-xs text-[#666666]">
+            <span className="text-xs text-ink-subtle">
               {new Date(p.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
             </span>
           </div>
-          {p.title && <p className="text-sm text-[#A0A0A0] mb-1">{p.title}</p>}
+          {p.title && <p className="text-sm text-ink-muted mb-1">{p.title}</p>}
           {p.url ? (
             <FileViewer url={p.url} label={label} buttonText={i === 0 ? "Ver plan" : "Ver"} />
           ) : (
-            <p className="text-sm text-[#666666]">No disponible ahora mismo. Vuelve a entrar en un momento.</p>
+            <p className="text-sm text-ink-subtle">No disponible ahora mismo. Vuelve a entrar en un momento.</p>
           )}
           <PlanNote note={p.note} />
         </div>
@@ -63,9 +63,9 @@ function PlanList({ items, label, empty, fallo }: { items: (Plan & { url?: strin
 function PlanNote({ note }: { note?: string | null }) {
   if (!note) return null;
   return (
-    <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
-      <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{note}</p>
+    <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 px-3 py-2.5">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-brand mb-1">Nota de tu coach</p>
+      <p className="text-sm text-ink-muted whitespace-pre-wrap">{note}</p>
     </div>
   );
 }
@@ -170,42 +170,42 @@ export default async function PerfilPage() {
   const planCard = (
     <div className="card-dark p-6 !transform-none">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-        <h2 className="font-bold text-white">Mi plan</h2>
+        <h2 className="font-bold text-ink">Mi plan</h2>
         {profile?.renewal_date && (
-          <span className="text-xs text-[#A0A0A0]">Renovación: {new Date(profile.renewal_date).toLocaleDateString("es-ES")}</span>
+          <span className="text-xs text-ink-muted">Renovación: {new Date(profile.renewal_date).toLocaleDateString("es-ES")}</span>
         )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-3">🥗 Nutrición</p>
+        <div className="rounded-xl border border-line p-4">
+          <p className="font-bold text-ink mb-3">🥗 Nutrición</p>
           <PlanList items={nutPlans} label="Plan de nutrición" empty="Tu coach aún no ha subido tu plan de nutrición." fallo={planesFallo} />
         </div>
-        <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-3">🏋️ Entrenamiento</p>
+        <div className="rounded-xl border border-line p-4">
+          <p className="font-bold text-ink mb-3">🏋️ Entrenamiento</p>
           <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} />
         </div>
       </div>
 
       {/* Suplementación: qué toma, cuánto, cuándo y dónde comprarlo. */}
       {supplements.length > 0 && (
-        <div className="rounded-xl border border-[#252525] p-4 mt-4">
-          <p className="font-bold text-white mb-1">💊 Suplementación</p>
-          <p className="text-xs text-[#666666] mb-3">Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada.</p>
+        <div className="rounded-xl border border-line p-4 mt-4">
+          <p className="font-bold text-ink mb-1">💊 Suplementación</p>
+          <p className="text-xs text-ink-subtle mb-3">Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada.</p>
           <div className="flex flex-col gap-2">
             {supplements.map((s) => (
-              <div key={s.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+              <div key={s.id} className="rounded-lg border border-line px-4 py-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold text-white">{s.name}</span>
-                    {pauta(s) && <span className="block text-xs text-[#A0A0A0] mt-0.5">{pauta(s)}</span>}
+                    <span className="block text-sm font-bold text-ink">{s.name}</span>
+                    {pauta(s) && <span className="block text-xs text-ink-muted mt-0.5">{pauta(s)}</span>}
                   </span>
                   {s.url && (
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">
                       Comprarlo
                     </a>
                   )}
                 </div>
-                {s.note && <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">{s.note}</p>}
+                {s.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap border-t border-line pt-1.5">{s.note}</p>}
               </div>
             ))}
           </div>
@@ -246,30 +246,30 @@ export default async function PerfilPage() {
                 { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} aguaObjetivo={profile?.water_target_l ?? null} pasosObjetivo={profile?.steps_target ?? null} /> },
                 { id: "llamadas", icon: "📞", label: "Llamadas", node: (
                   <div className="card-dark p-6 !transform-none">
-                    <h2 className="font-bold text-white mb-1">Mis llamadas estratégicas</h2>
-                    <p className="text-xs text-[#666666] mb-4">
+                    <h2 className="font-bold text-ink mb-1">Mis llamadas estratégicas</h2>
+                    <p className="text-xs text-ink-subtle mb-4">
                       Aquí tienes la grabación de tus llamadas, para que puedas volver a verlas cuando quieras.
                     </p>
                     {calls.length === 0 ? (
-                      <p className="text-sm text-[#666666]">
+                      <p className="text-sm text-ink-subtle">
                         Todavía no hay ninguna. Cuando tu coach suba la grabación de tu llamada, aparecerá aquí.
                       </p>
                     ) : (
                       <div className="flex flex-col gap-4">
                         {calls.map((c, i) => (
-                          <div key={c.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
+                          <div key={c.id} className={i > 0 ? "border-t border-line pt-4" : ""}>
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               {i === 0 && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">La última</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white">La última</span>
                               )}
-                              <span className="text-xs text-[#666666]">{callDay(c)}</span>
+                              <span className="text-xs text-ink-subtle">{callDay(c)}</span>
                             </div>
-                            <p className="text-sm text-white font-bold mb-2">{c.title || DEFAULT_TITLE}</p>
+                            <p className="text-sm text-ink font-bold mb-2">{c.title || DEFAULT_TITLE}</p>
                             <CallLink url={c.url} title={c.title || DEFAULT_TITLE} />
                             {c.note && (
-                              <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
-                                <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{c.note}</p>
+                              <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 px-3 py-2.5">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-brand mb-1">Nota de tu coach</p>
+                                <p className="text-sm text-ink-muted whitespace-pre-wrap">{c.note}</p>
                               </div>
                             )}
                           </div>
@@ -280,21 +280,21 @@ export default async function PerfilPage() {
                 ) },
                 { id: "contrato", icon: "📄", label: "Contrato", node: (
                   <div className="card-dark p-6 !transform-none">
-                    <h2 className="font-bold text-white mb-3">Mis contratos firmados</h2>
+                    <h2 className="font-bold text-ink mb-3">Mis contratos firmados</h2>
                     {contratosFirmados.length === 0 ? (
-                      <p className="text-sm text-[#666666]">Cuando firmes un contrato, aparecerá aquí para que puedas descargarlo.</p>
+                      <p className="text-sm text-ink-subtle">Cuando firmes un contrato, aparecerá aquí para que puedas descargarlo.</p>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {contratosFirmados.map((c) => (
-                          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
+                          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-line px-4 py-2.5">
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-white truncate">{c.title}</p>
-                              <p className="text-xs text-[#666666]">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
+                              <p className="text-sm font-bold text-ink truncate">{c.title}</p>
+                              <p className="text-xs text-ink-subtle">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
                             </div>
                             {c.url ? (
-                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
+                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">Descargar</a>
                             ) : (
-                              <span className="text-[#666666] text-xs shrink-0">No disponible</span>
+                              <span className="text-ink-subtle text-xs shrink-0">No disponible</span>
                             )}
                           </div>
                         ))}

@@ -27,7 +27,7 @@ export default function AccesoPage({
             Entra con tu email y te enviamos un enlace de acceso. Sin contraseñas.
           </p>
           {searchParams.revoked && (
-            <p className="max-w-md mx-auto mb-5 text-sm text-[#A0A0A0]">
+            <p className="max-w-md mx-auto mb-5 text-sm text-ink-muted">
               Tu acceso ya no está activo. Si crees que es un error, contacta con tu coach.
             </p>
           )}

@@ -82,17 +82,17 @@ export default function TechniqueUpload() {
   }
 
   const label = status === "checking" ? "Comprobando…" : status === "uploading" ? "Subiendo vídeo…" : status === "saving" ? "Guardando…" : "Enviar para corregir";
-  const inputCls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const inputCls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-[#1CA0E3]/30 mb-8">
-      <h3 className="font-bold text-white mb-1">Sube tu vídeo de técnica</h3>
-      <p className="text-sm text-[#A0A0A0] mb-4">Graba un clip corto de tu ejercicio (máx. ~60 s) y tu coach te lo corrige.</p>
+    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-6 !transform-none border-brand/30 mb-8">
+      <h3 className="font-bold text-ink mb-1">Sube tu vídeo de técnica</h3>
+      <p className="text-sm text-ink-muted mb-4">Graba un clip corto de tu ejercicio (máx. ~60 s) y tu coach te lo corrige.</p>
       <div className="flex flex-col gap-3">
         <input type="text" value={exercise} onChange={(e) => setExercise(e.target.value)} placeholder="Ejercicio (ej. Sentadilla)" aria-label="Ejercicio" maxLength={120} className={inputCls} />
         <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="¿Algo que quieras que mire? (opcional)" aria-label="Nota" rows={2} maxLength={1000} className={inputCls} />
-        <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo" className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
-        {error && <p role="alert" className="text-sm text-[#FF6B6B]">{error}</p>}
+        <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo" className="text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-bold file:text-white" />
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <button type="submit" disabled={busy} className="btn-brand text-sm px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed self-start">{label}</button>
       </div>
     </form>
