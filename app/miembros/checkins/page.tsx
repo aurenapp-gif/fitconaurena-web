@@ -376,7 +376,7 @@ export default async function CheckinsPage({
                     <div className="flex items-center gap-3">
                       {admin && !filtrada && (
                         <Link href={`/miembros/checkins?clienta=${encodeURIComponent(it.member_email)}`}
-                          className="text-sm font-bold text-ink hover:text-brand">
+                          className="min-h-[40px] inline-flex items-center text-sm font-bold text-ink hover:text-brand">
                           {nombres.get(it.member_email) ?? it.member_email}
                         </Link>
                       )}

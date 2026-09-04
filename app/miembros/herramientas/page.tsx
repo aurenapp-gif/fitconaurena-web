@@ -29,7 +29,6 @@ export default async function HerramientasPage() {
                 para que sigas avanzando sin renunciar a tu vida.
               </p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {TOOLS.length === 0 ? (

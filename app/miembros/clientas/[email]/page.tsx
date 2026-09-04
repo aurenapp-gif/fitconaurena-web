@@ -368,7 +368,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                             simplemente no salía «Ver» y no había forma de saber
                             que ese plan estaba roto para la clienta. */}
                         {p.url
-                          ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm">Ver</a>
+                          ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Ver</a>
                           : <span className="text-danger text-xs" title="El archivo no está disponible. Vuelve a subirlo.">⚠️ sin archivo</span>}
                         <PlanTypeSwitch id={p.id} type={p.type} />
                         <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
@@ -432,7 +432,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                             <span className="block text-xs text-ink-subtle">{callDay(c)}</span>
                           </span>
                           <span className="flex items-center gap-3 shrink-0">
-                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm">Ver</a>
+                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Ver</a>
                             <CallDelete id={c.id} />
                           </span>
                         </div>
@@ -490,7 +490,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         </p>
                       </div>
                       {c.url ? (
-                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">Descargar</a>
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm font-semibold shrink-0">Descargar</a>
                       ) : (
                         <span className="text-ink-subtle text-xs shrink-0">No disponible</span>
                       )}

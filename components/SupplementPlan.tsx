@@ -196,9 +196,9 @@ export default function SupplementPlan({
                     {pauta(s) && <span className="block text-xs text-ink-muted">{pauta(s)}</span>}
                   </span>
                   <span className="flex items-center gap-3 shrink-0">
-                    {s.url && <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm">Enlace</a>}
+                    {s.url && <a href={s.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Enlace</a>}
                     <button type="button" onClick={() => borrar(s.id, s.name)}
-                      className="text-xs font-semibold text-danger hover:underline shrink-0">✕ Quitar</button>
+                      className="min-h-[40px] inline-flex items-center text-xs font-semibold text-danger hover:underline shrink-0">✕ Quitar</button>
                   </span>
                 </div>
                 {s.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap border-t border-line pt-1.5">💬 {s.note}</p>}

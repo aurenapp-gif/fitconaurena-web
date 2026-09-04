@@ -60,7 +60,6 @@ export default async function ContratosPage() {
               <h1 className="section-title">Contratos firmados</h1>
               <p className="text-sm text-ink-subtle mt-1">{sigs.length} firma{sigs.length === 1 ? "" : "s"} · {clientas.length} clienta{clientas.length === 1 ? "" : "s"}</p>
             </div>
-            <Link href="/miembros/admin" className="btn-outline text-sm px-5 py-2.5">← Panel</Link>
           </div>
 
           {clientas.length === 0 ? (
@@ -95,7 +94,7 @@ export default async function ContratosPage() {
                           </span>
                         </div>
                         {s.url ? (
-                          <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">Descargar</a>
+                          <a href={s.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm font-semibold shrink-0">Descargar</a>
                         ) : (
                           <span className="text-ink-subtle text-xs shrink-0">No disponible</span>
                         )}

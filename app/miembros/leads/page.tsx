@@ -44,7 +44,6 @@ export default async function LeadsPage() {
                 {leads.length} lead{leads.length !== 1 ? "s" : ""} · personas que rellenaron el cuestionario
               </p>
             </div>
-            <Link href="/miembros/admin" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {/* Resumen del pipeline */}

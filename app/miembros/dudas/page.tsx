@@ -114,7 +114,6 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
                   : "Aquí puedes preguntar sin dar la cara. Nadie sabrá que has sido tú, tu coach tampoco. Si a ti te pasa, seguramente le pase a más gente."}
               </p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {admin && needsSetup && (

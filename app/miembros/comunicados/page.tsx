@@ -157,7 +157,6 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
                     : "Avisos importantes de tu coach. Aquí los tienes todos siempre a mano."}
               </p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {/* Sub-apartados */}

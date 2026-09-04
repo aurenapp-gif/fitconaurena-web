@@ -69,7 +69,6 @@ export default async function TecnicaPage() {
               <h1 className="section-title">Revisión de técnica</h1>
               {admin && pending > 0 && <p className="text-sm text-brand mt-1">{pending} sin corregir</p>}
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {!admin && <TechniqueUpload />}

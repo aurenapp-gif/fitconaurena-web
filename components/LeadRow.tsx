@@ -60,8 +60,8 @@ export default function LeadRow({ lead }: { lead: Lead }) {
         <div className="min-w-0">
           <p className="text-sm font-bold text-ink truncate">{lead.name || "Sin nombre"}</p>
           <p className="text-xs text-ink-muted truncate">
-            <a href={`mailto:${lead.email}`} className="hover:text-brand">{lead.email}</a>
-            {lead.phone ? <> · <a href={`tel:${lead.phone}`} className="hover:text-brand">{lead.phone}</a></> : null}
+            <a href={`mailto:${lead.email}`} className="min-h-[40px] inline-flex items-center hover:text-brand">{lead.email}</a>
+            {lead.phone ? <> · <a href={`tel:${lead.phone}`} className="min-h-[40px] inline-flex items-center hover:text-brand">{lead.phone}</a></> : null}
           </p>
           <p className="text-[10px] text-ink-subtle mt-0.5">
             {fmtDate(lead.created_at)}
@@ -89,7 +89,7 @@ export default function LeadRow({ lead }: { lead: Lead }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-xs text-brand mt-3 font-semibold"
+        className="min-h-[40px] inline-flex items-center text-xs text-brand mt-1 font-semibold"
       >
         {open ? "Ocultar detalles ▲" : "Ver detalles ▼"}
       </button>

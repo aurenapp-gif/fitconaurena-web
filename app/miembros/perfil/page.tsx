@@ -348,7 +348,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
                               <p className="text-xs text-ink-subtle">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
                             </div>
                             {c.url ? (
-                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">Descargar</a>
+                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm font-semibold shrink-0">Descargar</a>
                             ) : (
                               <span className="text-ink-subtle text-xs shrink-0">No disponible</span>
                             )}

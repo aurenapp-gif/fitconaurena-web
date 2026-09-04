@@ -34,7 +34,7 @@ export default function CallDelete({ id }: { id: string }) {
 
   return (
     <button type="button" onClick={handleDelete} disabled={busy}
-      className="text-xs font-semibold text-danger hover:underline disabled:opacity-50 shrink-0">
+      className="min-h-[40px] inline-flex items-center text-xs font-semibold text-danger hover:underline disabled:opacity-50 shrink-0">
       {busy ? "Borrando…" : "✕ Borrar"}
     </button>
   );

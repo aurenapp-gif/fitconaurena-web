@@ -149,7 +149,6 @@ export default async function ClientasPage() {
               <h1 className="section-title">Clientas</h1>
               <p className="text-sm text-ink-subtle mt-1">{members.length} activa{members.length !== 1 ? "s" : ""}</p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           <AddClient contracts={contractTpls} hasAnexo={hasAnexo} />

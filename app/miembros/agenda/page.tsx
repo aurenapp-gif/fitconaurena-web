@@ -59,7 +59,6 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
               <span className="section-tag">Solo administración</span>
               <h1 className="section-title">Agenda</h1>
             </div>
-            <Link href="/miembros/admin" className="btn-outline text-sm px-5 py-2.5">← Panel</Link>
           </div>
 
           <div className="flex items-center justify-between mb-4">

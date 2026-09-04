@@ -42,7 +42,7 @@ export default function ContractTemplatesList({ templates }: { templates: Contra
             <p className="text-sm font-bold text-ink truncate mt-1">{t.title}</p>
           </div>
           <button type="button" onClick={() => remove(t.id, t.title)} disabled={pending === t.id}
-            className="text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
+            className="min-h-[40px] inline-flex items-center text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
             {pending === t.id ? "Eliminando…" : "Eliminar"}
           </button>
         </div>
