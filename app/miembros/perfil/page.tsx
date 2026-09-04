@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import ProfileForm from "@/components/ProfileForm";
 import PushToggle from "@/components/PushToggle";
 import PwaInstall from "@/components/PwaInstall";
@@ -226,8 +226,8 @@ export default async function PerfilPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
+      <AppShell admin={admin} />
+      <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-16">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>

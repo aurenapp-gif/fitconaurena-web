@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import TechniqueUpload from "@/components/TechniqueUpload";
 import TechniqueReply from "@/components/TechniqueReply";
 import TechniqueDelete from "@/components/TechniqueDelete";
@@ -60,8 +60,8 @@ export default async function TecnicaPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 overflow-hidden min-h-screen">
+      <AppShell admin={admin} />
+      <main className="app-main relative overflow-hidden min-h-screen">
         <div className="container-wide relative z-10 py-16">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import AddClient from "@/components/AddClient";
 import ClientasLista, { type FilaClienta } from "@/components/ClientasLista";
 import RenovacionesPendientes, { type FilaRenovacion } from "@/components/RenovacionesPendientes";
@@ -140,8 +140,8 @@ export default async function ClientasPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
+      <AppShell admin />
+      <main className="app-main relative min-h-screen">
         <div className="container-wide relative z-10 py-16">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>

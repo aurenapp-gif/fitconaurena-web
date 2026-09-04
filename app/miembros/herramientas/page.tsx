@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import ToolLink from "@/components/ToolLink";
 import { requireMember } from "@/lib/guard";
+import { isAdmin } from "@/lib/members";
 import { TOOLS } from "@/lib/tools";
 
 export const metadata: Metadata = { title: "Herramientas", robots: { index: false, follow: false } };
@@ -11,12 +12,13 @@ export const dynamic = "force-dynamic";
 export default async function HerramientasPage() {
   // Mismo gate que el resto del área privada: sesión válida, no revocada y sin
   // contratos pendientes de firma.
-  await requireMember();
+  const email = await requireMember();
+  const admin = isAdmin(email);
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
+      <AppShell admin={admin} />
+      <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-16">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>

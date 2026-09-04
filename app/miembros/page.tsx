@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import CallCountdown from "@/components/CallCountdown";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
@@ -61,8 +61,8 @@ export default async function MiembrosPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 overflow-hidden min-h-screen">
+      <AppShell admin={admin} />
+      <main className="app-main relative overflow-hidden min-h-screen">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none"
           style={{ background: "radial-gradient(circle, #1CA0E3 0%, transparent 70%)" }} />
         <div className="container-wide relative z-10 py-16">

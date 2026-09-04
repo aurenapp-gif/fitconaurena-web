@@ -58,17 +58,21 @@ const PESTANAS: Item[] = [
 ];
 
 // Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
+// Los contratos de la clienta viven en su perfil; la página /contratos es el
+// archivo de la coach, por eso no está aquí.
 const RESTO: Item[] = [
   { href: "/miembros/dudas", label: "Dudas", icon: "dudas" },
   { href: "/miembros/tecnica", label: "Técnica", icon: "tecnica" },
   { href: "/miembros/herramientas", label: "Herramientas", icon: "herramientas" },
-  { href: "/miembros/agenda", label: "Agenda", icon: "agenda" },
-  { href: "/miembros/contratos", label: "Contratos", icon: "contratos" },
 ];
 
+// Solo la coach. Agenda y Contratos redirigen a cualquier otra persona, así
+// que enseñárselos a una clienta sería un enlace que no lleva a ninguna parte.
 const COACH: Item[] = [
   { href: "/miembros/clientas", label: "Clientas", icon: "clientas", coach: true },
   { href: "/miembros/admin", label: "Panel", icon: "panel", coach: true },
+  { href: "/miembros/agenda", label: "Agenda", icon: "agenda", coach: true },
+  { href: "/miembros/contratos", label: "Contratos", icon: "contratos", coach: true },
   { href: "/miembros/leads", label: "Solicitudes", icon: "leads", coach: true },
 ];
 

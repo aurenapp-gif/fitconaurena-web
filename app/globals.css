@@ -149,6 +149,29 @@ body {
   }
 }
 
+/*
+ * Hueco para la navegación (components/AppShell.tsx).
+ *
+ * En móvil hay una cabecera fija arriba (56 px) y la barra de pestañas fija
+ * abajo; el contenido deja sitio a las dos, y a la zona segura del iPhone. En
+ * escritorio la navegación es una barra lateral de 240 px: el contenido se
+ * desplaza a la derecha y no necesita hueco abajo.
+ *
+ * Fuera de @layer para ganar a las utilidades de padding de cada página.
+ */
+main.app-main {
+  padding-top: 3.5rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  min-height: 100vh;
+}
+@media (min-width: 1024px) {
+  main.app-main {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 15rem;
+  }
+}
+
 /* Feedback táctil al pulsar. Fuera de @layer para ganar a los :active de
    los botones. */
 .btn-brand:active,
