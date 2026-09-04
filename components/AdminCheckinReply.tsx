@@ -36,12 +36,12 @@ export default function AdminCheckinReply({ id }: { id: string }) {
         onChange={(e) => setReply(e.target.value)}
         rows={2}
         placeholder="Responder a este check-in…"
-        className="rounded-lg border border-[#252525] bg-[#0A0A0A] px-3 py-2 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] resize-none"
+        className="rounded-lg border border-line bg-page px-3 py-2 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand resize-none"
       />
       <button onClick={send} disabled={status === "loading"} className="btn-brand text-xs px-4 py-2 self-start disabled:opacity-60">
         {status === "loading" ? "Enviando…" : "Responder"}
       </button>
-      {status === "error" && <span className="text-xs text-[#FF6B6B]">No se pudo enviar.</span>}
+      {status === "error" && <span className="text-xs text-danger">No se pudo enviar.</span>}
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default function ContractSign({ items, defaultName, defaultValues }: Prop
   if (items.length === 0) {
     return (
       <div className="card-dark p-6 !transform-none">
-        <p className="text-sm text-[#A0A0A0]">No tienes contratos pendientes de firma. Puedes volver al área privada.</p>
+        <p className="text-sm text-ink-muted">No tienes contratos pendientes de firma. Puedes volver al área privada.</p>
       </div>
     );
   }
@@ -46,8 +46,8 @@ export default function ContractSign({ items, defaultName, defaultValues }: Prop
               onClick={() => setActive(i)}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 i === active
-                  ? "bg-[#1CA0E3] border-[#1CA0E3] text-white"
-                  : "border-[#252525] text-[#A0A0A0] hover:border-[#1CA0E3]/40"
+                  ? "bg-brand border-brand text-white"
+                  : "border-line text-ink-muted hover:border-brand/40"
               }`}
             >
               {it.kind === "anexo_salud" ? "Anexo de salud" : it.templateTitle}
@@ -112,7 +112,7 @@ function ContractCard({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.strokeStyle = "#0A0A0A";
+    ctx.strokeStyle = "#0F172A";
   }
 
   /**
@@ -279,7 +279,7 @@ function ContractCard({
     }
   }
 
-  const inputCls = "w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const inputCls = "w-full rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
   const title = item.kind === "anexo_salud" ? "Anexo de salud" : item.templateTitle;
   const subtitle = item.kind === "anexo_salud"
     ? "Rellena tu declaración de salud y consentimiento antes de empezar."
@@ -288,8 +288,8 @@ function ContractCard({
   return (
     <div className="card-dark p-6 !transform-none">
       <div className="mb-4">
-        <h2 className="font-bold text-white text-lg">{title}</h2>
-        <p className="text-sm text-[#A0A0A0]">{subtitle}</p>
+        <h2 className="font-bold text-ink text-lg">{title}</h2>
+        <p className="text-sm text-ink-muted">{subtitle}</p>
       </div>
 
       {item.templateUrl && (
@@ -317,28 +317,28 @@ function ContractCard({
         })}
       </div>
 
-      <div className="border-t border-[#252525] pt-6">
-        <label className="block text-xs text-[#A0A0A0] mb-1.5">Tu nombre completo (para firmar)</label>
+      <div className="border-t border-line pt-6">
+        <label className="block text-xs text-ink-muted mb-1.5">Tu nombre completo (para firmar)</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre y apellidos" className={`${inputCls} mb-4`} />
 
-        <label className="block text-xs text-[#A0A0A0] mb-1.5">Tu firma</label>
-        <div className="relative rounded-xl overflow-hidden border border-[#252525] mb-2">
+        <label className="block text-xs text-ink-muted mb-1.5">Tu firma</label>
+        <div className="relative rounded-xl overflow-hidden border border-line mb-2">
           <canvas
             ref={canvasRef}
             onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
-            className="w-full h-40 bg-white touch-none block"
+            className="w-full h-40 bg-surface touch-none block"
           />
         </div>
-        <button type="button" onClick={clearSig} className="text-xs text-[#A0A0A0] hover:text-white transition-colors mb-4">
+        <button type="button" onClick={clearSig} className="text-xs text-ink-muted hover:text-ink transition-colors mb-4">
           Borrar firma
         </button>
 
         <label className="flex items-start gap-3 mb-4 cursor-pointer">
-          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#1CA0E3]" />
-          <span className="text-sm text-[#A0A0A0]">He leído y acepto {item.kind === "anexo_salud" ? "el anexo de salud" : "el contrato"}, y firmo de forma electrónica.</span>
+          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-brand" />
+          <span className="text-sm text-ink-muted">He leído y acepto {item.kind === "anexo_salud" ? "el anexo de salud" : "el contrato"}, y firmo de forma electrónica.</span>
         </label>
 
-        {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B] mb-3">{msg}</p>}
+        {status === "error" && <p role="alert" className="text-sm text-danger mb-3">{msg}</p>}
 
         <button type="button" onClick={submit} disabled={status === "loading"} className="btn-brand text-base px-8 py-4 w-full disabled:opacity-60 disabled:cursor-not-allowed">
           {status === "loading" ? "Firmando…" : "Firmar y enviar"}
@@ -363,11 +363,11 @@ function FieldRow({
   // consentimiento tiene que ser un clic de la clienta, no un valor de fábrica.
   if (field.type === "radio") {
     return (
-      <fieldset className="rounded-xl border border-[#1CA0E3]/30 bg-[#1CA0E3]/[0.04] p-5">
-        <legend className="px-2 text-sm font-bold text-white">
-          {field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}
+      <fieldset className="rounded-xl border border-brand/30 bg-brand/[0.04] p-5">
+        <legend className="px-2 text-sm font-bold text-ink">
+          {field.label}{marcaObligatorio && <span className="text-brand"> *</span>}
         </legend>
-        {field.hint && <p className="text-xs text-[#A0A0A0] mb-4">{field.hint}</p>}
+        {field.hint && <p className="text-xs text-ink-muted mb-4">{field.hint}</p>}
         <div className="flex flex-col gap-3">
           {(field.options ?? []).map((o) => {
             const on = value === o.value;
@@ -375,7 +375,7 @@ function FieldRow({
               <label
                 key={o.value}
                 className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-                  on ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#0A0A0A] hover:border-[#1CA0E3]/40"
+                  on ? "border-brand bg-brand/10" : "border-line bg-page hover:border-brand/40"
                 }`}
               >
                 <input
@@ -384,13 +384,13 @@ function FieldRow({
                   value={o.value}
                   checked={on}
                   onChange={() => onChange(o.value)}
-                  className="mt-1 w-4 h-4 accent-[#1CA0E3] shrink-0"
+                  className="mt-1 w-4 h-4 accent-brand shrink-0"
                 />
                 <span className="min-w-0">
-                  <span className={`block font-bold ${o.destacar ? "text-base text-white" : "text-sm text-[#E5E5E5]"}`}>
+                  <span className={`block font-bold ${o.destacar ? "text-base text-ink" : "text-sm text-ink"}`}>
                     {o.label}
                   </span>
-                  {o.detalle && <span className="block text-xs text-[#A0A0A0] mt-1.5 leading-relaxed">{o.detalle}</span>}
+                  {o.detalle && <span className="block text-xs text-ink-muted mt-1.5 leading-relaxed">{o.detalle}</span>}
                 </span>
               </label>
             );
@@ -407,16 +407,16 @@ function FieldRow({
           type="checkbox"
           checked={value === true}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-0.5 w-4 h-4 accent-[#1CA0E3] shrink-0"
+          className="mt-0.5 w-4 h-4 accent-brand shrink-0"
         />
-        <span className="text-sm text-[#A0A0A0]">{field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}</span>
+        <span className="text-sm text-ink-muted">{field.label}{marcaObligatorio && <span className="text-brand"> *</span>}</span>
       </label>
     );
   }
   if (field.type === "yesno") {
     return (
       <div>
-        <p className="text-sm text-[#A0A0A0] mb-2">{field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}</p>
+        <p className="text-sm text-ink-muted mb-2">{field.label}{marcaObligatorio && <span className="text-brand"> *</span>}</p>
         <div className="flex gap-2">
           {(["si", "no"] as const).map((opt) => (
             <button
@@ -425,8 +425,8 @@ function FieldRow({
               onClick={() => onChange(opt)}
               className={`px-4 py-2 text-xs font-bold rounded-lg border transition-colors ${
                 value === opt
-                  ? "bg-[#1CA0E3] border-[#1CA0E3] text-white"
-                  : "border-[#252525] text-[#A0A0A0] hover:border-[#1CA0E3]/40"
+                  ? "bg-brand border-brand text-white"
+                  : "border-line text-ink-muted hover:border-brand/40"
               }`}
             >
               {opt === "si" ? "SÍ" : "NO"}
@@ -439,7 +439,7 @@ function FieldRow({
   if (field.type === "textarea") {
     return (
       <div>
-        <label className="block text-xs text-[#A0A0A0] mb-1.5">{field.label}</label>
+        <label className="block text-xs text-ink-muted mb-1.5">{field.label}</label>
         <textarea
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
@@ -452,8 +452,8 @@ function FieldRow({
   const type = field.type === "date" ? "date" : field.type === "tel" ? "tel" : "text";
   return (
     <div>
-      <label className="block text-xs text-[#A0A0A0] mb-1.5">
-        {field.label}{marcaObligatorio && <span className="text-[#1CA0E3]"> *</span>}
+      <label className="block text-xs text-ink-muted mb-1.5">
+        {field.label}{marcaObligatorio && <span className="text-brand"> *</span>}
       </label>
       <input
         type={type}

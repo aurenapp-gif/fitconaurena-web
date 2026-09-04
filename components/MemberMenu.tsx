@@ -22,7 +22,7 @@ export default function MemberMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#A0A0A0] hover:text-white transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink transition-colors"
       >
         Miembros
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -32,11 +32,11 @@ export default function MemberMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 rounded-xl border border-[#252525] bg-[#0F0F0F] p-1.5 shadow-xl">
+        <div className="absolute right-0 mt-2 w-56 rounded-xl border border-line bg-page p-1.5 shadow-xl">
           <Link
             href="/miembros/acceso"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2.5 text-sm text-white hover:bg-[#1CA0E3]/10 hover:text-[#1CA0E3] transition-colors"
+            className="block rounded-lg px-3 py-2.5 text-sm text-white hover:bg-brand/10 hover:text-brand transition-colors"
           >
             Acceso para miembros
           </Link>

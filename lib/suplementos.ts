@@ -67,9 +67,19 @@ export function parsePasos(v: unknown): number | null {
   return r >= MIN_PASOS && r <= MAX_PASOS ? r : null;
 }
 
-/** «8.000 pasos» — con el punto de los miles, como se escribe en español. */
+/**
+ * «8.000» — con el punto de los miles, como se escribe en español.
+ *
+ * No vale `toLocaleString("es-ES")`: en español las cifras de cuatro dígitos
+ * van sin separador («8000»), y una pauta de pasos se lee mucho peor así.
+ */
+export function miles(n: number): string {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/** «8.000 pasos». */
 export function pasos(n: number): string {
-  return `${n.toLocaleString("es-ES")} pasos`;
+  return `${miles(n)} pasos`;
 }
 
 /** «2,5 L» — con coma, que es como se escribe en español. */

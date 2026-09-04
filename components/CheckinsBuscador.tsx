@@ -28,8 +28,8 @@ export default function CheckinsBuscador({ fichas }: { fichas: FichaBusqueda[] }
 
   return (
     <div className="card-dark p-5 !transform-none mb-8">
-      <h2 className="font-bold text-white mb-1">Ver las revisiones de una clienta</h2>
-      <p className="text-xs text-[#666666] mb-4">
+      <h2 className="font-bold text-ink mb-1">Ver las revisiones de una clienta</h2>
+      <p className="text-xs text-ink-subtle mb-4">
         Elige a una y verás solo las suyas, en orden, con lo que sube y lo que baja en cada sesión.
       </p>
 
@@ -40,10 +40,10 @@ export default function CheckinsBuscador({ fichas }: { fichas: FichaBusqueda[] }
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar clienta por nombre o correo…"
           aria-label="Buscar clienta"
-          className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] pl-11 pr-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
+          className="w-full rounded-xl border border-line bg-page pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
         />
         <svg
-          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="2"
+          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"
           aria-hidden="true"
           className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
         >
@@ -53,7 +53,7 @@ export default function CheckinsBuscador({ fichas }: { fichas: FichaBusqueda[] }
       </div>
 
       {busca.trim() && (
-        <p className="text-xs text-[#666666] mb-3">
+        <p className="text-xs text-ink-subtle mb-3">
           {visibles.length === 0 ? "Ninguna clienta coincide." : `${visibles.length} de ${fichas.length}`}
         </p>
       )}
@@ -63,15 +63,15 @@ export default function CheckinsBuscador({ fichas }: { fichas: FichaBusqueda[] }
           <Link
             key={f.email}
             href={`/miembros/checkins?clienta=${encodeURIComponent(f.email)}`}
-            className="rounded-lg border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 hover:border-[#1CA0E3] transition-colors"
+            className="rounded-lg border border-line bg-page px-4 py-2.5 hover:border-brand transition-colors"
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-white truncate">{f.nombre}</span>
-              <span className="text-xs text-[#666666] shrink-0">
+              <span className="text-sm text-ink truncate">{f.nombre}</span>
+              <span className="text-xs text-ink-subtle shrink-0">
                 {f.revisiones} {f.revisiones === 1 ? "revisión" : "revisiones"}
               </span>
             </div>
-            {f.ultima && <p className="text-[10px] text-[#666666] mt-0.5">Última: {fmt(f.ultima)}</p>}
+            {f.ultima && <p className="text-[10px] text-ink-subtle mt-0.5">Última: {fmt(f.ultima)}</p>}
           </Link>
         ))}
       </div>

@@ -66,12 +66,12 @@ export default function AnnouncementPoll({
   const verResultado = miVoto !== null || admin || cerrada;
 
   return (
-    <div className="mt-3 rounded-xl border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-4 py-3">
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-[#1CA0E3]">
+        <p className="text-xs font-bold uppercase tracking-wide text-brand">
           🗳️ {cerrada ? "Votación cerrada" : "Vota"}
         </p>
-        <span className="text-[11px] text-[#666666]">
+        <span className="text-[11px] text-ink-subtle">
           {total} {total === 1 ? "voto" : "votos"}
         </span>
       </div>
@@ -87,50 +87,50 @@ export default function AnnouncementPoll({
               disabled={cerrada || enviando !== null}
               aria-pressed={mia}
               className={`relative overflow-hidden text-left rounded-lg border px-3 py-2 transition-colors disabled:cursor-default ${
-                mia ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#0A0A0A] hover:border-[#1CA0E3]/60"
+                mia ? "border-brand bg-brand/10" : "border-line bg-page hover:border-brand/60"
               }`}
             >
               {/* Barra de fondo con el porcentaje. Detrás del texto, no encima. */}
               {verResultado && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-0 left-0 bg-[#1CA0E3]/15"
+                  className="absolute inset-y-0 left-0 bg-brand/15"
                   style={{ width: `${f.pct}%` }}
                 />
               )}
               <span className="relative flex items-center justify-between gap-3">
-                <span className="text-sm text-white">
+                <span className="text-sm text-ink">
                   {mia && "✓ "}{f.opcion}
                 </span>
                 {verResultado && (
-                  <span className="text-xs font-bold text-[#1CA0E3] shrink-0 tabular-nums">
+                  <span className="text-xs font-bold text-brand shrink-0 tabular-nums">
                     {f.votos} · {f.pct}%
                   </span>
                 )}
               </span>
               {admin && f.quienes.length > 0 && (
-                <span className="relative block text-[10px] text-[#666666] mt-1">{f.quienes.join(" · ")}</span>
+                <span className="relative block text-[10px] text-ink-subtle mt-1">{f.quienes.join(" · ")}</span>
               )}
             </button>
           );
         })}
       </div>
 
-      {error && <p role="alert" className="text-xs text-[#FF6B6B] mt-2">{error}</p>}
+      {error && <p role="alert" className="text-xs text-danger mt-2">{error}</p>}
 
       {!admin && !cerrada && (
-        <p className="text-[10px] text-[#666666] mt-2">
+        <p className="text-[10px] text-ink-subtle mt-2">
           {miVoto === null ? "Elige una opción." : "Puedes cambiar tu voto pulsando otra."} Tu coach ve quién ha votado cada cosa.
         </p>
       )}
 
       {admin && (
-        <div className="flex items-center gap-3 flex-wrap mt-3 pt-3 border-t border-[#252525]">
+        <div className="flex items-center gap-3 flex-wrap mt-3 pt-3 border-t border-line">
           <button type="button" onClick={() => cerrar(!cerrada)} className="btn-outline text-xs px-4 py-2">
             {cerrada ? "Reabrir votación" : "Cerrar votación"}
           </button>
           {sinVotar.length > 0 && (
-            <span className="text-[10px] text-[#666666]">
+            <span className="text-[10px] text-ink-subtle">
               Sin votar ({sinVotar.length}): {sinVotar.join(" · ")}
             </span>
           )}

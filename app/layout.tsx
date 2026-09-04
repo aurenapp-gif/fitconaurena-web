@@ -4,7 +4,7 @@ import "./globals.css";
 import NavProgress from "@/components/NavProgress";
 
 /**
- * Inter servida desde el propio repositorio, no descargada de Google al
+ * Manrope servida desde el propio repositorio, no descargada de Google al
  * compilar.
  *
  * `next/font/google` se baja la tipografía durante el build. Cuando la máquina
@@ -12,15 +12,15 @@ import NavProgress from "@/components/NavProgress";
  * ETIMEDOUT— el build entero falla por algo que no tiene nada que ver con el
  * código. Con el archivo dentro del repositorio no hay red de por medio.
  *
- * Es la variable, que cubre de 100 a 900 en un solo archivo de 48 KB, menos que
- * los seis estáticos que se usaban antes. Inter es SIL Open Font License; la
- * licencia va al lado del archivo.
+ * Es la variable (de 200 a 800 en un solo archivo de 24 KB, subconjunto
+ * latino, que cubre el castellano entero). Manrope es SIL Open Font License;
+ * la licencia va al lado del archivo.
  */
-const inter = localFont({
-  src: "./fonts/Inter-Variable.woff2",
-  variable: "--font-inter",
+const manrope = localFont({
+  src: "./fonts/Manrope-Variable.woff2",
+  variable: "--font-sans",
   display: "swap",
-  weight: "100 900",
+  weight: "200 800",
 });
 
 export const metadata: Metadata = {
@@ -39,12 +39,12 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Aurena" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Aurena" },
   icons: { icon: "/icon.svg", apple: "/icon.png" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0A0A",
+  themeColor: "#F6F7F9",
 };
 
 export default function RootLayout({
@@ -53,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={inter.variable}>
+    <html lang="es" className={manrope.variable}>
       <body className="antialiased">
         <NavProgress />
         {children}

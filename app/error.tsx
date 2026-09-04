@@ -3,8 +3,8 @@
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
-      <p className="font-black text-lg mb-6 text-white">
-        Programa <span className="text-[#1CA0E3]">FITCON</span>
+      <p className="font-black text-lg mb-6 text-ink">
+        Programa <span className="text-brand">FITCON</span>
       </p>
       <h1 className="section-title mb-3">Algo ha ido mal</h1>
       <p className="section-sub max-w-md mx-auto mb-8">

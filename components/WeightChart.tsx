@@ -7,7 +7,7 @@ export default function WeightChart({
 }) {
   if (points.length < 2) {
     return (
-      <p className="text-sm text-[#666666]">
+      <p className="text-sm text-ink-subtle">
         Registra al menos 2 check-ins con peso para ver tu gráfica de progreso.
       </p>
     );
@@ -36,8 +36,8 @@ export default function WeightChart({
         {/* ejes guía */}
         {[minY, (minY + maxY) / 2, maxY].map((v, i) => (
           <g key={i}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#252525" strokeWidth="1" />
-            <text x={4} y={y(v) + 4} fill="#666666" fontSize="11">{v.toFixed(1)}</text>
+            <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#E6E8EC" strokeWidth="1" />
+            <text x={4} y={y(v) + 4} fill="#94A3B8" fontSize="11">{v.toFixed(1)}</text>
           </g>
         ))}
         <path d={area} fill="#1CA0E3" fillOpacity="0.08" />
@@ -46,7 +46,7 @@ export default function WeightChart({
           <circle key={i} cx={x(i)} cy={y(p.weight)} r="3.5" fill="#1CA0E3" />
         ))}
       </svg>
-      <div className="flex justify-between text-[10px] text-[#666666] px-1">
+      <div className="flex justify-between text-[10px] text-ink-subtle px-1">
         <span>{points[0].date}</span>
         <span>{points[points.length - 1].date}</span>
       </div>

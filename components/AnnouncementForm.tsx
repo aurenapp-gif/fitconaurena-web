@@ -53,7 +53,7 @@ export default function AnnouncementForm() {
     } catch { setStatus("error"); setMsg("Error de conexión."); }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
@@ -62,13 +62,13 @@ export default function AnnouncementForm() {
       <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={4000}
         placeholder="Escribe aquí tu comunicado…" aria-label="Comunicado" className={cls} />
       {/* Votación */}
-      <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
+      <div className="rounded-xl border border-line bg-page px-4 py-3">
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input type="checkbox" checked={votar} onChange={(e) => setVotar(e.target.checked)}
-            className="w-4 h-4 accent-[#1CA0E3]" />
-          <span className="text-sm text-white">🗳️ Que puedan votar</span>
+            className="w-4 h-4 accent-brand" />
+          <span className="text-sm text-ink">🗳️ Que puedan votar</span>
         </label>
-        <p className="text-xs text-[#666666] mt-1 ml-7">
+        <p className="text-xs text-ink-subtle mt-1 ml-7">
           Para preguntarles algo: «¿cambiamos la llamada grupal al jueves?». Cada clienta vota una vez y puede cambiar su voto.
         </p>
 
@@ -76,7 +76,7 @@ export default function AnnouncementForm() {
           <div className="mt-3 ml-7 flex flex-col gap-2">
             {opciones.map((o, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs text-[#666666] w-4 shrink-0">{i + 1}.</span>
+                <span className="text-xs text-ink-subtle w-4 shrink-0">{i + 1}.</span>
                 <input
                   value={o}
                   onChange={(e) => setOpciones(opciones.map((x, j) => (j === i ? e.target.value : x)))}
@@ -88,7 +88,7 @@ export default function AnnouncementForm() {
                 {opciones.length > 2 && (
                   <button type="button" onClick={() => setOpciones(opciones.filter((_, j) => j !== i))}
                     aria-label={`Quitar la opción ${i + 1}`}
-                    className="text-[#FF6B6B] text-sm px-2 shrink-0">✕</button>
+                    className="text-danger text-sm px-2 shrink-0">✕</button>
                 )}
               </div>
             ))}
@@ -100,7 +100,7 @@ export default function AnnouncementForm() {
         )}
       </div>
 
-      {msg && <p className={`text-sm ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
+      {msg && <p className={`text-sm ${status === "error" ? "text-danger" : "text-brand"}`}>{msg}</p>}
       <button type="submit" disabled={status === "sending"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "sending" ? "Publicando y avisando…" : "Publicar y avisar"}
       </button>

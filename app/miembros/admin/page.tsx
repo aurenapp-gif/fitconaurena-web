@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import ContractTemplateUpload from "@/components/ContractTemplateUpload";
 import ContractTemplatesList from "@/components/ContractTemplatesList";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
@@ -71,9 +71,9 @@ export default async function AdminPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
-        <div className="container-wide relative z-10 py-16">
+      <AppShell admin />
+      <main className="app-main relative min-h-screen">
+        <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>
               <span className="section-tag">Solo administración</span>
@@ -83,21 +83,20 @@ export default async function AdminPage() {
               <Link href="/miembros/clientas" className="btn-brand text-sm px-5 py-2.5">Clientas</Link>
               <Link href="/miembros/leads" className="btn-brand text-sm px-5 py-2.5">Leads / CRM</Link>
               <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
-              <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
             </div>
           </div>
 
           {/* Panel "Hoy": resumen accionable de la coach */}
           <section className="mb-8">
-            <h2 className="font-bold text-white mb-3">Hoy</h2>
+            <h2 className="font-bold text-ink mb-3">Hoy</h2>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className={`text-center px-3 py-4 rounded-xl border ${s.urgent ? "border-[#1CA0E3]/40 bg-[#1CA0E3]/5" : "border-[#252525] bg-[#141414]"}`}
+                  className={`text-center px-3 py-4 rounded-xl border ${s.urgent ? "border-brand/40 bg-brand/5" : "border-line bg-page"}`}
                 >
-                  <div className={`text-3xl font-extrabold leading-none ${s.urgent ? "text-[#1CA0E3]" : "text-white"}`}>{s.value}</div>
-                  <div className="text-xs text-[#A0A0A0] mt-1.5">{s.label}</div>
+                  <div className={`text-3xl font-extrabold leading-none ${s.urgent ? "text-brand" : "text-ink"}`}>{s.value}</div>
+                  <div className="text-xs text-ink-muted mt-1.5">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -106,12 +105,12 @@ export default async function AdminPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {renewals.length > 0 && (
                   <div className="card-dark p-4 !transform-none">
-                    <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Renovaciones próximas</p>
+                    <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Renovaciones próximas</p>
                     <div className="flex flex-col gap-1.5">
                       {renewals.map(({ m, r }) => (
                         <Link key={m.email} href={`/miembros/clientas/${encodeURIComponent(m.email)}`} className="flex items-center justify-between gap-2 hover:opacity-80">
-                          <span className="text-sm text-white truncate">{nameOf(m.email)}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.urgent ? "bg-[#FF6B6B] text-white" : "border border-[#252525] text-[#A0A0A0]"}`}>{r.text}</span>
+                          <span className="text-sm text-ink truncate">{nameOf(m.email)}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.urgent ? "bg-danger text-white" : "border border-line text-ink-muted"}`}>{r.text}</span>
                         </Link>
                       ))}
                     </div>
@@ -119,12 +118,12 @@ export default async function AdminPage() {
                 )}
                 {noCheckin.length > 0 && (
                   <div className="card-dark p-4 !transform-none">
-                    <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Sin check-in (15 días)</p>
+                    <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Sin check-in (15 días)</p>
                     <div className="flex flex-col gap-1.5">
                       {noCheckin.map((m) => (
                         <Link key={m.email} href={`/miembros/clientas/${encodeURIComponent(m.email)}`} className="flex items-center justify-between gap-2 hover:opacity-80">
-                          <span className="text-sm text-white truncate">{nameOf(m.email)}</span>
-                          <span className="text-[10px] text-[#666666] shrink-0">ver ficha →</span>
+                          <span className="text-sm text-ink truncate">{nameOf(m.email)}</span>
+                          <span className="text-[10px] text-ink-subtle shrink-0">ver ficha →</span>
                         </Link>
                       ))}
                     </div>
@@ -138,24 +137,24 @@ export default async function AdminPage() {
           <section className="mb-8">
             <div className="card-dark p-6 !transform-none">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-                <h2 className="font-bold text-white">Contratos y anexo de salud</h2>
+                <h2 className="font-bold text-ink">Contratos y anexo de salud</h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-[#A0A0A0]">
+                  <span className="text-xs text-ink-muted">
                     {contratosCount} contrato{contratosCount === 1 ? "" : "s"} · {anexoActive ? "anexo listo" : "sin anexo"} · {totalSigned} firmado{totalSigned === 1 ? "" : "s"}
                   </span>
-                  <Link href="/miembros/contratos" className="text-[#1CA0E3] text-sm font-semibold">Ver firmados →</Link>
+                  <Link href="/miembros/contratos" className="text-brand text-sm font-semibold">Ver firmados →</Link>
                 </div>
               </div>
-              <p className="text-sm text-[#A0A0A0] mb-4">
+              <p className="text-sm text-ink-muted mb-4">
                 Sube varias plantillas de contrato (por ejemplo, por precio: 1197, 1497, 1897) y una sola plantilla de anexo de salud. Al dar de alta a una clienta desde su ficha, eliges qué contrato le corresponde; el anexo se le asigna automáticamente.
               </p>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Añadir plantilla</p>
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Añadir plantilla</p>
                   <ContractTemplateUpload />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">Plantillas actuales</p>
+                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Plantillas actuales</p>
                   <ContractTemplatesList templates={templates} />
                 </div>
               </div>
@@ -165,20 +164,20 @@ export default async function AdminPage() {
           <div className="grid gap-6">
             {/* Check-ins recientes */}
             <section>
-              <h2 className="font-bold text-white mb-3">Check-ins recientes</h2>
+              <h2 className="font-bold text-ink mb-3">Check-ins recientes</h2>
               {checkins.length === 0 ? (
-                <p className="text-sm text-[#A0A0A0]">Aún no hay check-ins.</p>
+                <p className="text-sm text-ink-muted">Aún no hay check-ins.</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {checkins.map((c) => (
                     <div key={c.id} className="card-dark p-4 !transform-none flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{c.member_email}</p>
-                        <p className="text-xs text-[#A0A0A0]">
+                        <p className="text-sm font-bold text-ink truncate">{c.member_email}</p>
+                        <p className="text-xs text-ink-muted">
                           {c.weight != null ? `${c.weight} kg` : "Sin peso"} · {c.coach_reply ? "respondido" : "pendiente"}
                         </p>
                       </div>
-                      <span className="text-[10px] text-[#666666] shrink-0">{fmt(c.created_at)}</span>
+                      <span className="text-[10px] text-ink-subtle shrink-0">{fmt(c.created_at)}</span>
                     </div>
                   ))}
                 </div>

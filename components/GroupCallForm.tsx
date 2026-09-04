@@ -42,23 +42,23 @@ export default function GroupCallForm() {
     } catch { setStatus("error"); setMsg("Error de conexión."); }
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[#A0A0A0]">Fecha de la llamada</span>
+        <span className="text-xs text-ink-muted">Fecha de la llamada</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={cls} />
       </label>
       <input value={link} onChange={(e) => setLink(e.target.value)} inputMode="url"
         placeholder="Enlace de la grabación (https://…)" aria-label="Enlace de la grabación" className={cls} />
       <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={4000}
         placeholder="Nota (opcional): temas tratados, minuto clave…" aria-label="Nota" className={cls} />
-      <label className="flex items-center gap-2 text-sm text-[#A0A0A0]">
-        <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="accent-[#1CA0E3] w-4 h-4" />
+      <label className="flex items-center gap-2 text-sm text-ink-muted">
+        <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="accent-brand w-4 h-4" />
         Avisar a las clientas por email y notificación
       </label>
-      {msg && <p className={`text-sm ${status === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</p>}
+      {msg && <p className={`text-sm ${status === "error" ? "text-danger" : "text-brand"}`}>{msg}</p>}
       <button type="submit" disabled={status === "sending"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "sending" ? "Publicando…" : "Publicar grabación"}
       </button>

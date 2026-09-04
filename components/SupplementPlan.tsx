@@ -18,7 +18,7 @@ export default function SupplementPlan({
   member, agua, pasosObjetivo, items,
 }: { member: string; agua: number | null; pasosObjetivo: number | null; items: Supplement[] }) {
   const router = useRouter();
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   // --- Agua ----------------------------------------------------------------
   const [litrosTxt, setLitrosTxt] = useState(agua != null ? String(agua).replace(".", ",") : "");
@@ -105,10 +105,10 @@ export default function SupplementPlan({
     <div className="flex flex-col gap-6">
       {/* Agua */}
       <div>
-        <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">💧 Agua al día</p>
+        <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">💧 Agua al día</p>
         <div className="flex items-end gap-2 flex-wrap">
           <div>
-            <label className="block text-xs text-[#A0A0A0] mb-1">Litros (entre {MIN_AGUA} y {MAX_AGUA})</label>
+            <label className="block text-xs text-ink-muted mb-1">Litros (entre {MIN_AGUA} y {MAX_AGUA})</label>
             <input
               value={litrosTxt}
               onChange={(e) => setLitrosTxt(e.target.value)}
@@ -121,10 +121,10 @@ export default function SupplementPlan({
           <button type="button" onClick={guardarAgua} disabled={aguaEstado === "loading"} className="btn-brand text-sm px-5 py-3 disabled:opacity-60">
             {aguaEstado === "loading" ? "…" : "Guardar"}
           </button>
-          {aguaEstado === "saved" && <span className="text-sm text-[#1CA0E3] pb-3">✓</span>}
+          {aguaEstado === "saved" && <span className="text-sm text-brand pb-3">✓</span>}
         </div>
-        {aguaMsg && <p className="text-sm text-[#FF6B6B] mt-1">{aguaMsg}</p>}
-        <p className="text-xs text-[#666666] mt-1.5">
+        {aguaMsg && <p className="text-sm text-danger mt-1">{aguaMsg}</p>}
+        <p className="text-xs text-ink-subtle mt-1.5">
           {agua != null
             ? `Ahora tiene ${litros(agua)} al día (unos ${vasos(agua)} vasos). Ella registra el agua en vasos, así que se le enseñan las dos cosas.`
             : "Sin objetivo puesto. Déjalo en blanco y guarda para quitárselo."}
@@ -133,10 +133,10 @@ export default function SupplementPlan({
 
       {/* Pasos */}
       <div>
-        <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">👟 Pasos al día</p>
+        <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">👟 Pasos al día</p>
         <div className="flex items-end gap-2 flex-wrap">
           <div>
-            <label className="block text-xs text-[#A0A0A0] mb-1">
+            <label className="block text-xs text-ink-muted mb-1">
               Pasos (entre {MIN_PASOS.toLocaleString("es-ES")} y {MAX_PASOS.toLocaleString("es-ES")})
             </label>
             <input
@@ -151,10 +151,10 @@ export default function SupplementPlan({
           <button type="button" onClick={guardarPasos} disabled={pasosEstado === "loading"} className="btn-brand text-sm px-5 py-3 disabled:opacity-60">
             {pasosEstado === "loading" ? "…" : "Guardar"}
           </button>
-          {pasosEstado === "saved" && <span className="text-sm text-[#1CA0E3] pb-3">✓</span>}
+          {pasosEstado === "saved" && <span className="text-sm text-brand pb-3">✓</span>}
         </div>
-        {pasosMsg && <p className="text-sm text-[#FF6B6B] mt-1">{pasosMsg}</p>}
-        <p className="text-xs text-[#666666] mt-1.5">
+        {pasosMsg && <p className="text-sm text-danger mt-1">{pasosMsg}</p>}
+        <p className="text-xs text-ink-subtle mt-1.5">
           {pasosObjetivo != null
             ? `Ahora tiene ${pasos(pasosObjetivo)} al día. Le sale al registrar sus hábitos, junto a los pasos que lleva.`
             : "Sin objetivo puesto. Déjalo en blanco y guarda para quitárselo."}
@@ -163,7 +163,7 @@ export default function SupplementPlan({
 
       {/* Suplementos */}
       <div>
-        <p className="text-xs font-bold text-[#666666] uppercase tracking-wide mb-2">💊 Suplementación</p>
+        <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">💊 Suplementación</p>
         <form onSubmit={anadir} className="flex flex-col gap-3">
           <div className="flex gap-3 flex-wrap">
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME}
@@ -181,27 +181,27 @@ export default function SupplementPlan({
             <button type="submit" disabled={estado === "loading"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
               {estado === "loading" ? "Guardando…" : "Añadir suplemento"}
             </button>
-            {msg && <span className={`text-sm ${estado === "error" ? "text-[#FF6B6B]" : "text-[#1CA0E3]"}`}>{msg}</span>}
+            {msg && <span className={`text-sm ${estado === "error" ? "text-danger" : "text-brand"}`}>{msg}</span>}
           </div>
         </form>
 
         {items.length > 0 && (
           <div className="mt-5 flex flex-col gap-2">
-            <p className="text-xs text-[#A0A0A0]">Su pauta ({items.length}):</p>
+            <p className="text-xs text-ink-muted">Su pauta ({items.length}):</p>
             {items.map((s) => (
-              <div key={s.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+              <div key={s.id} className="rounded-lg border border-line px-4 py-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block text-sm text-white truncate">💊 {s.name}</span>
-                    {pauta(s) && <span className="block text-xs text-[#A0A0A0]">{pauta(s)}</span>}
+                    <span className="block text-sm text-ink truncate">💊 {s.name}</span>
+                    {pauta(s) && <span className="block text-xs text-ink-muted">{pauta(s)}</span>}
                   </span>
                   <span className="flex items-center gap-3 shrink-0">
-                    {s.url && <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm">Enlace</a>}
+                    {s.url && <a href={s.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Enlace</a>}
                     <button type="button" onClick={() => borrar(s.id, s.name)}
-                      className="text-xs font-semibold text-[#FF6B6B] hover:underline shrink-0">✕ Quitar</button>
+                      className="min-h-[40px] inline-flex items-center text-xs font-semibold text-danger hover:underline shrink-0">✕ Quitar</button>
                   </span>
                 </div>
-                {s.note && <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">💬 {s.note}</p>}
+                {s.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap border-t border-line pt-1.5">💬 {s.note}</p>}
               </div>
             ))}
           </div>

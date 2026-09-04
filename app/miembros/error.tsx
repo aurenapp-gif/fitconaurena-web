@@ -1,14 +1,14 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 
 /* Red de seguridad del área de miembros: si una página de /miembros lanza un
  * error inesperado, se muestra esto (con la navegación) en vez de romperse. */
 export default function MiembrosError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen flex items-center justify-center">
+      <AppShell />
+      <main className="app-main relative min-h-screen flex items-center justify-center">
         <div className="text-center px-6">
           <h1 className="section-title mb-3">No se pudo cargar</h1>
           <p className="section-sub max-w-md mx-auto mb-8">

@@ -32,8 +32,8 @@ export default function GraciasPage({
         <div className="container-narrow relative z-10 py-24 text-center">
           {error ? (
             <>
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-[#252525] bg-[#161616]">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" strokeWidth="2.5" aria-hidden="true">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 border border-line bg-surface">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" aria-hidden="true">
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 8v5M12 16h.01" />
                 </svg>
@@ -52,7 +52,7 @@ export default function GraciasPage({
             </>
           ) : (
             <>
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-[#1CA0E3]">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 bg-brand">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" aria-hidden="true">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
@@ -61,7 +61,7 @@ export default function GraciasPage({
               <h1 className="section-title mb-4">¡Correo verificado!</h1>
               <p className="section-sub mb-10 max-w-md mx-auto">
                 Gracias por confirmar tu email. Ya tienes acceso a tu{" "}
-                <strong className="text-white">contenido gratuito</strong>. Pulsa el botón
+                <strong className="text-ink">contenido gratuito</strong>. Pulsa el botón
                 para abrirlo en Google Drive.
               </p>
 
@@ -82,8 +82,8 @@ export default function GraciasPage({
                 </Link>
               </div>
 
-              <p className="mt-8 text-xs text-[#666666]">
-                ¿El botón no abre? Copia este enlace: <span className="text-[#A0A0A0] break-all">{DRIVE_URL}</span>
+              <p className="mt-8 text-xs text-ink-subtle">
+                ¿El botón no abre? Copia este enlace: <span className="text-ink-muted break-all">{DRIVE_URL}</span>
               </p>
             </>
           )}

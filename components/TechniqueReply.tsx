@@ -66,18 +66,18 @@ export default function TechniqueReply({ id }: { id: string }) {
   }
 
   const label = status === "uploading" ? "Subiendo…" : status === "saving" ? "Guardando…" : "Enviar corrección";
-  const inputCls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const inputCls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2 border-t border-[#252525] pt-3">
+    <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
       <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Escribe tu corrección…" aria-label="Corrección" rows={3} maxLength={2000} className={inputCls} />
-      <label className="text-xs text-[#A0A0A0]">Vídeo de respuesta (opcional):</label>
-      <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo de respuesta" className="text-sm text-[#A0A0A0] file:mr-3 file:rounded-lg file:border-0 file:bg-[#1CA0E3] file:px-4 file:py-2 file:font-bold file:text-white" />
+      <label className="text-xs text-ink-muted">Vídeo de respuesta (opcional):</label>
+      <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo de respuesta" className="text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-bold file:text-white" />
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-[#A0A0A0]">O graba una nota de voz:</span>
+        <span className="text-xs text-ink-muted">O graba una nota de voz:</span>
         <AudioRecorder onSend={handleAudio} disabled={busy} sendLabel="Enviar audio" />
       </div>
-      {error && <p role="alert" className="text-sm text-[#FF6B6B]">{error}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <button type="submit" disabled={busy} className="btn-brand text-sm px-5 py-2.5 disabled:opacity-60 self-start">{label}</button>
     </form>
   );

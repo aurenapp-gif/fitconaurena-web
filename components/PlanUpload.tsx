@@ -412,7 +412,7 @@ export default function PlanUpload({ member }: { member: string }) {
     );
   }
 
-  const cls = "rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]";
+  const cls = "rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand";
 
   return (
     <form ref={formRef} onSubmit={submit} className="flex flex-col gap-3">
@@ -452,7 +452,7 @@ export default function PlanUpload({ member }: { member: string }) {
         onDragLeave={() => { dentro.current = Math.max(0, dentro.current - 1); if (dentro.current === 0) setEncima(false); }}
         onDrop={soltar}
         className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center transition-colors ${
-          encima ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#3A3A3A] bg-[#0A0A0A] hover:border-[#1CA0E3]/60"
+          encima ? "border-brand bg-brand/10" : "border-line-strong bg-page hover:border-brand/60"
         }`}
       >
         {/* Sin `accept`: es lo que hacía que Safari rechazara el arrastre de los
@@ -468,10 +468,10 @@ export default function PlanUpload({ member }: { member: string }) {
           aria-label="Archivo del plan"
           className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
         />
-        <span className="text-sm font-bold text-white break-all pointer-events-none">
+        <span className="text-sm font-bold text-ink break-all pointer-events-none">
           {preparando ? "Preparando el archivo…" : encima ? "Suelta el plan aquí" : file ? file.name : "Arrastra aquí el plan"}
         </span>
-        <span className="text-xs text-[#666666] pointer-events-none">
+        <span className="text-xs text-ink-subtle pointer-events-none">
           {file && !encima && !preparando
             ? `${(file.size / MB).toFixed(1)} MB · pulsa para cambiarlo`
             : "o pulsa para buscarlo · PDF, Word o imagen"}
@@ -480,12 +480,12 @@ export default function PlanUpload({ member }: { member: string }) {
       {/* Arrastrar desde la ventanita de descargas de Safari es justo el gesto
           que falla: ese archivo lo entrega Safari y llega sin permiso de
           lectura. Desde el Dock o el Finder lo entrega el sistema y sí entra. */}
-      <p className="text-[11px] text-[#666666] -mt-1">
+      <p className="text-[11px] text-ink-subtle -mt-1">
         Si arrastras desde la ventana de descargas de Safari y no funciona, prueba desde la
-        pila <strong className="text-[#A0A0A0]">Descargas del Dock</strong> o desde el Finder:
+        pila <strong className="text-ink-muted">Descargas del Dock</strong> o desde el Finder:
         esos sí entran.
       </p>
-      {status === "error" && <p role="alert" className="text-sm text-[#FF6B6B]">{msg}</p>}
+      {status === "error" && <p role="alert" className="text-sm text-danger">{msg}</p>}
       {ilegible && (
         <button
           type="button"
@@ -498,7 +498,7 @@ export default function PlanUpload({ member }: { member: string }) {
       <button type="submit" disabled={status === "subiendo" || preparando || ilegible} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">
         {status === "subiendo" ? "Subiendo…" : "Subir plan"}
       </button>
-      <p className="text-[10px] text-[#3A3A3A]">subida v{VERSION}</p>
+      <p className="text-[10px] text-ink-subtle">subida v{VERSION}</p>
     </form>
   );
 }

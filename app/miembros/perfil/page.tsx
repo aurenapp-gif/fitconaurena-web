@@ -1,18 +1,18 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import ProfileForm from "@/components/ProfileForm";
 import PushToggle from "@/components/PushToggle";
 import PwaInstall from "@/components/PwaInstall";
 import PerfilTabs from "@/components/PerfilTabs";
-import HabitsTracker from "@/components/HabitsTracker";
+import HabitsTracker, { type DiaSemana } from "@/components/HabitsTracker";
 import FileViewer from "@/components/FileViewer";
 import CallLink from "@/components/CallLink";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { callDay, DEFAULT_TITLE, type MemberCall } from "@/lib/llamadas";
-import { pauta, type Supplement } from "@/lib/suplementos";
+import { litros, pasos, pauta, type Supplement } from "@/lib/suplementos";
+import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento, type Renovacion } from "@/lib/renovaciones";
 import type { Questionnaire } from "@/lib/profile";
 import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
@@ -23,56 +23,109 @@ type Profile = { email: string; display_name: string | null; photo_path: string 
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null };
 
-/** Todos los planes de un tipo, del más reciente al más antiguo. El primero se
- * marca como "Actual"; los anteriores quedan accesibles debajo (historial). */
-function PlanList({ items, label, empty, fallo }: { items: (Plan & { url?: string })[]; label: string; empty: string; fallo?: boolean }) {
-  // Decirle «tu coach aún no ha subido tu plan» cuando lo que ha pasado es que
-  // no se ha podido consultar sería el peor error posible de esta pantalla.
-  if (fallo) return (
-    <p role="alert" className="text-sm text-[#FF6B6B]">
-      No hemos podido cargar tus planes ahora mismo. Vuelve a entrar en un momento: no se ha perdido nada.
-    </p>
-  );
-  if (items.length === 0) return <p className="text-sm text-[#666666]">{empty}</p>;
+const fechaLarga = (iso: string) => new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" });
+
+/**
+ * Los planes de un tipo: el vigente en grande, con su fecha y hasta cuándo
+ * vale; los anteriores plegados debajo, que casi nunca hacen falta pero no
+ * deben perderse.
+ */
+function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion }: {
+  etiqueta: string;
+  items: (Plan & { url?: string })[];
+  label: string;
+  vacio: string;
+  fallo?: boolean;
+  renovacion: Renovacion;
+}) {
+  const actual = items[0];
+  const anteriores = items.slice(1);
   return (
-    <div className="flex flex-col gap-4">
-      {items.map((p, i) => (
-        <div key={p.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            {i === 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">Actual</span>
+    <section className="flex flex-col gap-2" aria-label={etiqueta}>
+      <p className="text-[11.5px] font-bold text-ink-muted tracking-wide px-0.5">{etiqueta}</p>
+      <div className="card-dark !p-4 !transform-none flex flex-col gap-3">
+        {fallo ? (
+          // Decirle «tu coach aún no ha subido tu plan» cuando lo que ha pasado
+          // es que no se ha podido consultar sería el peor error posible aquí.
+          <p role="alert" className="text-sm text-danger">
+            No hemos podido cargar tus planes ahora mismo. Vuelve a entrar en un momento: no se ha perdido nada.
+          </p>
+        ) : !actual ? (
+          <p className="text-sm text-ink-subtle">{vacio}</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10.5px] font-extrabold px-2 py-[3px] rounded-full bg-brand text-white shrink-0">Actual</span>
+                <span className="text-xs text-ink-muted truncate">{fechaLarga(actual.created_at)}</span>
+              </div>
+              {renovacion.toca && (
+                <span className="text-xs font-bold text-ink-muted shrink-0">
+                  {renovacion.dias != null && renovacion.dias < 0 ? "pendiente de renovar" : `hasta el ${fechaCorta(renovacion.toca)}`}
+                </span>
+              )}
+            </div>
+            <p className="text-[15px] font-extrabold text-ink tracking-tight leading-snug">{actual.title?.trim() || label}</p>
+            {actual.note && (
+              <div className="flex gap-2.5 rounded-[10px] bg-brand-soft px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+                <span className="w-[3px] rounded-full bg-brand shrink-0" aria-hidden="true" />
+                <p className="whitespace-pre-wrap"><span className="font-bold">Nota de tu coach:</span> {actual.note}</p>
+              </div>
             )}
-            <span className="text-xs text-[#666666]">
-              {new Date(p.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-            </span>
-          </div>
-          {p.title && <p className="text-sm text-[#A0A0A0] mb-1">{p.title}</p>}
-          {p.url ? (
-            <FileViewer url={p.url} label={label} buttonText={i === 0 ? "Ver plan" : "Ver"} />
-          ) : (
-            <p className="text-sm text-[#666666]">No disponible ahora mismo. Vuelve a entrar en un momento.</p>
-          )}
-          <PlanNote note={p.note} />
-        </div>
-      ))}
-    </div>
+            {actual.url ? (
+              <FileViewer url={actual.url} label={label} buttonText="Ver plan" ancho />
+            ) : (
+              <p className="text-sm text-ink-subtle">No disponible ahora mismo. Vuelve a entrar en un momento.</p>
+            )}
+            {anteriores.length > 0 && (
+              <details className="group border-t border-line pt-1">
+                <summary className="flex items-center justify-between min-h-[40px] cursor-pointer list-none text-[13px] font-bold text-ink-muted [&::-webkit-details-marker]:hidden">
+                  <span className="shrink-0 whitespace-nowrap">Anteriores ({anteriores.length})</span>
+                  <span className="truncate ml-3 text-right font-semibold text-ink-subtle group-open:hidden">
+                    {anteriores.map((p) => p.title?.trim() || fechaLarga(p.created_at)).join(" · ")}
+                  </span>
+                  <span className="hidden group-open:inline text-ink-subtle">Ocultar</span>
+                </summary>
+                <div className="flex flex-col divide-y divide-line">
+                  {anteriores.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between gap-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink truncate">{p.title?.trim() || label}</p>
+                        <p className="text-xs text-ink-subtle">{fechaLarga(p.created_at)}</p>
+                      </div>
+                      {p.url ? (
+                        <div className="flex items-center gap-3 shrink-0">
+                          <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold min-h-[40px] inline-flex items-center">Ver</a>
+                          <a href={`${p.url}${p.url.includes("?") ? "&" : "?"}download`} className="text-ink-muted text-sm font-semibold min-h-[40px] inline-flex items-center">Descargar</a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-ink-subtle shrink-0">No disponible</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 
-/** Comentario que la coach deja junto al plan (indicaciones, cambios…). */
-function PlanNote({ note }: { note?: string | null }) {
-  if (!note) return null;
-  return (
-    <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
-      <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{note}</p>
-    </div>
-  );
+/** Lunes a domingo de la semana en curso, marcando los días con registro. */
+function semanaDe(today: string, registrados: Set<string>): DiaSemana[] {
+  const d = new Date(today + "T00:00:00Z");
+  const lunes = new Date(d);
+  lunes.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return ["L", "M", "X", "J", "V", "S", "D"].map((label, i) => {
+    const x = new Date(lunes);
+    x.setUTCDate(lunes.getUTCDate() + i);
+    const ds = x.toISOString().slice(0, 10);
+    return { label, done: registrados.has(ds), hoy: ds === today, futuro: ds > today };
+  });
 }
 
-function todayMadrid(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
-}
 // Racha de días seguidos con registro (cuenta hacia atrás desde hoy; si hoy aún
 // no se ha registrado, empieza desde ayer para no romper la racha).
 function dayStreak(set: Set<string>, today: string): number {
@@ -86,7 +139,7 @@ function dayStreak(set: Set<string>, today: string): number {
   return streak;
 }
 
-export default async function PerfilPage() {
+export default async function PerfilPage({ searchParams }: { searchParams?: { tab?: string } }) {
   const email = await requireMember();
   const admin = isAdmin(email);
 
@@ -154,63 +207,62 @@ export default async function PerfilPage() {
   const plansWithUrl = (plans ?? []).map((p, i) => ({ ...p, url: planUrls[i] }));
   const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
   const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");
+  const hoy = hoyMadrid();
+  const renNut = renovacionAlimentacion(nutPlans[0] ? diaDe(nutPlans[0].created_at) : null, hoy);
+  const renEnt = renovacionEntrenamiento(entPlans[0] ? diaDe(entPlans[0].created_at) : null, hoy);
 
-  const today = todayMadrid();
   const loggedDays = new Set(habitRows.map((r) => r.day));
-  const todayRow = habitRows.find((r) => r.day === today);
+  const todayRow = habitRows.find((r) => r.day === hoy);
   const habitToday = { water: todayRow?.water ?? null, steps: todayRow?.steps ?? null, sleep: todayRow?.sleep ?? null };
-  const habitStreak = dayStreak(loggedDays, today);
-  const last7 = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(today + "T00:00:00Z");
-    d.setUTCDate(d.getUTCDate() - (6 - i));
-    const ds = d.toISOString().slice(0, 10);
-    return { label: new Date(ds + "T00:00:00Z").toLocaleDateString("es-ES", { weekday: "narrow", timeZone: "UTC" }), done: loggedDays.has(ds) };
-  });
+  const habitStreak = dayStreak(loggedDays, hoy);
+  const semana = semanaDe(hoy, loggedDays);
 
-  const planCard = (
-    <div className="card-dark p-6 !transform-none">
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-        <h2 className="font-bold text-white">Mi plan</h2>
-        {profile?.renewal_date && (
-          <span className="text-xs text-[#A0A0A0]">Renovación: {new Date(profile.renewal_date).toLocaleDateString("es-ES")}</span>
-        )}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-3">🥗 Nutrición</p>
-          <PlanList items={nutPlans} label="Plan de nutrición" empty="Tu coach aún no ha subido tu plan de nutrición." fallo={planesFallo} />
-        </div>
-        <div className="rounded-xl border border-[#252525] p-4">
-          <p className="font-bold text-white mb-3">🏋️ Entrenamiento</p>
-          <PlanList items={entPlans} label="Plan de entrenamiento" empty="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} />
-        </div>
-      </div>
+  const agua = profile?.water_target_l ?? null;
+  const pasosObj = profile?.steps_target ?? null;
 
-      {/* Suplementación: qué toma, cuánto, cuándo y dónde comprarlo. */}
-      {supplements.length > 0 && (
-        <div className="rounded-xl border border-[#252525] p-4 mt-4">
-          <p className="font-bold text-white mb-1">💊 Suplementación</p>
-          <p className="text-xs text-[#666666] mb-3">Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada.</p>
-          <div className="flex flex-col gap-2">
-            {supplements.map((s) => (
-              <div key={s.id} className="rounded-lg border border-[#252525] px-4 py-2.5">
+  const planesTab = (
+    <div className="flex flex-col gap-4">
+      <BloquePlan etiqueta="Nutrición" items={nutPlans} label="Plan de nutrición" vacio="Tu coach aún no ha subido tu plan de nutrición." fallo={planesFallo} renovacion={renNut} />
+      <BloquePlan etiqueta="Entrenamiento" items={entPlans} label="Plan de entrenamiento" vacio="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} renovacion={renEnt} />
+
+      {/* Pauta diaria: agua, pasos y suplementación. */}
+      <section className="flex flex-col gap-2" aria-label="Agua, pasos y suplementación">
+        <p className="text-[11.5px] font-bold text-ink-muted tracking-wide px-0.5">Agua, pasos y suplementación</p>
+        <div className="card-dark !py-1 !px-4 !transform-none divide-y divide-line">
+          <div className="flex items-center justify-between gap-3 min-h-[48px] text-sm">
+            <span className="font-bold text-ink">Agua</span>
+            <span className="text-ink-muted">{agua != null ? `${litros(agua)} al día` : "Sin pauta todavía"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 min-h-[48px] text-sm">
+            <span className="font-bold text-ink">Pasos</span>
+            <span className="text-ink-muted">{pasosObj != null ? `${pasos(pasosObj)} al día` : "Sin pauta todavía"}</span>
+          </div>
+          {supplements.length === 0 ? (
+            <div className="flex items-center justify-between gap-3 min-h-[48px] text-sm">
+              <span className="font-bold text-ink">Suplementos</span>
+              <span className="text-ink-muted">Ninguno pautado</span>
+            </div>
+          ) : (
+            supplements.map((s) => (
+              <div key={s.id} className="py-3">
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold text-white">{s.name}</span>
-                    {pauta(s) && <span className="block text-xs text-[#A0A0A0] mt-0.5">{pauta(s)}</span>}
+                    <span className="block text-sm font-bold text-ink">{s.name}</span>
+                    {pauta(s) && <span className="block text-xs text-ink-muted mt-0.5">{pauta(s)}</span>}
                   </span>
                   {s.url && (
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">
-                      Comprarlo
-                    </a>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand text-sm font-semibold shrink-0">Comprarlo</a>
                   )}
                 </div>
-                {s.note && <p className="text-xs text-[#A0A0A0] mt-1.5 whitespace-pre-wrap border-t border-[#252525] pt-1.5">{s.note}</p>}
+                {s.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap">{s.note}</p>}
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
-      )}
+        {supplements.length > 0 && (
+          <p className="text-xs text-ink-subtle px-0.5">Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada.</p>
+        )}
+      </section>
     </div>
   );
 
@@ -226,50 +278,54 @@ export default async function PerfilPage() {
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
-        <div className="container-content relative z-10 py-16">
-          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-            <div>
-              <span className="section-tag">Área de miembros</span>
-              <h1 className="section-title">Mi perfil</h1>
-            </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
-          </div>
+      <AppShell admin={admin} />
+      <main className="app-main relative min-h-screen">
+        <div className="container-content relative z-10 py-6 lg:py-12">
+          <h1 className="text-[26px] lg:text-3xl font-extrabold text-ink tracking-tight leading-tight mb-4">Mi perfil</h1>
 
           {admin ? (
             profileForm
           ) : (
             <PerfilTabs
+              initial={searchParams?.tab}
               tabs={[
-                { id: "datos", icon: "📋", label: "Datos", node: <div className="flex flex-col gap-8">{planCard}{profileForm}</div> },
-                { id: "habitos", icon: "🔥", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} last7={last7} aguaObjetivo={profile?.water_target_l ?? null} pasosObjetivo={profile?.steps_target ?? null} /> },
-                { id: "llamadas", icon: "📞", label: "Llamadas", node: (
-                  <div className="card-dark p-6 !transform-none">
-                    <h2 className="font-bold text-white mb-1">Mis llamadas estratégicas</h2>
-                    <p className="text-xs text-[#666666] mb-4">
+                { id: "planes", label: "Planes", node: planesTab },
+                { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} aguaObjetivo={agua} pasosObjetivo={pasosObj} /> },
+                { id: "cuestionario", label: "Datos", node: (
+                  <div className="flex flex-col gap-6">
+                    {profileForm}
+                    <section aria-label="Ajustes" className="flex flex-col gap-2">
+                      <p className="text-[11.5px] font-bold text-ink-muted tracking-wide px-0.5">Ajustes</p>
+                      <div className="flex flex-col gap-4"><PushToggle /><PwaInstall /></div>
+                    </section>
+                  </div>
+                ) },
+                { id: "llamadas", label: "Llamadas", node: (
+                  <div className="card-dark !p-4 !transform-none">
+                    <h2 className="text-sm font-extrabold text-ink mb-1">Mis llamadas estratégicas</h2>
+                    <p className="text-xs text-ink-subtle mb-4">
                       Aquí tienes la grabación de tus llamadas, para que puedas volver a verlas cuando quieras.
                     </p>
                     {calls.length === 0 ? (
-                      <p className="text-sm text-[#666666]">
+                      <p className="text-sm text-ink-subtle">
                         Todavía no hay ninguna. Cuando tu coach suba la grabación de tu llamada, aparecerá aquí.
                       </p>
                     ) : (
                       <div className="flex flex-col gap-4">
                         {calls.map((c, i) => (
-                          <div key={c.id} className={i > 0 ? "border-t border-[#252525] pt-4" : ""}>
+                          <div key={c.id} className={i > 0 ? "border-t border-line pt-4" : ""}>
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               {i === 0 && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1CA0E3] text-white">La última</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white">La última</span>
                               )}
-                              <span className="text-xs text-[#666666]">{callDay(c)}</span>
+                              <span className="text-xs text-ink-subtle">{callDay(c)}</span>
                             </div>
-                            <p className="text-sm text-white font-bold mb-2">{c.title || DEFAULT_TITLE}</p>
+                            <p className="text-sm text-ink font-bold mb-2">{c.title || DEFAULT_TITLE}</p>
                             <CallLink url={c.url} title={c.title || DEFAULT_TITLE} />
                             {c.note && (
-                              <div className="mt-3 rounded-lg border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 px-3 py-2.5">
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-[#1CA0E3] mb-1">Nota de tu coach</p>
-                                <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{c.note}</p>
+                              <div className="mt-3 flex gap-2.5 rounded-[10px] bg-brand-soft px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+                                <span className="w-[3px] rounded-full bg-brand shrink-0" aria-hidden="true" />
+                                <p className="whitespace-pre-wrap"><span className="font-bold">Nota de tu coach:</span> {c.note}</p>
                               </div>
                             )}
                           </div>
@@ -278,23 +334,23 @@ export default async function PerfilPage() {
                     )}
                   </div>
                 ) },
-                { id: "contrato", icon: "📄", label: "Contrato", node: (
-                  <div className="card-dark p-6 !transform-none">
-                    <h2 className="font-bold text-white mb-3">Mis contratos firmados</h2>
+                { id: "contrato", label: "Contratos", node: (
+                  <div className="card-dark !p-4 !transform-none">
+                    <h2 className="text-sm font-extrabold text-ink mb-3">Mis contratos firmados</h2>
                     {contratosFirmados.length === 0 ? (
-                      <p className="text-sm text-[#666666]">Cuando firmes un contrato, aparecerá aquí para que puedas descargarlo.</p>
+                      <p className="text-sm text-ink-subtle">Cuando firmes un contrato, aparecerá aquí para que puedas descargarlo.</p>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {contratosFirmados.map((c) => (
-                          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#252525] px-4 py-2.5">
+                          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-line px-4 py-2.5 min-h-[56px]">
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-white truncate">{c.title}</p>
-                              <p className="text-xs text-[#666666]">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
+                              <p className="text-sm font-bold text-ink truncate">{c.title}</p>
+                              <p className="text-xs text-ink-subtle">Firmado el {new Date(c.signedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
                             </div>
                             {c.url ? (
-                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[#1CA0E3] text-sm font-semibold shrink-0">Descargar</a>
+                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm font-semibold shrink-0">Descargar</a>
                             ) : (
-                              <span className="text-[#666666] text-xs shrink-0">No disponible</span>
+                              <span className="text-ink-subtle text-xs shrink-0">No disponible</span>
                             )}
                           </div>
                         ))}
@@ -302,7 +358,6 @@ export default async function PerfilPage() {
                     )}
                   </div>
                 ) },
-                { id: "ajustes", icon: "⚙️", label: "Ajustes", node: <div className="flex flex-col gap-6"><PushToggle /><PwaInstall /></div> },
               ]}
             />
           )}

@@ -113,8 +113,8 @@ export default function AudioRecorder({
   if (state === "recording") {
     return (
       <div className="flex items-center gap-2">
-        <span className="flex items-center gap-1.5 text-sm text-[#FF6B6B] font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B6B] animate-pulse" /> {fmt(seconds)}
+        <span className="flex items-center gap-1.5 text-sm text-danger font-semibold">
+          <span className="w-2.5 h-2.5 rounded-full bg-danger animate-pulse" /> {fmt(seconds)}
         </span>
         <button type="button" onClick={stop} className="btn-brand text-sm px-4 py-2.5">■ Parar</button>
       </div>
@@ -126,7 +126,7 @@ export default function AudioRecorder({
       <div className="flex items-center gap-2 flex-wrap">
         <audio controls src={previewUrl} className="h-10 max-w-[200px]" />
         <button type="button" onClick={send} disabled={disabled} className="btn-brand text-sm px-4 py-2.5 disabled:opacity-60">{sendLabel}</button>
-        <button type="button" onClick={discard} className="text-sm text-[#FF6B6B] px-2" aria-label="Descartar">✕</button>
+        <button type="button" onClick={discard} className="text-sm text-danger px-2" aria-label="Descartar">✕</button>
       </div>
     );
   }
@@ -136,11 +136,11 @@ export default function AudioRecorder({
       <button
         type="button" onClick={start} disabled={disabled}
         aria-label="Grabar nota de voz"
-        className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-3.5 py-3 text-sm hover:border-[#1CA0E3] disabled:opacity-60"
+        className="rounded-xl border border-line bg-page px-3.5 py-3 text-sm hover:border-brand disabled:opacity-60"
       >
         🎤
       </button>
-      {error && <span className="text-xs text-[#FF6B6B]">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

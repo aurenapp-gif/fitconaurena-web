@@ -102,5 +102,24 @@ export function tocaParteCoach(p: Periodo): boolean {
   return (DIAS_PARTE_COACH as readonly number[]).includes(p.dia);
 }
 
+/**
+ * Cuándo le toca a la clienta la siguiente revisión, para la pantalla de
+ * inicio.
+ *
+ * Si la de esta quincena está sin subir, la «próxima» es esa misma: aunque
+ * hayan pasado unos días del 1 o del 15, sigue siendo la que toca. Si ya la
+ * subió, la siguiente fecha fija: el 15 de este mes o el 1 del que viene.
+ */
+export function proximaRevision(hoy: string, hechaEstaQuincena: boolean): { fecha: string; dias: number; pendiente: boolean } {
+  const p = periodoDe(hoy);
+  if (!hechaEstaQuincena) return { fecha: p.inicio, dias: 0, pendiente: true };
+  const [y, m, d] = hoy.split("-").map(Number);
+  const fecha = d < 15
+    ? `${y}-${String(m).padStart(2, "0")}-15`
+    : m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const ms = Date.UTC(+fecha.slice(0, 4), +fecha.slice(5, 7) - 1, +fecha.slice(8, 10)) - Date.UTC(y, m - 1, d);
+  return { fecha, dias: Math.round(ms / 86400000), pendiente: false };
+}
+
 /** Texto de la norma, para no repetirlo por media app. */
 export const NORMA = "Las revisiones se suben el día 1 y el día 15 de cada mes.";

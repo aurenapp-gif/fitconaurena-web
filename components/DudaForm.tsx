@@ -59,7 +59,7 @@ export default function DudaForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-bold text-[#A0A0A0] mb-2">¿Sobre qué es?</label>
+        <label className="block text-xs font-bold text-ink-muted mb-2">¿Sobre qué es?</label>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
             <button
@@ -69,8 +69,8 @@ export default function DudaForm() {
               aria-pressed={cat === c.id}
               className={`px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
                 cat === c.id
-                  ? "bg-[#1CA0E3] text-white"
-                  : "border border-[#252525] text-[#A0A0A0] hover:text-white"
+                  ? "bg-brand text-white"
+                  : "border border-line text-ink-muted hover:text-ink"
               }`}
             >
               <span aria-hidden="true">{c.icon}</span> {c.label}
@@ -80,7 +80,7 @@ export default function DudaForm() {
       </div>
 
       <div>
-        <label htmlFor="duda-body" className="block text-xs font-bold text-[#A0A0A0] mb-2">
+        <label htmlFor="duda-body" className="block text-xs font-bold text-ink-muted mb-2">
           Tu duda o tu problema
         </label>
         <textarea
@@ -90,29 +90,29 @@ export default function DudaForm() {
           rows={5}
           maxLength={2000}
           placeholder={selected.example ? `Por ejemplo: ${selected.example}` : "Cuéntame qué te pasa…"}
-          className="w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3]"
+          className="w-full rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
         />
-        <p className="text-xs text-[#666666] mt-1.5">
+        <p className="text-xs text-ink-subtle mt-1.5">
           Escríbelo con tus palabras, sin filtrar. Cuanto más real, mejor te podrá ayudar.
         </p>
       </div>
 
-      <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-3">
+      <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-line bg-page px-4 py-3">
         <input
           type="checkbox"
           checked={privada}
           onChange={(e) => setPrivada(e.target.checked)}
-          className="mt-0.5 w-4 h-4 accent-[#1CA0E3] shrink-0"
+          className="mt-0.5 w-4 h-4 accent-brand shrink-0"
         />
-        <span className="text-sm text-[#A0A0A0]">
-          <strong className="text-white">Prefiero que me respondas solo a mí.</strong>{" "}
+        <span className="text-sm text-ink-muted">
+          <strong className="text-ink">Prefiero que me respondas solo a mí.</strong>{" "}
           Si marcas esto, tu coach verá tu correo y te contestará en privado. Tu duda no se
           publicará ni la verá nadie más.
         </span>
       </label>
 
       {msg && (
-        <p className={`text-sm ${status === "error" ? "text-[#FF6B6B]" : "text-[#22C55E]"}`}>{msg}</p>
+        <p className={`text-sm ${status === "error" ? "text-danger" : "text-success"}`}>{msg}</p>
       )}
 
       <button type="submit" disabled={status === "sending"} className="btn-brand text-sm px-6 py-3 self-start disabled:opacity-60">

@@ -2,20 +2,35 @@
 
 import { useState } from "react";
 
-type Tab = { id: string; icon: string; label: string; node: React.ReactNode };
+type Tab = { id: string; label: string; node: React.ReactNode };
 
-/* Navegación por pestañas dentro de Perfil (Datos · Hábitos · Ajustes).
- * Recibe el contenido ya renderizado de cada pestaña como slots. */
-export default function PerfilTabs({ tabs }: { tabs: Tab[] }) {
-  const [active, setActive] = useState(tabs[0]?.id);
+/**
+ * Secciones del perfil como control segmentado (Planes · Hábitos · Datos…).
+ *
+ * Recibe el contenido ya renderizado de cada pestaña. La activa se refleja en
+ * la URL (`?tab=habitos`) sin recargar, para que un enlace desde el inicio
+ * pueda abrir directamente la sección que toca y para que «atrás» no pierda
+ * dónde estaba.
+ */
+export default function PerfilTabs({ tabs, initial }: { tabs: Tab[]; initial?: string }) {
+  const [active, setActive] = useState(tabs.some((t) => t.id === initial) ? initial! : tabs[0]?.id);
+
+  function elegir(id: string) {
+    setActive(id);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", id);
+      window.history.replaceState(null, "", url.toString());
+    } catch { /* sin URL no pasa nada: la pestaña cambia igual */ }
+  }
 
   return (
     <div>
       <div
         role="tablist"
         aria-label="Secciones del perfil"
-        className="grid gap-2 mb-6"
-        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+        className="flex gap-1 p-1 rounded-xl bg-line mb-4 overflow-x-auto"
+        style={{ scrollbarWidth: "none" }}
       >
         {tabs.map((t) => {
           const on = t.id === active;
@@ -27,13 +42,12 @@ export default function PerfilTabs({ tabs }: { tabs: Tab[] }) {
               id={`tab-${t.id}`}
               aria-selected={on}
               aria-controls={`panel-${t.id}`}
-              onClick={() => setActive(t.id)}
-              className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 transition-all ${
-                on ? "border-[#1CA0E3] bg-[#1CA0E3]/10" : "border-[#252525] bg-[#141414] hover:border-[#1CA0E3]/40"
+              onClick={() => elegir(t.id)}
+              className={`flex-1 min-h-[36px] px-2 sm:px-2.5 rounded-[9px] text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-colors ${
+                on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"
               }`}
             >
-              <span className="text-xl">{t.icon}</span>
-              <span className={`text-[11px] sm:text-xs font-bold ${on ? "text-[#1CA0E3]" : "text-[#A0A0A0]"}`}>{t.label}</span>
+              {t.label}
             </button>
           );
         })}

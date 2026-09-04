@@ -42,9 +42,9 @@ export default function ServiceEndSetter({ member, current }: { member: string; 
     <div className="flex flex-col gap-2">
       <div className="flex items-end gap-2 flex-wrap">
         <div>
-          <label className="block text-xs text-[#A0A0A0] mb-1">Fin del servicio contratado</label>
+          <label className="block text-xs text-ink-muted mb-1">Fin del servicio contratado</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-            className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white outline-none focus:border-[#1CA0E3]" />
+            className="rounded-xl border border-line bg-page px-4 py-2.5 text-sm text-ink outline-none focus:border-brand" />
         </div>
         <button onClick={() => save(date)} disabled={status === "loading"} className="btn-brand text-sm px-5 py-2.5 disabled:opacity-60">
           {status === "loading" ? "…" : "Guardar"}
@@ -54,9 +54,9 @@ export default function ServiceEndSetter({ member, current }: { member: string; 
             {SERVICE_MONTHS} meses desde hoy
           </button>
         )}
-        {status === "saved" && <span className="text-sm text-[#1CA0E3]">✓</span>}
+        {status === "saved" && <span className="text-sm text-brand">✓</span>}
       </div>
-      {msg && <span className="text-sm text-[#FF6B6B]">{msg}</span>}
+      {msg && <span className="text-sm text-danger">{msg}</span>}
     </div>
   );
 }

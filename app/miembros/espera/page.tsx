@@ -45,26 +45,26 @@ export default async function EsperaPage() {
           <h1 className="section-title mb-4">Tu programa empieza el {dia.split(",")[0]}</h1>
 
           <div className="card-dark p-6 !transform-none mb-6">
-            <p className="text-4xl font-extrabold text-[#1CA0E3] leading-none mb-1">
+            <p className="text-4xl font-extrabold text-brand leading-none mb-1">
               {faltan} {faltan === 1 ? "día" : "días"}
             </p>
-            <p className="text-sm text-[#A0A0A0] mb-5">para el {dia}</p>
+            <p className="text-sm text-ink-muted mb-5">para el {dia}</p>
 
-            <p className="text-sm text-[#A0A0A0] leading-relaxed mb-4">
-              Al firmar elegiste <strong className="text-white">esperar los {DIAS_DESISTIMIENTO} días</strong> de
+            <p className="text-sm text-ink-muted leading-relaxed mb-4">
+              Al firmar elegiste <strong className="text-ink">esperar los {DIAS_DESISTIMIENTO} días</strong> de
               plazo de desistimiento antes de empezar. Es tu derecho y lo estamos respetando: durante
               este tiempo conservas íntegra la posibilidad de echarte atrás y recuperar el 100 % de lo
               pagado, sin dar explicaciones.
             </p>
-            <p className="text-sm text-[#A0A0A0] leading-relaxed">
+            <p className="text-sm text-ink-muted leading-relaxed">
               Por eso todavía no hay nada activo: ni plan, ni contenidos, ni llamada. El día{" "}
-              <strong className="text-white">{dia}</strong> te llegará un correo y podrás entrar con normalidad.
+              <strong className="text-ink">{dia}</strong> te llegará un correo y podrás entrar con normalidad.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#252525] bg-[#0A0A0A] px-5 py-4">
-            <p className="text-sm font-bold text-white mb-1">¿Prefieres empezar ya?</p>
-            <p className="text-xs text-[#A0A0A0]">
+          <div className="rounded-xl border border-line bg-page px-5 py-4">
+            <p className="text-sm font-bold text-ink mb-1">¿Prefieres empezar ya?</p>
+            <p className="text-xs text-ink-muted">
               Escríbele a tu coach y te lo cambia. Ten en cuenta que, al empezar antes, pierdes el
               derecho a la devolución íntegra sobre los contenidos que se te entreguen.
             </p>

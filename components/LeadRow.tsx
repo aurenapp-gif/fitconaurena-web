@@ -17,11 +17,11 @@ function answerLabel(qid: string, value: string | undefined): string {
 }
 
 const STATUS_STYLE: Record<LeadStatus, string> = {
-  nuevo: "bg-[#252525] text-[#A0A0A0]",
-  contactada: "bg-[#2a3a5a] text-[#cfe0ff]",
-  agendada: "bg-[#1CA0E3] text-white",
-  cliente: "bg-[#1e4d2b] text-[#b8f5c8]",
-  descartada: "bg-[#3a2222] text-[#ffc0c0]",
+  nuevo: "bg-surface-2 text-ink-muted",
+  contactada: "bg-brand-soft text-brand",
+  agendada: "bg-brand text-white",
+  cliente: "bg-success-soft text-success",
+  descartada: "bg-danger-soft text-danger",
 };
 
 export default function LeadRow({ lead }: { lead: Lead }) {
@@ -58,12 +58,12 @@ export default function LeadRow({ lead }: { lead: Lead }) {
     <div className="card-dark p-4 !transform-none">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-white truncate">{lead.name || "Sin nombre"}</p>
-          <p className="text-xs text-[#A0A0A0] truncate">
-            <a href={`mailto:${lead.email}`} className="hover:text-[#1CA0E3]">{lead.email}</a>
-            {lead.phone ? <> · <a href={`tel:${lead.phone}`} className="hover:text-[#1CA0E3]">{lead.phone}</a></> : null}
+          <p className="text-sm font-bold text-ink truncate">{lead.name || "Sin nombre"}</p>
+          <p className="text-xs text-ink-muted truncate">
+            <a href={`mailto:${lead.email}`} className="min-h-[40px] inline-flex items-center hover:text-brand">{lead.email}</a>
+            {lead.phone ? <> · <a href={`tel:${lead.phone}`} className="min-h-[40px] inline-flex items-center hover:text-brand">{lead.phone}</a></> : null}
           </p>
-          <p className="text-[10px] text-[#666666] mt-0.5">
+          <p className="text-[10px] text-ink-subtle mt-0.5">
             {fmtDate(lead.created_at)}
             {lead.qualified === false ? " · no califica" : ""}
             {lead.call_at ? ` · llamada: ${fmtDate(lead.call_at)}` : ""}
@@ -71,7 +71,7 @@ export default function LeadRow({ lead }: { lead: Lead }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {lead.qualified ? (
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#1CA0E3]/15 text-[#1CA0E3]">Califica</span>
+            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-brand/15 text-brand">Califica</span>
           ) : null}
           <select
             value={status}
@@ -80,7 +80,7 @@ export default function LeadRow({ lead }: { lead: Lead }) {
             className={`text-xs font-bold rounded-lg px-2 py-1.5 outline-none cursor-pointer ${STATUS_STYLE[status]}`}
           >
             {LEAD_STATUSES.map((s) => (
-              <option key={s.value} value={s.value} className="bg-[#0A0A0A] text-white">{s.label}</option>
+              <option key={s.value} value={s.value} className="bg-page text-ink">{s.label}</option>
             ))}
           </select>
         </div>
@@ -89,37 +89,37 @@ export default function LeadRow({ lead }: { lead: Lead }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-xs text-[#1CA0E3] mt-3 font-semibold"
+        className="min-h-[40px] inline-flex items-center text-xs text-brand mt-1 font-semibold"
       >
         {open ? "Ocultar detalles ▲" : "Ver detalles ▼"}
       </button>
 
       {open && (
-        <div className="mt-3 border-t border-[#252525] pt-3 space-y-3">
+        <div className="mt-3 border-t border-line pt-3 space-y-3">
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
             {QUESTIONS.map((q) => (
               <div key={q.id} className="text-xs">
-                <span className="text-[#666666]">{q.label}</span>
+                <span className="text-ink-subtle">{q.label}</span>
                 <br />
-                <span className="text-white">{answerLabel(q.id, lead.answers?.[q.id])}</span>
+                <span className="text-ink">{answerLabel(q.id, lead.answers?.[q.id])}</span>
               </div>
             ))}
           </div>
           {lead.motivacion ? (
             <div className="text-xs">
-              <span className="text-[#666666]">Motivación</span>
-              <p className="text-white whitespace-pre-wrap mt-0.5">{lead.motivacion}</p>
+              <span className="text-ink-subtle">Motivación</span>
+              <p className="text-ink whitespace-pre-wrap mt-0.5">{lead.motivacion}</p>
             </div>
           ) : null}
 
           <div>
-            <label className="text-xs text-[#666666]">Notas internas</label>
+            <label className="text-xs text-ink-subtle">Notas internas</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Apunta lo que hablasteis, próximos pasos…"
-              className="mt-1 w-full rounded-xl border border-[#252525] bg-[#0A0A0A] px-3 py-2 text-sm text-white placeholder:text-[#666666] outline-none focus:border-[#1CA0E3] transition-colors"
+              className="mt-1 w-full rounded-xl border border-line bg-page px-3 py-2 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand transition-colors"
             />
             <div className="flex items-center gap-3 mt-2">
               <button
@@ -130,7 +130,7 @@ export default function LeadRow({ lead }: { lead: Lead }) {
               >
                 Guardar notas
               </button>
-              {savedMsg && <span className="text-xs text-[#A0A0A0]">{savedMsg}</span>}
+              {savedMsg && <span className="text-xs text-ink-muted">{savedMsg}</span>}
             </div>
           </div>
         </div>

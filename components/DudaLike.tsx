@@ -49,8 +49,8 @@ export default function DudaLike({ id, likes, mine }: { id: string; likes: numbe
       title={on ? "Ya has dicho que a ti también te pasa" : "A mí también me pasa"}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
         on
-          ? "border-[#1CA0E3] bg-[#1CA0E3]/10 text-[#1CA0E3]"
-          : "border-[#252525] text-[#A0A0A0] hover:text-white"
+          ? "border-brand bg-brand/10 text-brand"
+          : "border-line text-ink-muted hover:text-ink"
       }`}
     >
       <span aria-hidden="true">{on ? "💙" : "🤍"}</span>

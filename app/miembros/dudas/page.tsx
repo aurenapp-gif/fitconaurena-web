@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 import SetupSql from "@/components/SetupSql";
 import DudaForm from "@/components/DudaForm";
 import DudaLike from "@/components/DudaLike";
@@ -96,25 +96,24 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
 
   const tabCls = (active: boolean) =>
     `px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
-      active ? "bg-[#1CA0E3] text-white" : "border border-[#252525] text-[#A0A0A0] hover:text-white"
+      active ? "bg-brand text-white" : "border border-line text-ink-muted hover:text-ink"
     }`;
 
   return (
     <>
-      <Navbar />
-      <main className="relative pt-16 min-h-screen">
-        <div className="container-content relative z-10 py-16">
+      <AppShell admin={admin} />
+      <main className="app-main relative min-h-screen">
+        <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>
               <span className="section-tag">Área de miembros</span>
               <h1 className="section-title">Dudas</h1>
-              <p className="text-sm text-[#A0A0A0] mt-2 max-w-2xl">
+              <p className="text-sm text-ink-muted mt-2 max-w-2xl">
                 {admin
                   ? `Lo que tus clientas no se atreven a preguntar en la llamada. Nadie sabe quién ha escrito cada duda, tú tampoco.${sinResponder > 0 ? ` Tienes ${sinResponder} sin responder.` : ""}`
                   : "Aquí puedes preguntar sin dar la cara. Nadie sabrá que has sido tú, tu coach tampoco. Si a ti te pasa, seguramente le pase a más gente."}
               </p>
             </div>
-            <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>
           </div>
 
           {admin && needsSetup && (
@@ -124,9 +123,9 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
           )}
 
           {!admin && (
-            <div className="card-dark p-6 !transform-none mb-6 border-[#1CA0E3]/30">
-              <h2 className="font-bold text-white mb-1">Deja tu duda</h2>
-              <p className="text-sm text-[#666666] mb-4">
+            <div className="card-dark p-6 !transform-none mb-6 border-brand/30">
+              <h2 className="font-bold text-ink mb-1">Deja tu duda</h2>
+              <p className="text-sm text-ink-subtle mb-4">
                 No se guarda tu nombre ni tu correo, solo el día. Ni siquiera tu coach puede saber
                 quién la ha escrito.
               </p>
@@ -150,7 +149,7 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
 
           {list.length === 0 ? (
             <div className="card-dark p-6 !transform-none">
-              <p className="text-sm text-[#A0A0A0]">
+              <p className="text-sm text-ink-muted">
                 {admin
                   ? "Todavía no hay ninguna duda. Cuéntaselo en la próxima llamada: cuando entiendan que es de verdad anónimo, empiezan a escribir."
                   : tema
@@ -167,10 +166,10 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
                 return (
                   <article key={d.id} className="card-dark p-5 !transform-none">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className="text-xs font-bold text-[#A0A0A0]">
+                      <span className="text-xs font-bold text-ink-muted">
                         <span aria-hidden="true">{cat.icon}</span> {cat.label}
                       </span>
-                      <span className="text-xs text-[#666666]">· {fmtDay(d.created_at)}</span>
+                      <span className="text-xs text-ink-subtle">· {fmtDay(d.created_at)}</span>
                       {(answered || d.status !== "nueva") && (
                         <span
                           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -180,23 +179,23 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
                         </span>
                       )}
                       {admin && d.reply_email && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFB020]/15 text-[#FFB020]">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn/15 text-warn">
                           🔒 Privada · {d.reply_email}
                         </span>
                       )}
                       {admin && d.hidden && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#FF6B6B]">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-danger/15 text-danger">
                           Oculta
                         </span>
                       )}
                     </div>
 
-                    <p className="text-sm text-white whitespace-pre-wrap mb-3">{d.body}</p>
+                    <p className="text-sm text-ink whitespace-pre-wrap mb-3">{d.body}</p>
 
                     {answered && (
-                      <div className="rounded-xl border border-[#1CA0E3]/30 bg-[#1CA0E3]/5 p-4 mb-3">
-                        <p className="text-xs font-bold text-[#1CA0E3] mb-1.5">Respuesta de tu coach</p>
-                        {d.answer && <p className="text-sm text-[#A0A0A0] whitespace-pre-wrap">{d.answer}</p>}
+                      <div className="rounded-xl border border-brand/30 bg-brand/5 p-4 mb-3">
+                        <p className="text-xs font-bold text-brand mb-1.5">Respuesta de tu coach</p>
+                        {d.answer && <p className="text-sm text-ink-muted whitespace-pre-wrap">{d.answer}</p>}
                         {d.answer_url && (
                           <a
                             href={d.answer_url}
@@ -216,7 +215,7 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
                           precisamente para decidir qué responder antes. */}
                       {!d.reply_email && (
                         admin ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#252525] px-3 py-1.5 text-xs font-bold text-[#A0A0A0]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink-muted">
                             <span aria-hidden="true">💙</span>
                             {(counts.get(d.id) ?? 0) === 0
                               ? "Nadie se ha sumado"

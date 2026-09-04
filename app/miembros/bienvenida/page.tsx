@@ -40,7 +40,7 @@ export default async function BienvenidaPage() {
           <div className="max-w-xl">
             <span className="section-tag">Bienvenida</span>
             <h1 className="section-title">Vamos a preparar tu espacio</h1>
-            <p className="text-sm text-[#A0A0A0] mt-2 mb-8">
+            <p className="text-sm text-ink-muted mt-2 mb-8">
               Solo un minuto: pon tu nombre y una foto para que tu coach te reconozca. Después
               entrarás a tu área privada.
             </p>

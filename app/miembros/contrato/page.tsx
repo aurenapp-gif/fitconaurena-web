@@ -92,7 +92,7 @@ export default async function ContratoPage() {
               {/* Las clientas exentas no están bloqueadas: pueden volver cuando quieran. */}
               {exempt && <Link href="/miembros" className="btn-outline text-sm px-5 py-2.5">← Volver</Link>}
             </div>
-            <p className="text-sm text-[#A0A0A0] mt-2 max-w-2xl">
+            <p className="text-sm text-ink-muted mt-2 max-w-2xl">
               {exempt
                 ? <>Tu coach ha dejado {items.length === 1 ? "este documento" : "estos documentos"} a tu disposición. Firmarlo{items.length === 1 ? "" : "s"} es opcional y puedes hacerlo cuando quieras.</>
                 : <>Para poder empezar tu programa necesitamos que rellenes y firmes {items.length === 1 ? "este documento" : "estos documentos"}. Es rápido y queda guardado con validez legal (firma electrónica simple, eIDAS).</>}
