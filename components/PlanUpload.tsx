@@ -115,6 +115,7 @@ export default function PlanUpload({ member }: { member: string }) {
   const [type, setType] = useState("nutricion");
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [ejercicios, setEjercicios] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "subiendo" | "error">("idle");
   const [msg, setMsg] = useState("");
@@ -280,7 +281,7 @@ export default function PlanUpload({ member }: { member: string }) {
       try {
         const fd = new FormData();
         fd.append("member", member); fd.append("type", type);
-        fd.append("title", title); fd.append("note", note);
+        fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios);
         fd.append("file", contenido, f.name);
         const res = await fetch("/api/miembros/clientas/plan", { method: "POST", body: fd });
         if (res.ok) return true;
@@ -309,7 +310,7 @@ export default function PlanUpload({ member }: { member: string }) {
         try {
           const fd = new FormData();
           fd.append("member", member); fd.append("type", type);
-          fd.append("title", title); fd.append("note", note);
+          fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios);
           fd.append("file", contenido, f.name);
           const req = new XMLHttpRequest();
           req.open("POST", "/api/miembros/clientas/plan");
@@ -379,7 +380,7 @@ export default function PlanUpload({ member }: { member: string }) {
         const res = await fetch("/api/miembros/clientas/plan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ member, type, title, note, path: datos.path, pathToken: datos.pathToken }),
+          body: JSON.stringify({ member, type, title, note, exercises: ejercicios, path: datos.path, pathToken: datos.pathToken }),
         });
         if (res.ok) return true;
         const d = await res.json().catch(() => ({}));
@@ -432,6 +433,22 @@ export default function PlanUpload({ member }: { member: string }) {
         aria-label="Comentario para la clienta"
         className={cls}
       />
+      {type === "entrenamiento" && (
+        <div className="flex flex-col gap-1">
+          <textarea
+            value={ejercicios}
+            onChange={(e) => setEjercicios(e.target.value)}
+            rows={4}
+            maxLength={4000}
+            placeholder={"Ejercicios del plan, uno por línea (opcional):\nSentadilla\nPress banca\nRemo con mancuerna"}
+            aria-label="Ejercicios del plan, uno por línea"
+            className={cls}
+          />
+          <p className="text-xs text-ink-subtle">
+            Con esta lista, en cada revisión ella apunta el peso y las repeticiones de cada ejercicio y las dos veis en qué progresa más y en qué menos.
+          </p>
+        </div>
+      )}
       {/*
         EL SOLTAR LO ATIENDE EL CAMPO DE ARCHIVO, NO ESTE RECUADRO.
 

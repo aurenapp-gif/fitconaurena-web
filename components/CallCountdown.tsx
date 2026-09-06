@@ -38,19 +38,19 @@ export default function CallCountdown({ callUrl = "", variant = "tarjeta" }: { c
     const target = now === null ? null : proximaLlamada(now);
     const live = target !== null && now !== null && target <= now;
     return (
-      <div className="flex items-center justify-between gap-3 py-3">
+      <div className="flex items-center justify-between gap-3 min-h-[46px] px-4 py-2.5">
         <div className="min-w-0">
-          <p className="text-[11.5px] font-bold text-ink-muted tracking-wide">Llamada grupal</p>
-          <p className="text-base font-extrabold text-ink tracking-tight truncate">
+          <p className="text-[17px] text-ink leading-[22px]">Llamada de grupo</p>
+          <p className="text-[15px] text-ink-muted leading-5 truncate">
             {target === null ? "Jueves a las 17:30" : `${diaLlamada(target)} · 17:30`}
           </p>
         </div>
         {live && callUrl ? (
-          <a href={callUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-xs px-4 !min-h-[40px] shrink-0 animate-pulse">
+          <a href={callUrl} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-4 !min-h-[40px] shrink-0 animate-pulse">
             Entrar
           </a>
         ) : (
-          <span className={`text-xs font-bold shrink-0 ${live ? "text-brand" : "text-ink-muted"}`}>
+          <span className={`text-[17px] shrink-0 whitespace-nowrap ${live ? "text-brand" : "text-ink-subtle"}`}>
             {target === null || now === null ? "" : faltaPara(target, now)}
           </span>
         )}

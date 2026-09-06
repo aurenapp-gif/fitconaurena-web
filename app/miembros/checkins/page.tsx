@@ -6,16 +6,20 @@ import AdminCheckinReply from "@/components/AdminCheckinReply";
 import WeightChart from "@/components/WeightChart";
 import ProgressSummary from "@/components/ProgressSummary";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import EntrenoProgreso from "@/components/EntrenoProgreso";
 import CheckinsBuscador, { type FichaBusqueda } from "@/components/CheckinsBuscador";
 import ComparativaRevision from "@/components/ComparativaRevision";
-import { isAdmin } from "@/lib/members";
+import { Grupo, NotaCoach, Privado } from "@/components/Grupo";
+import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
-import { periodoDe, todayMadrid, NORMA } from "@/lib/revisiones";
+import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
+import { fechaCorta } from "@/lib/renovaciones";
 import { comparar, objetivoDe } from "@/lib/progreso";
+import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio, type Progreso } from "@/lib/entreno";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 
-export const metadata: Metadata = { title: "Check-ins", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Revisiones", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 type CheckIn = {
@@ -37,6 +41,7 @@ type CheckIn = {
   thigh: number | null;
   glute?: number | null;
   back?: number | null;
+  exercises?: unknown;
 };
 
 // Mismo orden que el formulario (de arriba abajo del cuerpo).
@@ -61,25 +66,29 @@ function hayNumero(v: unknown): boolean {
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" });
 }
+const fechaLarga = (d: string) => new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" });
 
-// Índice de semana alineado a lunes (epoch 1970-01-01 fue jueves).
-function weekIndex(d: string): number {
-  return Math.floor((Math.floor(new Date(d).getTime() / 86400000) + 3) / 7);
+/** Índice de quincena (dos por mes) de una fecha ISO, en horario de Madrid. */
+function quincenaIndex(iso: string): number {
+  const d = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(iso));
+  const [y, m, day] = d.split("-").map(Number);
+  return (y * 12 + (m - 1)) * 2 + (day >= 15 ? 1 : 0);
 }
 
-// Racha de semanas consecutivas con al menos un check-in (0 si se rompió).
-function weeklyStreak(dates: string[]): number {
-  if (!dates.length) return 0;
-  const weeks = Array.from(new Set(dates.map(weekIndex))).sort((a, b) => a - b);
-  const nowW = weekIndex(new Date().toISOString());
-  const lastW = weeks[weeks.length - 1];
-  if (nowW - lastW > 1) return 0; // último check-in hace más de 1 semana
-  let streak = 1;
-  for (let i = weeks.length - 1; i > 0; i--) {
-    if (weeks[i] - weeks[i - 1] === 1) streak++;
+/** Revisiones seguidas: quincenas consecutivas con al menos una, hasta la
+ * quincena en curso o la anterior (si la de ahora aún no toca o no está). */
+function revisionesSeguidas(fechas: string[], hoy: string): number {
+  if (!fechas.length) return 0;
+  const qs = Array.from(new Set(fechas.map(quincenaIndex))).sort((a, b) => a - b);
+  const ahora = quincenaIndex(hoy + "T12:00:00Z");
+  const ultima = qs[qs.length - 1];
+  if (ahora - ultima > 1) return 0;
+  let n = 1;
+  for (let i = qs.length - 1; i > 0; i--) {
+    if (qs[i] - qs[i - 1] === 1) n++;
     else break;
   }
-  return streak;
+  return n;
 }
 
 const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch(() => undefined) : Promise.resolve(undefined));
@@ -115,36 +124,57 @@ export default async function CheckinsPage({
 }) {
   const email = await requireMember();
   const admin = isAdmin(email);
+  const hoy = todayMadrid();
 
   // Clienta elegida en el buscador (solo la coach). Con una elegida se trae su
   // historial ENTERO y en orden, que es lo que hace falta para comparar
   // sesiones; sin elegir, las últimas cincuenta de todas.
   const elegida = admin && searchParams?.clienta ? normalizeEmail(searchParams.clienta) : "";
   const filtrada = elegida !== "" && isValidEmail(elegida);
+  // Correo cuyo historial se enseña de forma cronológica (la clienta o la
+  // elegida por la coach). Sirve para los ejercicios y el sueño.
+  const quien = admin ? (filtrada ? elegida : "") : email;
 
   const q = admin
     ? filtrada
       ? `select=*&member_email=eq.${encodeURIComponent(elegida)}&order=created_at.asc`
       : "select=*&order=created_at.desc&limit=50"
     : `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`;
-  const [rows, goalWeight] = await Promise.all([
+  const desde30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const coachEmail = adminEmails()[0];
+
+  const [rows, perfil, planEntreno, suenos, coachNombre] = await Promise.all([
     sbSelect<CheckIn>("check_ins", q).catch((e) => { console.error("[checkins] error", e); return [] as CheckIn[]; }),
     admin
       ? Promise.resolve(null)
-      : sbSelect<{ questionnaire: Record<string, string> | null }>(
-          "profiles", `select=questionnaire&email=eq.${encodeURIComponent(email)}`
-        ).then((r) => {
-          const g = Number(r[0]?.questionnaire?.peso_objetivo);
-          return Number.isFinite(g) ? g : null;
-        }).catch((e) => { console.error("[checkins] goal", e); return null; }),
+      : sbSelect<{ questionnaire: Record<string, string> | null; hide_weight?: boolean | null }>(
+          "profiles", `select=questionnaire,hide_weight&email=eq.${encodeURIComponent(email)}`
+        ).then((r) => r[0] ?? null).catch((e) => { console.error("[checkins] perfil", e); return null; }),
+    quien
+      ? sbSelect<{ exercises: unknown; title: string | null }>("plans", `select=exercises,title&member_email=eq.${encodeURIComponent(quien)}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
+          .then((r) => r[0] ?? null).catch(() => null)
+      : Promise.resolve(null),
+    quien
+      ? sbSelect<{ sleep: number | null }>("habit_logs", `select=sleep&member_email=eq.${encodeURIComponent(quien)}&day=gte.${desde30}&sleep=not.is.null`)
+          .catch(() => [] as { sleep: number | null }[])
+      : Promise.resolve([] as { sleep: number | null }[]),
+    coachEmail
+      ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
+          .then((r) => r[0]?.display_name ?? null).catch(() => null)
+      : Promise.resolve(null),
   ]);
+  const inicialCoach = (coachNombre || "C").trim().charAt(0).toUpperCase();
+  const goalWeight = (() => { const g = Number(perfil?.questionnaire?.peso_objetivo); return Number.isFinite(g) && g > 0 ? g : null; })();
+  const ocultarPeso = !!perfil?.hide_weight;
+  const suenoMedio = suenos.length ? suenos.reduce((a, s) => a + Number(s.sleep ?? 0), 0) / suenos.length : null;
 
   // Quincena en curso (día 1 o día 15). Para la clienta, si ya subió la suya;
   // para la coach, quién la ha hecho y quién no.
-  const periodo = periodoDe(todayMadrid());
+  const periodo = periodoDe(hoy);
   const hechaEstaQuincena = admin
     ? false
     : rows.some((r) => r.created_at.slice(0, 10) >= periodo.inicio);
+  const prox = proximaRevision(hoy, hechaEstaQuincena);
 
   let pendientes: string[] = [];
   let alDia: string[] = [];
@@ -194,22 +224,34 @@ export default async function CheckinsPage({
 
   const nombreElegida = filtrada ? nombres.get(elegida) ?? elegida : "";
 
-  // `rows` de la clienta filtrada viene de la más vieja a la más nueva. Para
-  // enseñarlas se le da la vuelta, pero se guarda el índice cronológico porque
-  // cada una se compara con la que tiene DETRÁS en el tiempo, no en pantalla.
-  const cronologicas = filtrada ? rows : [];
+  // `rows` de la clienta (o de la elegida) viene de la más vieja a la más
+  // nueva. Para enseñarlas se le da la vuelta, pero se guarda el índice
+  // cronológico porque cada una se compara con la que tiene DETRÁS en el
+  // tiempo, no en pantalla.
+  const cronologicas = admin ? (filtrada ? rows : []) : rows;
   const items = await withPhoto(admin ? (filtrada ? [...rows].reverse() : rows) : [...rows].reverse());
+  const posicion = new Map(cronologicas.map((r, i) => [r.id, i]));
+
+  // Entrenamiento: progreso de cada revisión frente a la anterior que tenga
+  // ejercicios, y los del plan vigente para el formulario (prerrellenados con
+  // la última revisión).
+  const entrenoDe = new Map<string, Progreso[]>();
+  let ultimoConEjercicios: Ejercicio[] | null = null;
+  for (const r of cronologicas) {
+    const ej = ejerciciosDe(r.exercises);
+    if (ej.length === 0) continue;
+    entrenoDe.set(r.id, compararEntreno(ej, ultimoConEjercicios));
+    ultimoConEjercicios = ej;
+  }
+  const nombresPlan = nombresDe(planEntreno?.exercises);
+  const previos = new Map((ultimoConEjercicios ?? []).map((e) => [e.name.toLowerCase(), e]));
+  const ejerciciosForm: Ejercicio[] = nombresPlan.map((n) => ({ name: n, weight: previos.get(n.toLowerCase())?.weight ?? null, reps: previos.get(n.toLowerCase())?.reps ?? null }));
+  const ultimaConEntreno = [...cronologicas].reverse().find((r) => entrenoDe.has(r.id));
 
   // Peso de la clienta filtrada, para su gráfica.
   const puntosClienta = filtrada
     ? cronologicas.filter((r) => hayNumero(r.weight)).map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
     : [];
-  // Índice de cada revisión dentro del orden cronológico, por id.
-  const posicion = new Map(cronologicas.map((r, i) => [r.id, i]));
-  // Solo pesos numéricos válidos (un valor corrupto nunca debe romper la gráfica).
-  const points = (admin ? [] : rows)
-    .filter((r) => hayNumero(r.weight))
-    .map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }));
 
   // Resumen de progreso (solo clienta). rows viene en orden ascendente.
   const mine = admin ? [] : rows;
@@ -218,11 +260,11 @@ export default async function CheckinsPage({
   const lastWeight = validWeights.length ? validWeights[validWeights.length - 1] : null;
   const weightDelta =
     firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
-  const streak = admin ? 0 : weeklyStreak(mine.map((r) => r.created_at));
+  const seguidas = admin ? 0 : revisionesSeguidas(mine.map((r) => r.created_at), hoy);
   // Cintura: primera vs última medida registrada (medida estrella del progreso).
-  const waists = mine.filter((r) => hayNumero(r.waist)).map((r) => Number(r.waist));
-  const firstWaist = waists.length ? waists[0] : null;
-  const lastWaist = waists.length ? waists[waists.length - 1] : null;
+  const cinturas = mine.filter((r) => hayNumero(r.waist)).map((r) => ({ date: fmt(r.created_at), value: Number(r.waist) }));
+  const firstWaist = cinturas.length ? cinturas[0].value : null;
+  const lastWaist = cinturas.length ? cinturas[cinturas.length - 1].value : null;
   const firstWithFront = mine.find((r) => r.photo_front);
   const lastWithFront = [...mine].reverse().find((r) => r.photo_front);
   const [beforePhoto, afterPhoto] = await Promise.all([
@@ -235,9 +277,9 @@ export default async function CheckinsPage({
       <AppShell admin={admin} />
       <main className="app-main relative min-h-screen">
         <div className={`${admin ? "container-wide" : "container-content"} relative z-10 py-6 lg:py-12`}>
-          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-            <h1 className="text-[26px] lg:text-3xl font-extrabold text-ink tracking-tight leading-tight">
-              {admin ? (filtrada ? nombreElegida : "Check-ins") : "Mis check-ins"}
+          <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+            <h1 className="page-title">
+              {admin ? (filtrada ? nombreElegida : "Revisiones") : "Mis revisiones"}
             </h1>
             {admin && filtrada && (
               <Link href="/miembros/checkins" className="btn-outline text-sm px-5 py-2.5">← Todas</Link>
@@ -249,70 +291,74 @@ export default async function CheckinsPage({
           {admin && filtrada ? null : admin ? (
             <div className="card-dark p-5 !transform-none mb-8">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-                <h2 className="font-bold text-ink">Revisión del {periodo.etiqueta}</h2>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${pendientes.length === 0 ? "bg-brand text-white" : "bg-warn/20 text-warn border border-warn/40"}`}>
+                <h2 className="font-semibold text-ink">Revisión del {periodo.etiqueta}</h2>
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${pendientes.length === 0 ? "bg-success-soft text-success" : "bg-warn-soft text-warn"}`}>
                   {alDia.length} de {alDia.length + pendientes.length} hechas
                 </span>
               </div>
               <p className="text-xs text-ink-subtle mb-3">{NORMA}</p>
               {pendientes.length === 0 ? (
-                <p className="text-sm text-brand">Todas al día ✓</p>
+                <p className="text-sm text-success">Todas al día</p>
               ) : (
                 <>
-                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
                   <p className="text-sm text-ink mb-3">{pendientes.join(" · ")}</p>
                 </>
               )}
               {alDia.length > 0 && (
                 <>
-                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-1.5">Hechas ({alDia.length})</p>
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-1.5">Hechas ({alDia.length})</p>
                   <p className="text-sm text-ink-muted">{alDia.join(" · ")}</p>
                 </>
               )}
             </div>
           ) : (
-            <div className={`rounded-2xl border px-4 py-3.5 mb-3.5 ${hechaEstaQuincena ? "border-brand/30 bg-brand-soft" : "border-warn/30 bg-warn-soft"}`}>
-              <p className={`text-sm font-extrabold ${hechaEstaQuincena ? "text-brand-dark" : "text-warn"}`}>
-                {hechaEstaQuincena
-                  ? `Revisión del ${periodo.etiqueta} hecha ✓`
-                  : `Te falta la revisión del ${periodo.etiqueta}`}
-              </p>
-              <p className={`text-xs mt-0.5 ${hechaEstaQuincena ? "text-brand-dark/80" : "text-warn/90"}`}>
-                {hechaEstaQuincena
-                  ? "Las revisiones son el día 1 y el día 15 de cada mes."
-                  : "Peso y tres fotos: frente, perfil y espaldas."}
-              </p>
+            <div className="bg-surface rounded-[14px] px-4 py-3 mb-5 flex items-start gap-3">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={hechaEstaQuincena ? "rgb(var(--c-success))" : "rgb(var(--c-warn))"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden="true">
+                {hechaEstaQuincena ? <path d="M20 6L9 17l-5-5" /> : <><rect x="3.5" y="5" width="17" height="16" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>}
+              </svg>
+              <div className="min-w-0">
+                <p className="text-[17px] font-semibold text-ink leading-snug">
+                  {hechaEstaQuincena ? `Revisión del ${periodo.etiqueta} hecha` : `Tu revisión del ${periodo.etiqueta}`}
+                </p>
+                <p className="text-[15px] text-ink-muted mt-0.5">
+                  {hechaEstaQuincena
+                    ? `La siguiente, el ${fechaCorta(prox.fecha)}. Las revisiones son el 1 y el 15 de cada mes.`
+                    : periodo.dia === 0 ? "Hoy toca. Peso opcional y tres fotos: frente, perfil y espaldas." : `Sigue sin subir. Peso opcional y tres fotos: frente, perfil y espaldas.`}
+                </p>
+              </div>
             </div>
           )}
 
           {!admin && (
-            <div className="flex flex-col gap-3.5 mb-5">
+            <div className="flex flex-col gap-5 mb-5">
               <ProgressSummary
                 total={mine.length}
-                streak={streak}
+                seguidas={seguidas}
                 firstWeight={firstWeight}
                 lastWeight={lastWeight}
                 weightDelta={weightDelta}
                 goalWeight={goalWeight}
                 firstWaist={firstWaist}
                 lastWaist={lastWaist}
+                sueno={suenoMedio}
+                cinturas={cinturas}
+                ocultarPeso={ocultarPeso}
                 beforePhoto={beforePhoto}
                 afterPhoto={afterPhoto}
                 beforeDate={firstWithFront ? fmt(firstWithFront.created_at) : undefined}
                 afterDate={lastWithFront ? fmt(lastWithFront.created_at) : undefined}
               />
-              {points.length >= 2 && (
-                <div className="card-dark !p-4 !transform-none">
-                  <p className="text-[11.5px] font-bold text-ink-muted tracking-wide mb-2">Tu peso</p>
-                  <WeightChart points={points} />
-                </div>
+              {ultimaConEntreno && (
+                <Grupo label="Tu entrenamiento" foot="Comparado con tu revisión anterior por el peso que mueves y las repeticiones que haces.">
+                  <EntrenoProgreso progreso={entrenoDe.get(ultimaConEntreno.id) ?? []} />
+                </Grupo>
               )}
-              <CheckinForm plegado={mine.length > 0} />
+              {nombresPlan.length === 0 && mine.length === 0 && (
+                <p className="text-[13px] text-ink-muted px-4">Cuando tu coach suba tu plan de entrenamiento con sus ejercicios, aquí apuntarás tus pesos y repeticiones en cada revisión.</p>
+              )}
+              <CheckinForm plegado={mine.length > 0} ejercicios={ejerciciosForm} />
             </div>
-          )}
-
-          {!admin && items.length > 0 && (
-            <p className="text-[11.5px] font-bold text-ink-muted tracking-wide px-0.5 mb-2">Anteriores</p>
           )}
 
           {admin && !filtrada && fichas.length > 0 && <CheckinsBuscador fichas={fichas} />}
@@ -321,7 +367,7 @@ export default async function CheckinsPage({
             <div className="card-dark p-6 !transform-none mb-6">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
                 <div className="min-w-0">
-                  <h2 className="font-bold text-ink truncate">{nombreElegida}</h2>
+                  <h2 className="font-semibold text-ink truncate">{nombreElegida}</h2>
                   <p className="text-xs text-ink-subtle">
                     {cronologicas.length} {cronologicas.length === 1 ? "revisión" : "revisiones"}
                     {objetivo ? ` · objetivo: ${objetivo}` : ""}
@@ -339,7 +385,7 @@ export default async function CheckinsPage({
 
               {puntosClienta.length >= 2 && (
                 <div className="mb-5">
-                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Peso</p>
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">Peso</p>
                   <WeightChart points={puntosClienta} />
                 </div>
               )}
@@ -347,7 +393,7 @@ export default async function CheckinsPage({
               {/* Desde la primera hasta la última: el balance de todo el servicio. */}
               {cronologicas.length >= 2 && (
                 <div>
-                  <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">
                     Desde su primera revisión ({fmt(cronologicas[0].created_at)})
                   </p>
                   <ComparativaRevision
@@ -360,38 +406,52 @@ export default async function CheckinsPage({
                 </div>
               )}
 
+              {ultimaConEntreno && (
+                <div className="mt-5">
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">
+                    Entrenamiento · última revisión frente a la anterior
+                  </p>
+                  <div className="rounded-xl bg-page">
+                    <EntrenoProgreso progreso={entrenoDe.get(ultimaConEntreno.id) ?? []} />
+                  </div>
+                </div>
+              )}
+
               <p className="text-[11px] text-ink-subtle mt-3">
                 Azul lo que baja, rojo lo que sube, gris lo que se queda igual. Siempre.
               </p>
             </div>
           )}
 
+          {!admin && items.length > 0 && <span className="group-label">Anteriores</span>}
+
           <div className="flex flex-col gap-3">
             {items.length === 0 ? (
-              <p className="text-sm text-ink-muted">{admin ? "Aún no hay check-ins." : "Tu primer check-in aparecerá aquí."}</p>
+              <p className="text-[15px] text-ink-muted px-4">{admin ? "Aún no hay revisiones." : "Tu primera revisión aparecerá aquí."}</p>
             ) : (
               items.map((it) => (
-                <div key={it.id} className="card-dark !p-4 !transform-none">
+                <div key={it.id} className={admin ? "card-dark !p-4 !transform-none" : "bg-surface rounded-[14px] p-4"}>
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       {admin && !filtrada && (
                         <Link href={`/miembros/checkins?clienta=${encodeURIComponent(it.member_email)}`}
-                          className="min-h-[40px] inline-flex items-center text-sm font-bold text-ink hover:text-brand">
+                          className="min-h-[40px] inline-flex items-center text-sm font-semibold text-ink hover:text-brand">
                           {nombres.get(it.member_email) ?? it.member_email}
                         </Link>
                       )}
                       {admin && filtrada && (
-                        <span className="text-xs font-bold text-ink-subtle">
+                        <span className="text-xs font-semibold text-ink-subtle">
                           Revisión {(posicion.get(it.id) ?? 0) + 1} de {cronologicas.length}
                         </span>
                       )}
-                      {it.weight != null && (
-                        <span className={admin ? "text-sm font-bold text-brand" : "text-base font-extrabold text-ink"}>{it.weight} kg</span>
+                      {!admin && <span className="text-[17px] font-semibold text-ink">{fechaLarga(it.created_at)}</span>}
+                      {it.weight != null && (admin || !ocultarPeso) && (
+                        <span className={admin ? "text-sm font-semibold text-brand" : "text-[15px] text-ink-muted"}>{it.weight} kg</span>
                       )}
                     </div>
-                    <span className="text-xs text-ink-muted">{fmt(it.created_at)}</span>
+                    <span className="text-[13px] text-ink-muted">{admin ? fmt(it.created_at) : ""}</span>
                   </div>
-                  {it.note && <p className="text-sm text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
+                  {it.note && <p className="text-[15px] text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
                   {admin && filtrada && (
                     <ComparativaRevision
                       cambios={comparar(
@@ -404,20 +464,34 @@ export default async function CheckinsPage({
                     />
                   )}
                   {!(admin && filtrada) && MEASURE_LABELS.some((m) => it[m.key] != null) && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => (
-                        <span key={m.key} className="text-[11.5px] text-ink-muted rounded-lg bg-page px-2.5 py-1.5">
-                          {m.label} <span className="text-ink font-bold">{it[m.key] as number} cm</span>
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-[15px] text-ink-muted mb-3">
+                      {MEASURE_LABELS.filter((m) => it[m.key] != null).map((m) => `${m.label} ${it[m.key] as number}`).join(" · ")} cm
+                    </p>
                   )}
-                  {it.photos.length > 0 && <PhotoLightbox photos={it.photos} />}
+                  {admin && filtrada && entrenoDe.has(it.id) && (
+                    <div className="rounded-xl bg-page mb-3"><EntrenoProgreso progreso={entrenoDe.get(it.id) ?? []} compacto /></div>
+                  )}
+                  {!admin && entrenoDe.has(it.id) && (
+                    <details className="mb-3 group">
+                      <summary className="text-[15px] text-brand cursor-pointer list-none min-h-[40px] inline-flex items-center [&::-webkit-details-marker]:hidden">Entrenamiento de esta revisión</summary>
+                      <div className="rounded-xl bg-page mt-2"><EntrenoProgreso progreso={entrenoDe.get(it.id) ?? []} compacto /></div>
+                    </details>
+                  )}
+                  {it.photos.length > 0 && (
+                    <>
+                      <PhotoLightbox photos={it.photos} />
+                      {!admin && <div className="mt-1"><Privado>Solo tú y tu coach veis estas fotos.</Privado></div>}
+                    </>
+                  )}
                   {it.coach_reply ? (
-                    <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 px-4 py-3">
-                      <p className="text-xs font-bold text-brand mb-1">Respuesta de tu coach</p>
-                      <p className="text-sm text-ink whitespace-pre-wrap">{it.coach_reply}</p>
-                    </div>
+                    admin ? (
+                      <div className="mt-3 rounded-lg bg-brand-soft px-4 py-3">
+                        <p className="text-xs font-semibold text-brand mb-1">Tu respuesta</p>
+                        <p className="text-sm text-ink whitespace-pre-wrap">{it.coach_reply}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-2 -mx-4 border-t border-line"><NotaCoach texto={it.coach_reply} inicial={inicialCoach} fecha={it.coach_reply_at ? fechaLarga(it.coach_reply_at) : undefined} /></div>
+                    )
                   ) : (
                     admin && <AdminCheckinReply id={it.id} />
                   )}

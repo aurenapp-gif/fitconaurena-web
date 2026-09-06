@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
  * Además siempre se ofrece "Descargar" (Supabase fuerza la descarga con el
  * parámetro `download`, conservando el nombre original del archivo).
  */
-export default function FileViewer({ url, label, buttonText = "Ver plan", ancho = false }: { url: string; label: string; buttonText?: string; /** Botón a todo lo ancho (tarjeta del plan en móvil). */ ancho?: boolean }) {
+export default function FileViewer({ url, label, buttonText = "Ver plan", ancho = false, fila = false }: { url: string; label: string; buttonText?: string; /** Botón a todo lo ancho (tarjeta del plan en móvil). */ ancho?: boolean; /** Como fila de acción de un grupo: texto azul centrado, sin botón. */ fila?: boolean }) {
   const [open, setOpen] = useState(false);
   // Por defecto asumimos móvil (lo más común entre las clientas): así, si el
   // JS de detección no llega a ejecutarse, el botón abre el visor nativo, que
@@ -49,6 +49,16 @@ export default function FileViewer({ url, label, buttonText = "Ver plan", ancho 
 
   return (
     <>
+      {fila ? (
+        <div className="flex items-center justify-center gap-6 min-h-[46px] px-4 text-[17px] text-brand font-medium">
+          {canEmbed ? (
+            <button type="button" onClick={() => { track("plan_abierto"); setOpen(true); }} className="min-h-[44px]">{buttonText}</button>
+          ) : (
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => track("plan_abierto")} className="min-h-[44px] inline-flex items-center">{buttonText}</a>
+          )}
+          <a href={downloadUrl} onClick={() => track("plan_descargado")} className="text-ink-muted text-[15px] min-h-[44px] inline-flex items-center">Descargar</a>
+        </div>
+      ) : (
       <div className={ancho ? "flex flex-col gap-2 mt-1" : "flex items-center gap-3 flex-wrap mt-2"}>
         {canEmbed ? (
           <button type="button" onClick={() => { track("plan_abierto"); setOpen(true); }} className={`btn-brand text-sm px-5 py-2.5 ${ancho ? "w-full" : "inline-flex"}`}>
@@ -61,6 +71,7 @@ export default function FileViewer({ url, label, buttonText = "Ver plan", ancho 
         )}
         <a href={downloadUrl} onClick={() => track("plan_descargado")} className={`text-brand text-sm font-semibold ${ancho ? "text-center min-h-[40px] inline-flex items-center justify-center" : ""}`}>Descargar</a>
       </div>
+      )}
 
       {open && (
         <div onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/90 flex flex-col p-3 sm:p-6">

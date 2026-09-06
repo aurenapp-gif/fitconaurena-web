@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { sendPushToEmail } from "@/lib/push";
 import { sendCheckinDoneNotice } from "@/lib/mailer";
 import { periodoDe, todayMadrid } from "@/lib/revisiones";
+import { limpiarEjercicios } from "@/lib/entreno";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -83,12 +84,21 @@ export async function POST(req: NextRequest) {
   }
   const hasMeasure = Object.keys(measures).length > 0;
 
+  // Entrenamiento: peso y repeticiones por ejercicio, como JSON en un campo.
+  let exercises: ReturnType<typeof limpiarEjercicios> = [];
+  try {
+    const raw = String(form.get("exercises") ?? "").trim();
+    if (raw) exercises = limpiarEjercicios(JSON.parse(raw));
+  } catch {
+    return NextResponse.json({ error: "Los datos de entrenamiento no son válidos." }, { status: 400 });
+  }
+
   const hasPhoto = ["photo_front", "photo_side", "photo_back"].some((k) => {
     const f = form.get(k);
     return f instanceof File && f.size > 0;
   });
-  if (weight === null && !note && !hasPhoto && !hasMeasure) {
-    return NextResponse.json({ error: "Añade al menos peso, medidas, nota o foto." }, { status: 400 });
+  if (weight === null && !note && !hasPhoto && !hasMeasure && exercises.length === 0) {
+    return NextResponse.json({ error: "Añade al menos peso, medidas, entrenamiento, nota o foto." }, { status: 400 });
   }
   const badPhoto = validatePhotos(form);
   if (badPhoto) return NextResponse.json({ error: badPhoto }, { status: 400 });
@@ -107,18 +117,19 @@ export async function POST(req: NextRequest) {
       photo_side,
       photo_back,
     };
+    const conEjercicios = exercises.length ? { exercises } : {};
     try {
-      await sbInsert("check_ins", { ...row, ...measures });
+      await sbInsert("check_ins", { ...row, ...measures, ...conEjercicios });
     } catch (e) {
-      // Reintento sin las medidas nuevas por si aún no existen sus columnas.
-      // Nunca perdemos el check-in por una medida opcional.
+      // Reintento sin las columnas nuevas (medidas recientes, ejercicios) por
+      // si aún no existen. Nunca perdemos la revisión por un dato opcional.
       const safe = { ...measures };
-      let dropped = false;
+      let dropped = exercises.length > 0;
       for (const m of NEW_MEASURES) {
         if (m in safe) { delete safe[m]; dropped = true; }
       }
       if (!dropped) throw e;
-      console.error("[api/miembros/checkin] reintento sin medidas nuevas", e);
+      console.error("[api/miembros/checkin] reintento sin columnas nuevas", e);
       await sbInsert("check_ins", { ...row, ...safe });
     }
   } catch (err) {

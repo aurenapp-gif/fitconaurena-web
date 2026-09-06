@@ -25,6 +25,8 @@ import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
 import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe } from "@/lib/renovaciones";
+import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio } from "@/lib/entreno";
+import EntrenoProgreso from "@/components/EntrenoProgreso";
 
 export const metadata: Metadata = { title: "Clienta", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -37,8 +39,8 @@ type Prof = {
   full_name?: string | null; address?: string | null; postal_code?: string | null;
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
 };
-type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string };
-type CheckIn = { weight: number | null; created_at: string };
+type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown };
+type CheckIn = { weight: number | null; created_at: string; exercises?: unknown };
 type Activity = { action: string; detail: string | null; created_at: string };
 
 function fmtDate(d: string) {
@@ -98,7 +100,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
     // pantalla puede decir que no ha podido cargarlos.
     sbSelect<Plan>("plans", `select=*&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc`)
       .catch((e) => { console.error("[clienta] plans", e); return null; }),
-    sbSelect<CheckIn>("check_ins", `select=weight,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
+    sbSelect<CheckIn>("check_ins", `select=weight,created_at,exercises&member_email=eq.${encodeURIComponent(member)}&order=created_at.asc`)
       .catch((e) => { console.error(e); return [] as CheckIn[]; }),
     sbSelect<ContractTemplate>("contract_templates", "select=*&order=created_at.desc")
       .catch(() => [] as ContractTemplate[]),
@@ -243,6 +245,22 @@ export default async function ClientaPage({ params }: { params: { email: string 
   }));
   const pendientes = assignments.filter((a) => a.status === "pendiente");
 
+  // Entrenamiento: progresión de la última revisión con ejercicios frente a la
+  // anterior, con los mismos números que ve ella.
+  let entrenoUltimo: ReturnType<typeof compararEntreno> = [];
+  let entrenoFecha = "";
+  {
+    let previo: Ejercicio[] | null = null;
+    for (const c of checkins) {
+      const ej = ejerciciosDe(c.exercises);
+      if (ej.length === 0) continue;
+      entrenoUltimo = compararEntreno(ej, previo);
+      entrenoFecha = fmtDate(c.created_at);
+      previo = ej;
+    }
+  }
+  const ejerciciosPlan = nombresDe((plans ?? []).find((p) => p.type === "entrenamiento")?.exercises);
+
   return (
     <>
       <AppShell admin />
@@ -342,6 +360,24 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <Renovaciones alimentacion={renovAlimentacion} entrenamiento={renovEntrenamiento} />
           </div>
 
+          {/* Progresión de entrenamiento: lo que apunta en cada revisión */}
+          {(entrenoUltimo.length > 0 || ejerciciosPlan.length > 0) && (
+            <div className="card-dark p-6 !transform-none mb-6">
+              <h2 className="font-bold text-ink mb-1">Entrenamiento</h2>
+              {ejerciciosPlan.length > 0 && (
+                <p className="text-xs text-ink-muted mb-3">Ejercicios del plan vigente: {ejerciciosPlan.join(" · ")}</p>
+              )}
+              {entrenoUltimo.length > 0 ? (
+                <>
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">Última revisión con ejercicios ({entrenoFecha}) frente a la anterior</p>
+                  <div className="rounded-xl bg-page"><EntrenoProgreso progreso={entrenoUltimo} /></div>
+                </>
+              ) : (
+                <p className="text-sm text-ink-muted">Todavía no ha apuntado pesos ni repeticiones. Le saldrán en su próxima revisión.</p>
+              )}
+            </div>
+          )}
+
           {/* Subir planes */}
           <div className="card-dark p-6 !transform-none mb-6">
             <h2 className="font-bold text-ink mb-4">Subir plan</h2>
@@ -375,6 +411,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                       </span>
                     </div>
                     {p.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap border-t border-line pt-1.5">💬 {p.note}</p>}
+                    {nombresDe(p.exercises).length > 0 && <p className="text-xs text-ink-muted mt-1.5 border-t border-line pt-1.5">Ejercicios: {nombresDe(p.exercises).join(" · ")}</p>}
                   </div>
                 ))}
               </div>

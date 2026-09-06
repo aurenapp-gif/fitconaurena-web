@@ -279,8 +279,8 @@ export async function GET(req: NextRequest) {
     for (const m of members) {
       if (logged.has(m.email)) continue; // ya registró hoy
       sendPushToEmail(m.email, {
-        title: "¿Tus hábitos de hoy? 💧",
-        body: "Registra tu agua, pasos y sueño para no perder la racha.",
+        title: "¿Apuntas tu día?",
+        body: "Apunta tu agua, pasos y sueño para no perder la racha.",
         url: "/miembros/perfil",
       }).catch((e) => console.error("[cron] push habito", e));
       habitPushed++;
