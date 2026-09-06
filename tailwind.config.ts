@@ -45,8 +45,8 @@ const config: Config = {
         success: { DEFAULT: t("--c-success"), soft: t("--c-success-soft") },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
-        display: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        display: ["-apple-system", "BlinkMacSystemFont", "SF Pro Display", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
       },
       maxWidth: {
         narrow: "680px",

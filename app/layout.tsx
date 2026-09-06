@@ -1,27 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import NavProgress from "@/components/NavProgress";
 
-/**
- * Manrope servida desde el propio repositorio, no descargada de Google al
- * compilar.
- *
- * `next/font/google` se baja la tipografía durante el build. Cuando la máquina
- * que compila no puede llegar a fonts.gstatic.com —pasó: tres reintentos y
- * ETIMEDOUT— el build entero falla por algo que no tiene nada que ver con el
- * código. Con el archivo dentro del repositorio no hay red de por medio.
- *
- * Es la variable (de 200 a 800 en un solo archivo de 24 KB, subconjunto
- * latino, que cubre el castellano entero). Manrope es SIL Open Font License;
- * la licencia va al lado del archivo.
+/*
+ * Tipografía: la del sistema. En iPhone es la misma que usan sus apps, que es
+ * exactamente el efecto que se busca (que la app parezca de casa, no una web);
+ * en Android, la suya. Sin archivo que descargar ni fuente que cargar: el
+ * texto se pinta a la primera.
  */
-const manrope = localFont({
-  src: "./fonts/Manrope-Variable.woff2",
-  variable: "--font-sans",
-  display: "swap",
-  weight: "200 800",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -44,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F6F7F9",
+  themeColor: "#F7F5F1",
 };
 
 export default function RootLayout({
@@ -53,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={manrope.variable}>
+    <html lang="es">
       <body className="antialiased">
         <NavProgress />
         {children}

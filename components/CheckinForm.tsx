@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { resizeImage } from "@/lib/image";
+import type { Ejercicio } from "@/lib/entreno";
 
 const PHOTOS = [
   { field: "photo_front", label: "Frente" },
@@ -22,14 +23,17 @@ const MEASURES = [
 ] as const;
 
 /**
- * Formulario de check-in.
+ * Formulario de la revisión.
  *
  * Con `plegado`, en vez del formulario entero se enseña un solo botón «Subir
- * check-in» y el formulario aparece al pulsarlo: en móvil, un formulario de
- * seis campos abierto de entrada empuja el progreso fuera de la pantalla. La
- * primera vez (sin ningún check-in) va abierto: no hay nada más que ver.
+ * mi revisión» y el formulario aparece al pulsarlo: en móvil, un formulario
+ * abierto de entrada empuja el progreso fuera de la pantalla. La primera vez
+ * (sin ninguna revisión) va abierto: no hay nada más que ver.
+ *
+ * `ejercicios` son los del plan de entrenamiento vigente, prerrellenados con
+ * lo que apuntó en la revisión anterior: solo cambia lo que haya cambiado.
  */
-export default function CheckinForm({ plegado = false }: { plegado?: boolean }) {
+export default function CheckinForm({ plegado = false, ejercicios = [] }: { plegado?: boolean; ejercicios?: Ejercicio[] }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [abierto, setAbierto] = useState(!plegado);
@@ -38,6 +42,9 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [measures, setMeasures] = useState<Record<string, string>>({});
   const [showMeasures, setShowMeasures] = useState(false);
+  const [entreno, setEntreno] = useState<{ name: string; weight: string; reps: string }[]>(
+    ejercicios.map((e) => ({ name: e.name, weight: e.weight != null ? String(e.weight) : "", reps: e.reps != null ? String(e.reps) : "" }))
+  );
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [celebrate, setCelebrate] = useState("");
@@ -47,9 +54,10 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
     if (status === "loading") return;
     const anyPhoto = Object.values(files).some(Boolean);
     const anyMeasure = Object.values(measures).some((v) => v.trim() !== "");
-    if (!weight && !note && !anyPhoto && !anyMeasure) {
+    const entrenoLleno = entreno.filter((x) => x.weight.trim() !== "" || x.reps.trim() !== "");
+    if (!weight && !note && !anyPhoto && !anyMeasure && entrenoLleno.length === 0) {
       setStatus("error");
-      setMessage("Añade al menos peso, medidas, nota o foto.");
+      setMessage("Añade al menos peso, medidas, entrenamiento, nota o foto.");
       return;
     }
     setStatus("loading");
@@ -62,6 +70,9 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
       for (const m of MEASURES) {
         const v = (measures[m.field] ?? "").trim();
         if (v) fd.append(m.field, v);
+      }
+      if (entrenoLleno.length) {
+        fd.append("exercises", JSON.stringify(entrenoLleno.map((x) => ({ name: x.name, weight: x.weight.trim() || null, reps: x.reps.trim() || null }))));
       }
       for (const p of PHOTOS) {
         const f = files[p.field];
@@ -98,43 +109,36 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
           // Que el formulario quede a la vista nada más abrirse.
           setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
         }}
-        className="btn-brand text-[15px] w-full !min-h-[50px]"
+        className="btn-brand text-[17px] w-full !min-h-[50px]"
       >
-        Subir check-in
+        Subir mi revisión
       </button>
     );
   }
 
+  const campo = "rounded-[11px] bg-page px-4 py-3 text-[17px] text-ink placeholder:text-ink-subtle outline-none focus:ring-2 focus:ring-brand/40";
+  const campoChico = "w-full rounded-[9px] bg-page px-3 py-2 text-[15px] text-ink placeholder:text-ink-subtle outline-none focus:ring-2 focus:ring-brand/40 text-right";
+
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="card-dark p-5 sm:p-6 !transform-none border-brand/30 scroll-mt-20">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h3 className="font-bold text-ink">Nuevo check-in</h3>
+    <form ref={formRef} onSubmit={handleSubmit} className="bg-surface rounded-[14px] p-4 sm:p-5 scroll-mt-20">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="text-[17px] font-semibold text-ink">Tu revisión</h3>
         {plegado && (
-          <button type="button" onClick={() => setAbierto(false)} className="text-sm font-semibold text-ink-muted min-h-[40px] px-2">Cerrar</button>
+          <button type="button" onClick={() => setAbierto(false)} className="text-[15px] text-ink-muted min-h-[40px] px-2">Cerrar</button>
         )}
       </div>
       <div className="flex flex-col gap-3">
-        <input
-          type="number" step="0.1" inputMode="decimal" value={weight}
-          onChange={(e) => setWeight(e.target.value)} placeholder="Peso (kg) — opcional" aria-label="Peso en kg (opcional)"
-          className="rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
-        />
-        <p className="text-xs text-ink-muted -mt-1">
-          ¿Prefieres no pesarte? <strong className="text-ink">Déjalo en blanco</strong> y envía tu check-in igualmente
-          con tus fotos, tus medidas o una nota. Tu progreso se sigue viendo.
-        </p>
-
-        <div className="rounded-xl border border-line bg-page p-4">
-          <p className="text-sm font-semibold text-ink mb-1">📸 Sube 3 fotos: frente, perfil y espaldas</p>
-          <p className="text-xs text-ink-muted mb-4">
-            Hazlas siempre en el <strong className="text-ink">mismo sitio</strong> y con la <strong className="text-ink">misma luz</strong> (natural o artificial).
+        <div className="rounded-[11px] bg-page p-4">
+          <p className="text-[15px] font-semibold text-ink mb-0.5">Tres fotos: frente, perfil y espaldas</p>
+          <p className="text-[13px] text-ink-muted mb-3">
+            Siempre en el mismo sitio y con la misma luz. Solo las veis tú y tu coach.
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {PHOTOS.map((p) => (
-              <label key={p.field} className="flex flex-col items-center gap-2 cursor-pointer text-center">
-                <span className="text-xs font-semibold text-ink">{p.label}</span>
-                <span className={`w-full rounded-lg border px-2 py-3 text-[11px] ${files[p.field] ? "border-brand text-brand bg-brand/5" : "border-line text-ink-subtle"}`}>
-                  {files[p.field] ? "✓ Lista" : "Elegir"}
+              <label key={p.field} className="flex flex-col items-center gap-1.5 cursor-pointer text-center">
+                <span className="text-[13px] text-ink">{p.label}</span>
+                <span className={`w-full rounded-[9px] min-h-[44px] flex items-center justify-center text-[13px] ${files[p.field] ? "bg-success-soft text-success font-semibold" : "bg-surface text-ink-muted"}`}>
+                  {files[p.field] ? "Lista" : "Elegir"}
                 </span>
                 <input type="file" accept="image/*" className="hidden"
                   onChange={(e) => setFiles((f) => ({ ...f, [p.field]: e.target.files?.[0] ?? null }))} />
@@ -143,30 +147,41 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-page p-4">
+        <div className="flex flex-col gap-1">
+          <input
+            type="number" step="0.1" inputMode="decimal" value={weight}
+            onChange={(e) => setWeight(e.target.value)} placeholder="Peso en kg (opcional)" aria-label="Peso en kg (opcional)"
+            className={campo}
+          />
+          <p className="text-[13px] text-ink-muted px-1">
+            Si te pesas, en ayunas. Si prefieres no pesarte, déjalo en blanco: tu progreso se sigue viendo con las fotos y las medidas.
+          </p>
+        </div>
+
+        <div className="rounded-[11px] bg-page p-4">
           <button
             type="button"
             onClick={() => setShowMeasures((s) => !s)}
-            className="w-full flex items-center justify-between gap-2 text-left"
+            className="w-full flex items-center justify-between gap-2 text-left min-h-[28px]"
           >
-            <span className="text-sm font-semibold text-ink">📏 Medidas (cm) — opcional</span>
-            <span className="text-ink-subtle text-sm">{showMeasures ? "Ocultar −" : "Añadir +"}</span>
+            <span className="text-[15px] font-semibold text-ink">Medidas en cm (opcional)</span>
+            <span className="text-brand text-[15px]">{showMeasures ? "Ocultar" : "Añadir"}</span>
           </button>
           {showMeasures && (
             <>
-              <p className="text-xs text-ink-muted mt-1 mb-3">
+              <p className="text-[13px] text-ink-muted mt-1 mb-3">
                 Cuando la báscula no se mueve, las medidas demuestran que sí avanzas. Mídete relajada y siempre igual.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {MEASURES.map((m) => (
                   <label key={m.field} className="flex flex-col gap-1">
-                    <span className="text-[11px] text-ink-muted">{m.label}</span>
+                    <span className="text-[13px] text-ink-muted">{m.label}</span>
                     <input
                       type="number" step="0.1" inputMode="decimal"
                       value={measures[m.field] ?? ""}
                       onChange={(e) => setMeasures((v) => ({ ...v, [m.field]: e.target.value }))}
                       placeholder="cm" aria-label={`${m.label} en cm`}
-                      className="rounded-lg border border-line bg-page px-3 py-2 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
+                      className={`${campoChico} bg-surface text-left`}
                     />
                   </label>
                 ))}
@@ -175,25 +190,45 @@ export default function CheckinForm({ plegado = false }: { plegado?: boolean }) 
           )}
         </div>
 
-        <div className="rounded-xl border border-line bg-page px-4 py-3">
-          <p className="text-xs text-ink-muted">
-            ⚖️ Si te pesas, hazlo <strong className="text-ink">en ayunas</strong>, después de la primera orina de la mañana.
-          </p>
-        </div>
+        {entreno.length > 0 && (
+          <div className="rounded-[11px] bg-page p-4">
+            <p className="text-[15px] font-semibold text-ink mb-0.5">Tu entrenamiento</p>
+            <p className="text-[13px] text-ink-muted mb-3">
+              Para cada ejercicio, el peso y las repeticiones de tu mejor serie estas semanas. Viene rellenado con la revisión anterior: cambia solo lo que haya cambiado.
+            </p>
+            <div className="flex flex-col divide-y divide-line">
+              {entreno.map((x, i) => (
+                <div key={x.name} className="flex items-center gap-2 py-2">
+                  <span className="flex-1 min-w-0 text-[15px] text-ink truncate">{x.name}</span>
+                  <label className="flex items-center gap-1 w-[92px] shrink-0">
+                    <input type="number" step="0.5" inputMode="decimal" value={x.weight} aria-label={`${x.name}: peso en kg`} placeholder="kg"
+                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, weight: e.target.value } : y)))} className={`${campoChico} bg-surface`} />
+                    <span className="text-[13px] text-ink-muted">kg</span>
+                  </label>
+                  <label className="flex items-center gap-1 w-[92px] shrink-0">
+                    <input type="number" step="1" inputMode="numeric" value={x.reps} aria-label={`${x.name}: repeticiones`} placeholder="reps"
+                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, reps: e.target.value } : y)))} className={`${campoChico} bg-surface`} />
+                    <span className="text-[13px] text-ink-muted">rep</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <textarea
           value={note} onChange={(e) => setNote(e.target.value)} rows={3}
-          placeholder="¿Cómo te has sentido esta semana? (opcional)" aria-label="Nota"
-          className="rounded-xl border border-line bg-page px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-brand resize-none"
+          placeholder="¿Cómo te has sentido estas semanas? (opcional)" aria-label="Nota"
+          className={`${campo} resize-none`}
         />
-        {status === "error" && <p role="alert" className="text-sm text-danger">{message}</p>}
+        {status === "error" && <p role="alert" className="text-[15px] text-danger">{message}</p>}
         {celebrate && (
-          <p className="text-sm font-bold text-brand bg-brand/10 border border-brand/30 rounded-lg px-4 py-3">
+          <p className="text-[15px] font-semibold text-success bg-success-soft rounded-[11px] px-4 py-3">
             {celebrate}
           </p>
         )}
-        <button type="submit" disabled={status === "loading"} className="btn-brand text-[15px] w-full !min-h-[50px] disabled:opacity-60">
-          {status === "loading" ? "Guardando…" : "Guardar check-in"}
+        <button type="submit" disabled={status === "loading"} className="btn-brand text-[17px] w-full !min-h-[50px] disabled:opacity-60">
+          {status === "loading" ? "Guardando…" : "Guardar mi revisión"}
         </button>
       </div>
     </form>

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     if (rows[0]?.member_email) {
       await sendCheckinReplyEmail(rows[0].member_email);
       sendPushToEmail(rows[0].member_email, {
-        title: "Tu coach ha respondido tu check-in 💬",
+        title: "Tu coach te ha escrito",
         body: "Entra para ver sus comentarios.",
         url: "/miembros/checkins",
       }).catch((e) => console.error("[responder] push falló", e));

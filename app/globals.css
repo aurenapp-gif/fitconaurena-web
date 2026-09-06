@@ -12,30 +12,32 @@
  * pantalla más.
  */
 :root {
-  /* Superficies, de fondo a primer plano. Blancos y grises FRÍOS, apenas
-     teñidos: un blanco puro de página cansa; un gris cálido se ve sucio. */
-  --c-page: 246 247 249;        /* #F6F7F9 */
+  /* Superficies, de fondo a primer plano. Blanco roto CÁLIDO de fondo y
+     grupos blancos encima, sin borde: el contraste entre los dos ya los
+     separa. Un gris frío se veía de oficina; esto se ve de casa. */
+  --c-page: 247 245 241;        /* #F7F5F1 */
   --c-surface: 255 255 255;     /* #FFFFFF */
-  --c-surface-2: 238 240 243;   /* #EEF0F3 */
-  /* Bordes. */
-  --c-line: 230 232 236;        /* #E6E8EC */
-  --c-line-strong: 203 213 225; /* #CBD5E1 */
-  /* Texto, de más a menos presente. Nunca negro puro. */
-  --c-ink: 15 23 42;            /* #0F172A */
-  --c-ink-muted: 100 116 139;   /* #64748B */
-  --c-ink-subtle: 148 163 184;  /* #94A3B8 */
-  /* Marca. El azul de siempre; el «soft» es su tinte para fondos. */
+  --c-surface-2: 237 233 227;   /* #EDE9E3 */
+  /* Separadores, finos y cálidos. */
+  --c-line: 231 226 219;        /* #E7E2DB */
+  --c-line-strong: 201 196 189; /* #C9C4BD */
+  /* Texto, de más a menos presente. Un negro apenas cálido, nunca puro. */
+  --c-ink: 28 27 26;            /* #1C1B1A */
+  --c-ink-muted: 111 107 102;   /* #6F6B66 */
+  --c-ink-subtle: 156 151 145;  /* #9C9791 */
+  /* Marca. El azul de siempre, reservado para lo que se pulsa; el «soft» es
+     su tinte para fondos. */
   --c-brand: 28 160 227;        /* #1CA0E3 */
   --c-brand-dark: 20 136 201;   /* #1488C9 */
   --c-brand-soft: 232 245 252;  /* #E8F5FC */
-  /* Estados. Los de texto son más oscuros que sus «soft» de fondo para que
-     el contraste aguante sobre blanco. */
-  --c-danger: 220 38 38;        /* #DC2626 */
-  --c-danger-soft: 254 226 226; /* #FEE2E2 */
-  --c-warn: 180 83 9;           /* #B45309 */
-  --c-warn-soft: 254 243 199;   /* #FEF3C7 */
-  --c-success: 21 128 61;       /* #15803D */
-  --c-success-soft: 220 252 231;/* #DCFCE7 */
+  /* Estados. Melocotón para lo que se celebra o pide atención, salvia para
+     lo que mejora. Nada en rojo salvo un error de verdad. */
+  --c-danger: 190 52 52;        /* #BE3434 */
+  --c-danger-soft: 250 228 226; /* #FAE4E2 */
+  --c-warn: 184 100 58;         /* #B8643A */
+  --c-warn-soft: 251 235 221;   /* #FBEBDD */
+  --c-success: 79 122 76;       /* #4F7A4C */
+  --c-success-soft: 231 239 227;/* #E7EFE3 */
 }
 
 * {
@@ -52,7 +54,7 @@ html {
 body {
   background-color: rgb(var(--c-page));
   color: rgb(var(--c-ink));
-  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -91,7 +93,7 @@ body {
   /* Botón principal: uno por pantalla, la acción que importa. Mínimo 44 px
      de alto para que se pulse bien con el dedo. */
   .btn-brand {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[13px] font-semibold text-sm transition-all duration-150 cursor-pointer;
     min-height: 44px;
     background-color: rgb(var(--c-brand));
     color: #ffffff;
@@ -104,7 +106,7 @@ body {
 
   /* Botón secundario: borde, sin relleno. */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-150 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[13px] font-semibold text-sm transition-all duration-150 cursor-pointer;
     min-height: 44px;
     background: rgb(var(--c-surface));
     color: rgb(var(--c-ink));
@@ -127,25 +129,45 @@ body {
     font-size: clamp(1.6rem, 3vw, 2.4rem);
   }
 
+  /* ÁREA PRIVADA. Título grande de pantalla y etiqueta de grupo, como en las
+     listas agrupadas de iOS: la etiqueta va en gris pequeño encima del grupo
+     y el azul se reserva para lo que se pulsa. */
+  .page-title {
+    @apply font-bold leading-tight;
+    color: rgb(var(--c-ink));
+    letter-spacing: -0.4px;
+    font-size: clamp(1.75rem, 3vw, 2.125rem);
+  }
+  .group-label {
+    @apply block text-[13px] uppercase px-4 pb-1.5;
+    letter-spacing: 0.02em;
+    color: rgb(var(--c-ink-muted));
+  }
+  .group-foot {
+    @apply block text-[13px] px-4 pt-1.5 leading-[17px];
+    color: rgb(var(--c-ink-muted));
+  }
+
   .section-sub {
     @apply leading-relaxed;
     color: rgb(var(--c-ink-muted));
     font-size: clamp(0.95rem, 1.3vw, 1.05rem);
   }
 
-  /* Tarjeta: blanca, con borde fino y sin sombra. Quieta al pasar por encima:
-     el movimiento se reserva para lo que de verdad se puede pulsar. */
+  /* Grupo: blanco sobre el fondo cálido, sin borde ni sombra, como las listas
+     agrupadas de iOS. Quieto al pasar por encima: el movimiento se reserva
+     para lo que de verdad se puede pulsar. */
   .card {
-    @apply rounded-2xl p-6;
+    @apply rounded-[14px] p-6;
     background: rgb(var(--c-surface));
-    border: 1px solid rgb(var(--c-line));
+    border: 1px solid transparent;
   }
   /* Nombre heredado del tema oscuro. Se mantiene para no tocar ochenta
      pantallas de golpe; significa exactamente lo mismo que `.card`. */
   .card-dark {
-    @apply rounded-2xl p-6;
+    @apply rounded-[14px] p-6;
     background: rgb(var(--c-surface));
-    border: 1px solid rgb(var(--c-line));
+    border: 1px solid transparent;
   }
 }
 

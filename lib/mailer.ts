@@ -205,7 +205,7 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
   const subject = "¡Bienvenida a Fit con Aurena! 💚 Tu área privada";
   const text =
     `¡Bienvenida!\n\nYa tienes acceso a tu área privada de Fit con Aurena: tu perfil, tu plan, ` +
-    `tus check-ins y la revisión de técnica.\n\nEntra aquí: ${loginUrl}\n\nNos vemos dentro 💪`;
+    `tus revisiones y la corrección de técnica.\n\nEntra aquí: ${loginUrl}\n\nNos vemos dentro 💪`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
@@ -213,7 +213,7 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
       <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">¡Bienvenida! 💚</h1>
       <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
         Ya tienes acceso a tu <strong style="color:#fff;">área privada</strong>: tu perfil, tu plan de
-        nutrición y entrenamiento, tus check-ins y la revisión de técnica.
+        alimentación y entrenamiento, tus revisiones y la corrección de técnica.
       </p>
       <a href="${loginUrl}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
         Entrar a mi área
@@ -228,16 +228,16 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
 
 /** Avisa a la clienta de que su coach respondió a su check-in. */
 export async function sendCheckinReplyEmail(to: string): Promise<void> {
-  const subject = "Tu coach ha respondido a tu check-in 💬";
+  const subject = "Tu coach te ha escrito sobre tu revisión";
   const url = `${SITE_URL}/miembros/checkins`;
-  const text = `Tu coach ha respondido a tu último check-in. Entra a verlo: ${url}`;
+  const text = `Tu coach te ha escrito sobre tu última revisión. Entra a verlo: ${url}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
       <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Tu coach te ha respondido 💬</h1>
-      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Aurena ha comentado tu último check-in. Entra para verlo.</p>
-      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi check-in</a>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Tu coach te ha escrito sobre tu última revisión. Entra para verlo.</p>
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi revisión</a>
     </div>
   </div>`;
   await send({ to, subject, html, text });
