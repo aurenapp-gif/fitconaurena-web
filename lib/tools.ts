@@ -18,6 +18,17 @@ export type Tool = {
   hint?: string;
 };
 
+/**
+ * Interruptor de la sección. En septiembre de 2026 OpenAI retiró la opción de
+ * compartir GPT con otras personas («Solo yo» es lo único que queda), así que
+ * los tres enlaces dejaron de abrirse para las clientas. Hasta traer las
+ * herramientas dentro de la app, la sección enseña un aviso y ningún botón.
+ */
+export const HERRAMIENTAS_ACTIVAS = false;
+
+export const AVISO_HERRAMIENTAS =
+  "Por motivos ajenos al programa, las herramientas están desactivadas por mantenimiento hasta que encontremos una solución. Te avisaremos en cuanto vuelvan a estar disponibles.";
+
 export const TOOLS: Tool[] = [
   {
     id: "carta-libre",

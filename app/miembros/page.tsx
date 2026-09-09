@@ -11,6 +11,7 @@ import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
 import { miles } from "@/lib/suplementos";
 import { rachaDias, semanaDe } from "@/lib/habitos";
+import { HERRAMIENTAS_ACTIVAS } from "@/lib/tools";
 
 export const metadata: Metadata = {
   title: "Área de miembros",
@@ -276,7 +277,7 @@ export default async function MiembrosPage() {
               <Grupo label="Más">
                 <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
                 <Fila href="/miembros/dudas" titulo="Dudas" sub="Pregunta sin dar la cara" />
-                <Fila href="/miembros/herramientas" titulo="Herramientas" sub="Qué pedir fuera, cómo hacer un ejercicio…" />
+                <Fila href="/miembros/herramientas" titulo="Herramientas" sub={HERRAMIENTAS_ACTIVAS ? "Qué pedir fuera, cómo hacer un ejercicio…" : "En mantenimiento temporal"} />
               </Grupo>
             </div>
           </div>
