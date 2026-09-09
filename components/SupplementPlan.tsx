@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   litros, vasos, pauta, pasos, MIN_AGUA, MAX_AGUA, MIN_PASOS, MAX_PASOS,
-  MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE,
+  MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE, PAUTA_HABITUAL, NOTA_DESCUENTO,
   type Supplement,
 } from "@/lib/suplementos";
 
@@ -88,6 +88,35 @@ export default function SupplementPlan({
     } catch { setEstado("error"); setMsg("Error de conexión."); }
   }
 
+  // --- Pauta habitual ------------------------------------------------------
+  // Casillas ya marcadas con lo de siempre. Lo que ya tiene la clienta viene
+  // desmarcado para no duplicarlo. Enlace y nota se pueden retocar antes.
+  const yaTiene = new Set(items.map((s) => s.name.trim().toLowerCase()));
+  const [marcados, setMarcados] = useState<boolean[]>(() => PAUTA_HABITUAL.map((p) => !yaTiene.has(p.name.toLowerCase())));
+  const [enlaces, setEnlaces] = useState<string[]>(() => PAUTA_HABITUAL.map((p) => p.url));
+  const [notaHabitual, setNotaHabitual] = useState(NOTA_DESCUENTO);
+  const [habEstado, setHabEstado] = useState<"idle" | "loading" | "error" | "saved">("idle");
+  const [habMsg, setHabMsg] = useState("");
+
+  async function anadirHabitual() {
+    if (habEstado === "loading") return;
+    const seleccion = PAUTA_HABITUAL.map((p, i) => ({ ...p, url: enlaces[i].trim(), note: notaHabitual, on: marcados[i] })).filter((p) => p.on);
+    if (seleccion.length === 0) { setHabEstado("error"); setHabMsg("Marca al menos un suplemento."); return; }
+    setHabEstado("loading"); setHabMsg("");
+    try {
+      const res = await fetch("/api/miembros/clientas/suplementos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member, items: seleccion.map(({ name, dose, timing, url, note }) => ({ name, dose, timing, url, note })) }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setHabEstado("error"); setHabMsg(d.error ?? "No se pudo guardar."); return; }
+      setHabEstado("saved"); setHabMsg(`Añadidos ${seleccion.length}.`);
+      setMarcados(PAUTA_HABITUAL.map(() => false));
+      router.refresh();
+    } catch { setHabEstado("error"); setHabMsg("Error de conexión."); }
+  }
+
   async function borrar(id: string, nombre: string) {
     if (!confirm(`¿Quitar «${nombre}» de su pauta? Dejará de verlo.`)) return;
     try {
@@ -164,6 +193,45 @@ export default function SupplementPlan({
       {/* Suplementos */}
       <div>
         <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">💊 Suplementación</p>
+
+        {/* Pauta habitual: lo de siempre, de una vez */}
+        <div className="rounded-xl bg-page p-4 mb-4">
+          <p className="text-sm font-semibold text-ink mb-0.5">Tu pauta habitual</p>
+          <p className="text-xs text-ink-muted mb-3">Marca lo que le toca, cambia el enlace si hace falta y añádelo todo de una vez. Lo que ya tiene viene desmarcado.</p>
+          <div className="flex flex-col gap-2">
+            {PAUTA_HABITUAL.map((p, i) => {
+              const tiene = yaTiene.has(p.name.toLowerCase());
+              return (
+                <div key={p.name} className={`rounded-lg bg-surface px-3 py-2 ${marcados[i] ? "" : "opacity-70"}`}>
+                  <label className="flex items-start gap-3 cursor-pointer min-h-[40px]">
+                    <input type="checkbox" checked={marcados[i]} onChange={(e) => setMarcados((m) => m.map((v, j) => (j === i ? e.target.checked : v)))}
+                      aria-label={`Añadir ${p.name}`} className="mt-1.5 w-5 h-5 accent-[#1CA0E3] shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm text-ink">{p.name}{tiene && <span className="text-xs text-ink-subtle"> · ya la tiene</span>}</span>
+                      <span className="block text-xs text-ink-muted">{p.dose} · {p.timing}</span>
+                    </span>
+                  </label>
+                  {marcados[i] && (
+                    <input value={enlaces[i]} onChange={(e) => setEnlaces((arr) => arr.map((v, j) => (j === i ? e.target.value : v)))} inputMode="url"
+                      placeholder="Enlace para comprarlo (https://…)" aria-label={`Enlace de ${p.name}`} className={`${cls} w-full mt-1.5 !py-2 text-xs`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <label className="block mt-3">
+            <span className="block text-xs text-ink-muted mb-1">Nota que verán junto a cada uno</span>
+            <input value={notaHabitual} onChange={(e) => setNotaHabitual(e.target.value)} maxLength={MAX_NOTE} aria-label="Nota de la pauta habitual" className={`${cls} w-full`} />
+          </label>
+          <div className="flex items-center gap-3 flex-wrap mt-3">
+            <button type="button" onClick={anadirHabitual} disabled={habEstado === "loading"} className="btn-brand text-sm px-6 py-3 disabled:opacity-60">
+              {habEstado === "loading" ? "Añadiendo…" : `Añadir los marcados (${marcados.filter(Boolean).length})`}
+            </button>
+            {habMsg && <span className={`text-sm ${habEstado === "error" ? "text-danger" : "text-brand"}`}>{habMsg}</span>}
+          </div>
+        </div>
+
+        <p className="text-xs text-ink-muted mb-2">O añade uno distinto:</p>
         <form onSubmit={anadir} className="flex flex-col gap-3">
           <div className="flex gap-3 flex-wrap">
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME}

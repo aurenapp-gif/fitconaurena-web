@@ -17,6 +17,26 @@ export type Supplement = {
   created_at: string;
 };
 
+/**
+ * La pauta habitual de la coach: lo que recomienda casi siempre, con la
+ * dosis, el momento, la nota del descuento y el enlace que ha venido usando.
+ * Sale como casillas ya marcadas en la ficha de cada clienta, para añadirlo
+ * de una vez en lugar de escribir cinco veces lo mismo. Todo es editable
+ * antes de añadirlo.
+ *
+ * Sacado de lo que ya tenía pautado a sus clientas (septiembre de 2026).
+ */
+export const NOTA_DESCUENTO = "Con el código AURENA tienes descuento.";
+
+export type Preset = { name: string; dose: string; timing: string; url: string };
+export const PAUTA_HABITUAL: Preset[] = [
+  { name: "Creatina", dose: "2 cápsulas", timing: "Todos los días, a cualquier hora", url: "https://www.prozis.com/es/es/prozis/creatina-creapure-80-capsulas" },
+  { name: "Magnesio bisglicinato", dose: "1 cápsula", timing: "45 minutos antes de dormir", url: "https://www.prozis.com/es/es/prozis/bisglicinato-de-magnesio-albion-60-capsulas-veganas" },
+  { name: "Melatonina", dose: "1 cápsula", timing: "45 minutos antes de dormir", url: "https://www.prozis.com/es/es/prozis/melatonina-19-mg-90-capsulas" },
+  { name: "Ashwagandha", dose: "1 cápsula", timing: "45 minutos antes de dormir", url: "https://www.prozis.com/es/es/prozis/extracto-de-ashwagandha-450-mg-90-capsulas-vegetarianas" },
+  { name: "Omega 3", dose: "1 cápsula", timing: "Junto a la comida o la cena, que lleven grasas", url: "https://www.prozis.com/es/es/prozis/omega-3-xtreme-epa-60-softgels" },
+];
+
 export const MAX_NAME = 80;
 export const MAX_DOSE = 60;
 export const MAX_TIMING = 80;
