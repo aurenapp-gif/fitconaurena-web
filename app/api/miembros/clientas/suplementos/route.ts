@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let data: { member?: unknown; agua?: unknown; pasos?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown };
+  let data: { member?: unknown; agua?: unknown; pasos?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown; items?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const member = typeof data.member === "string" ? normalizeEmail(data.member) : "";
@@ -59,6 +59,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo guardar los pasos." }, { status: 500 });
     }
     return NextResponse.json({ ok: true, pasos: diarios });
+  }
+
+  // --- Pauta habitual: varios de una vez -----------------------------------
+  // La coach marca casillas en la ficha y llegan juntos. Se validan todos
+  // antes de guardar ninguno: o entra la pauta entera o no entra nada.
+  if (Array.isArray(data.items)) {
+    if (data.items.length === 0 || data.items.length > 20) {
+      return NextResponse.json({ error: "Marca al menos un suplemento." }, { status: 400 });
+    }
+    const filas: { member_email: string; name: string; dose: string | null; timing: string | null; url: string | null; note: string | null; created_by: string }[] = [];
+    for (const it of data.items) {
+      const o = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+      const n = typeof o.name === "string" ? o.name.trim().slice(0, MAX_NAME) : "";
+      if (!n) return NextResponse.json({ error: "Falta el nombre de un suplemento." }, { status: 400 });
+      const puso = typeof o.url === "string" && o.url.trim() !== "";
+      const u = safeLink(o.url);
+      if (puso && !u) return NextResponse.json({ error: `El enlace de ${n} tiene que empezar por https://` }, { status: 400 });
+      filas.push({
+        member_email: member,
+        name: n,
+        dose: (typeof o.dose === "string" ? o.dose.trim().slice(0, MAX_DOSE) : "") || null,
+        timing: (typeof o.timing === "string" ? o.timing.trim().slice(0, MAX_TIMING) : "") || null,
+        url: u,
+        note: (typeof o.note === "string" ? o.note.trim().slice(0, MAX_NOTE) : "") || null,
+        created_by: me,
+      });
+    }
+    try {
+      await sbInsert("member_supplements", filas);
+    } catch (err) {
+      console.error("[clientas/suplementos] pauta habitual", err);
+      if (isMissingTable(err)) return NextResponse.json({ error: "Falta crear la tabla.", setup: true }, { status: 400 });
+      return NextResponse.json({ error: "No se pudo guardar la pauta." }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, added: filas.length });
   }
 
   // --- Suplemento nuevo ----------------------------------------------------
