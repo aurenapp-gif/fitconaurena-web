@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { sbInsert, sbDelete, sbUpsert, isMissingTable } from "@/lib/supabase";
+import { sbInsert, sbDelete, sbUpsert, sbUpdate, isMissingTable } from "@/lib/supabase";
 import { safeLink, parseAgua, parsePasos, MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE, MIN_AGUA, MAX_AGUA, MIN_PASOS, MAX_PASOS } from "@/lib/suplementos";
 
 export const runtime = "nodejs";
@@ -124,6 +124,48 @@ export async function POST(req: NextRequest) {
     console.error("[clientas/suplementos] alta", err);
     if (isMissingTable(err)) return NextResponse.json({ error: "Falta crear la tabla.", setup: true }, { status: 400 });
     return NextResponse.json({ error: "No se pudo guardar el suplemento." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * Cambia un suplemento que ya está en la pauta: la dosis, el momento, el
+ * enlace o la nota. Antes había que quitarlo y volver a ponerlo entero solo
+ * para subirle las cápsulas. Solo la coach.
+ */
+export async function PATCH(req: NextRequest) {
+  const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+
+  let data: { id?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown };
+  try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+
+  const id = typeof data.id === "string" ? data.id.trim() : "";
+  if (!UUID.test(id)) return NextResponse.json({ error: "Suplemento no válido." }, { status: 400 });
+
+  const name = typeof data.name === "string" ? data.name.trim().slice(0, MAX_NAME) : "";
+  if (!name) return NextResponse.json({ error: "Pon el nombre del suplemento." }, { status: 400 });
+
+  const dose = typeof data.dose === "string" ? data.dose.trim().slice(0, MAX_DOSE) : "";
+  const timing = typeof data.timing === "string" ? data.timing.trim().slice(0, MAX_TIMING) : "";
+  const note = typeof data.note === "string" ? data.note.trim().slice(0, MAX_NOTE) : "";
+
+  // Mismo criterio que al darlo de alta: o es un enlace de verdad o no va.
+  const puso = typeof data.url === "string" && data.url.trim() !== "";
+  const url = safeLink(data.url);
+  if (puso && !url) return NextResponse.json({ error: "El enlace tiene que empezar por https://" }, { status: 400 });
+
+  try {
+    await sbUpdate("member_supplements", `id=eq.${id}`, {
+      name,
+      dose: dose || null,
+      timing: timing || null,
+      url,
+      note: note || null,
+    });
+  } catch (err) {
+    console.error("[clientas/suplementos] editar", err);
+    return NextResponse.json({ error: "No se pudo guardar el cambio." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }
