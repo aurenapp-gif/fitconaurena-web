@@ -5,6 +5,9 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import ContractTemplateUpload from "@/components/ContractTemplateUpload";
 import ContractTemplatesList from "@/components/ContractTemplatesList";
+import CallUrlSetter from "@/components/CallUrlSetter";
+import { AJUSTE_SALA, leerAjuste } from "@/lib/ajustes";
+import { TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
 import { sbSelect } from "@/lib/supabase";
@@ -28,6 +31,7 @@ export default async function AdminPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
+  const salaGuardada = await leerAjuste(AJUSTE_SALA);
 
   const since = isoDaysAgo(15);
 
@@ -85,6 +89,13 @@ export default async function AdminPage() {
               <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
             </div>
           </div>
+
+          {/* Videollamada grupal: el enlace de la sala, editable sin tocar Vercel */}
+          <section className="card-dark p-6 !transform-none mb-8">
+            <h2 className="font-bold text-ink mb-1">Videollamada grupal</h2>
+            <p className="text-xs text-ink-muted mb-4">Todos los {TEXTO_DIA_LLAMADA} a las {TEXTO_HORA_LLAMADA} (hora de Madrid). Si cambias la reunión de Zoom, pega aquí el enlace nuevo.</p>
+            <CallUrlSetter initial={salaGuardada ?? ""} />
+          </section>
 
           {/* Panel "Hoy": resumen accionable de la coach */}
           <section className="mb-8">
