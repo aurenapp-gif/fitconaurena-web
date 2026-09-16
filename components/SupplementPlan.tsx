@@ -93,6 +93,8 @@ export default function SupplementPlan({
   // desmarcado para no duplicarlo. Enlace y nota se pueden retocar antes.
   const yaTiene = new Set(items.map((s) => s.name.trim().toLowerCase()));
   const [marcados, setMarcados] = useState<boolean[]>(() => PAUTA_HABITUAL.map((p) => !yaTiene.has(p.name.toLowerCase())));
+  const [dosis, setDosis] = useState<string[]>(() => PAUTA_HABITUAL.map((p) => p.dose));
+  const [momentos, setMomentos] = useState<string[]>(() => PAUTA_HABITUAL.map((p) => p.timing));
   const [enlaces, setEnlaces] = useState<string[]>(() => PAUTA_HABITUAL.map((p) => p.url));
   const [notaHabitual, setNotaHabitual] = useState(NOTA_DESCUENTO);
   const [habEstado, setHabEstado] = useState<"idle" | "loading" | "error" | "saved">("idle");
@@ -100,7 +102,7 @@ export default function SupplementPlan({
 
   async function anadirHabitual() {
     if (habEstado === "loading") return;
-    const seleccion = PAUTA_HABITUAL.map((p, i) => ({ ...p, url: enlaces[i].trim(), note: notaHabitual, on: marcados[i] })).filter((p) => p.on);
+    const seleccion = PAUTA_HABITUAL.map((p, i) => ({ ...p, dose: dosis[i].trim(), timing: momentos[i].trim(), url: enlaces[i].trim(), note: notaHabitual, on: marcados[i] })).filter((p) => p.on);
     if (seleccion.length === 0) { setHabEstado("error"); setHabMsg("Marca al menos un suplemento."); return; }
     setHabEstado("loading"); setHabMsg("");
     try {
@@ -197,7 +199,7 @@ export default function SupplementPlan({
         {/* Pauta habitual: lo de siempre, de una vez */}
         <div className="rounded-xl bg-page p-4 mb-4">
           <p className="text-sm font-semibold text-ink mb-0.5">Tu pauta habitual</p>
-          <p className="text-xs text-ink-muted mb-3">Marca lo que le toca, cambia el enlace si hace falta y añádelo todo de una vez. Lo que ya tiene viene desmarcado.</p>
+          <p className="text-xs text-ink-muted mb-3">Marca lo que le toca. Dosis, momento y enlace vienen puestos y se pueden cambiar (por ejemplo, más creatina según su peso). Lo que ya tiene viene desmarcado.</p>
           <div className="flex flex-col gap-2">
             {PAUTA_HABITUAL.map((p, i) => {
               const tiene = yaTiene.has(p.name.toLowerCase());
@@ -208,12 +210,18 @@ export default function SupplementPlan({
                       aria-label={`Añadir ${p.name}`} className="mt-1.5 w-5 h-5 accent-[#1CA0E3] shrink-0" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-ink">{p.name}{tiene && <span className="text-xs text-ink-subtle"> · ya la tiene</span>}</span>
-                      <span className="block text-xs text-ink-muted">{p.dose} · {p.timing}</span>
+                      {!marcados[i] && <span className="block text-xs text-ink-muted">{dosis[i]} · {momentos[i]}</span>}
                     </span>
                   </label>
                   {marcados[i] && (
-                    <input value={enlaces[i]} onChange={(e) => setEnlaces((arr) => arr.map((v, j) => (j === i ? e.target.value : v)))} inputMode="url"
-                      placeholder="Enlace para comprarlo (https://…)" aria-label={`Enlace de ${p.name}`} className={`${cls} w-full mt-1.5 !py-2 text-xs`} />
+                    <div className="grid gap-1.5 sm:grid-cols-2 mt-1">
+                      <input value={dosis[i]} onChange={(e) => setDosis((arr) => arr.map((v, j) => (j === i ? e.target.value : v)))} maxLength={MAX_DOSE}
+                        placeholder="Dosis (ej. 2 cápsulas)" aria-label={`Dosis de ${p.name}`} className={`${cls} w-full !py-2 text-xs`} />
+                      <input value={momentos[i]} onChange={(e) => setMomentos((arr) => arr.map((v, j) => (j === i ? e.target.value : v)))} maxLength={MAX_TIMING}
+                        placeholder="Cuándo (ej. antes de dormir)" aria-label={`Cuándo tomar ${p.name}`} className={`${cls} w-full !py-2 text-xs`} />
+                      <input value={enlaces[i]} onChange={(e) => setEnlaces((arr) => arr.map((v, j) => (j === i ? e.target.value : v)))} inputMode="url"
+                        placeholder="Enlace para comprarlo (https://…)" aria-label={`Enlace de ${p.name}`} className={`${cls} w-full !py-2 text-xs sm:col-span-2`} />
+                    </div>
                   )}
                 </div>
               );

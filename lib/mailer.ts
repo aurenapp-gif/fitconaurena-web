@@ -8,6 +8,8 @@
  */
 
 import { fetchWithTimeout } from "@/lib/http";
+import { TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
+import { enlaceSala } from "@/lib/ajustes";
 import { SITE_URL, MEMBER_AREA_URL } from "@/lib/config";
 
 const FROM = process.env.RESEND_FROM ?? "Fit con Aurena <onboarding@resend.dev>";
@@ -293,18 +295,20 @@ export async function sendAnnouncementEmail(to: string, opts: { title: string; b
 
 // Sala de la videollamada. Preferimos CALL_URL (solo servidor); se mantiene
 // NEXT_PUBLIC_CALL_URL por compatibilidad con la configuración anterior.
-const CALL_URL = process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? MEMBER_AREA_URL;
+// El enlace lo guarda la coach desde su Panel (lib/ajustes); la variable de
+// entorno queda de respaldo.
 
-/** Recordatorio de la videollamada grupal (jueves 17:30). */
+/** Recordatorio de la videollamada grupal (día y hora en lib/llamada-grupal). */
 export async function sendCallReminder(to: string): Promise<void> {
-  const subject = "📹 Hoy videollamada grupal a las 17:30";
-  const text = `¡Hoy es jueves! Nos vemos en la videollamada grupal a las 17:30 (hora de Madrid).\n\nEntra a la sala: ${CALL_URL}`;
+  const CALL_URL = await enlaceSala();
+  const subject = `📹 Hoy videollamada grupal a las ${TEXTO_HORA_LLAMADA}`;
+  const text = `¡Hoy es ${TEXTO_DIA_LLAMADA_SINGULAR}! Nos vemos en la videollamada grupal a las ${TEXTO_HORA_LLAMADA} (hora de Madrid).\n\nEntra a la sala: ${CALL_URL}`;
   const html = `
   <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
     <div style="max-width:480px;margin:0 auto;">
       <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
       <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Hoy videollamada grupal 📹</h1>
-      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Te esperamos hoy a las <strong style="color:#fff;">17:30 (Madrid)</strong>.</p>
+      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 24px;font-size:15px;">Te esperamos hoy a las <strong style="color:#fff;">${TEXTO_HORA_LLAMADA} (Madrid)</strong>.</p>
       <a href="${CALL_URL}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Acceder a la sala</a>
     </div>
   </div>`;

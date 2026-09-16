@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { diaLlamada, faltaPara, proximaLlamada } from "@/lib/llamada-grupal";
+import { diaLlamada, faltaPara, proximaLlamada, TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 
 // La URL de la sala llega como prop desde el servidor (solo para miembros con
 // sesión), así no se incrusta en el bundle del cliente ni queda pública.
@@ -18,7 +18,7 @@ function Box({ value, label }: { value: number; label: string }) {
 }
 
 /**
- * Cuenta atrás para la videollamada grupal (jueves, 17:30 de Madrid).
+ * Cuenta atrás para la videollamada grupal (día y hora en lib/llamada-grupal).
  *
  * `variant="fila"` es la versión de una línea para el bloque «Hoy» del inicio:
  * el día y la hora a la izquierda, lo que falta a la derecha, y el enlace a la
@@ -42,7 +42,7 @@ export default function CallCountdown({ callUrl = "", variant = "tarjeta" }: { c
         <div className="min-w-0">
           <p className="text-[17px] text-ink leading-[22px]">Llamada de grupo</p>
           <p className="text-[15px] text-ink-muted leading-5 truncate">
-            {target === null ? "Jueves a las 17:30" : `${diaLlamada(target)} · 17:30`}
+            {target === null ? `${TEXTO_DIA_LLAMADA.charAt(0).toUpperCase() + TEXTO_DIA_LLAMADA.slice(1)} a las ${TEXTO_HORA_LLAMADA}` : `${diaLlamada(target)} · ${TEXTO_HORA_LLAMADA}`}
           </p>
         </div>
         {live && callUrl ? (
@@ -63,7 +63,7 @@ export default function CallCountdown({ callUrl = "", variant = "tarjeta" }: { c
     return (
       <div className="card-dark p-6 !transform-none">
         <h3 className="font-bold text-ink mb-1">Videollamada grupal</h3>
-        <p className="text-sm text-ink-muted">Todos los jueves a las 17:30 (hora de Madrid).</p>
+        <p className="text-sm text-ink-muted">Todos los {TEXTO_DIA_LLAMADA} a las {TEXTO_HORA_LLAMADA} (hora de Madrid).</p>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function CallCountdown({ callUrl = "", variant = "tarjeta" }: { c
   return (
     <div className="card-dark p-6 !transform-none border-brand/30">
       <h3 className="font-bold text-ink mb-1">Videollamada grupal</h3>
-      <p className="text-sm text-ink-muted">Todos los jueves a las 17:30 (hora de Madrid).</p>
+      <p className="text-sm text-ink-muted">Todos los {TEXTO_DIA_LLAMADA} a las {TEXTO_HORA_LLAMADA} (hora de Madrid).</p>
 
       {live ? (
         <p className="mt-5 font-black text-brand text-xl">¡En directo ahora! 🔴</p>

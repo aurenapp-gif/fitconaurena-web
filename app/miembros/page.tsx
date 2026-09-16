@@ -12,6 +12,7 @@ import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } fr
 import { miles } from "@/lib/suplementos";
 import { rachaDias, semanaDe } from "@/lib/habitos";
 import { HERRAMIENTAS_ACTIVAS } from "@/lib/tools";
+import { enlaceSala } from "@/lib/ajustes";
 
 export const metadata: Metadata = {
   title: "Área de miembros",
@@ -58,6 +59,7 @@ export default async function MiembrosPage() {
   const e = encodeURIComponent(email);
   const desde = new Date(Date.now() - 40 * 86400000).toISOString().slice(0, 10);
   const coachEmail = adminEmails()[0];
+  const sala = await enlaceSala();
 
   // Todo lo de la clienta en una sola ida y vuelta. Cada consulta falla por su
   // cuenta: un fallo en una no deja la pantalla en blanco.
@@ -177,7 +179,7 @@ export default async function MiembrosPage() {
               <Fila href="/miembros/dudas" titulo="Dudas" sub="Lo que no se atreven a preguntar en la llamada" />
             </Grupo>
             <div className="mt-5">
-              <CallCountdown callUrl={process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? ""} />
+              <CallCountdown callUrl={sala} />
             </div>
           </div>
         </main>
@@ -222,7 +224,7 @@ export default async function MiembrosPage() {
                 <Fila href="/miembros/checkins" titulo="Tu próxima revisión" sub={fechaCorta(prox.fecha)}
                   detalle={prox.pendiente ? (periodo.dia === 0 ? "hoy" : "sin subir") : prox.dias === 1 ? "mañana" : `en ${prox.dias} días`}
                   tono={prox.pendiente ? "warn" : "muted"} />
-                <CallCountdown variant="fila" callUrl={process.env.CALL_URL ?? process.env.NEXT_PUBLIC_CALL_URL ?? ""} />
+                <CallCountdown variant="fila" callUrl={sala} />
                 <Link href="/miembros/perfil?tab=habitos" className="block px-4 py-3">
                   <div className="flex items-baseline justify-between gap-3 text-[17px]">
                     <span className="text-ink">Pasos</span>

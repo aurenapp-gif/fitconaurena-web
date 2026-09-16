@@ -5,6 +5,7 @@ import { sbSelect, sbUpsert, sbUpdate, sbDeleteObject } from "@/lib/supabase";
 import { sendCallReminder, sendCheckinReminder, sendCheckinReport, sendEsperaTerminada, sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 import { periodoDe, tocaAvisar, tocaParteCoach, textoAviso } from "@/lib/revisiones";
+import { DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -120,9 +121,10 @@ export async function GET(req: NextRequest) {
   const REMINDER_HOUR = 10; // 10:00 (hora de Madrid)
   const nowHour = madridHour(new Date());
 
-  // 1) Recordatorio de videollamada los jueves (idempotente: si el cron se
-  //    dispara dos veces el mismo día, no reenvía gracias a last_call_reminder).
-  if (madridDay() === "Thu" && nowHour >= REMINDER_HOUR) {
+  // 1) Recordatorio de videollamada el día de la llamada (idempotente: si el
+  //    cron se dispara dos veces el mismo día, no reenvía gracias a
+  //    last_call_reminder). El día y la hora viven en lib/llamada-grupal.
+  if (madridDay() === DIA_LLAMADA && nowHour >= REMINDER_HOUR) {
     let callMap = new Map<string, string | null>();
     try {
       const profs = await sbSelect<{ email: string; last_call_reminder: string | null }>("profiles", "select=email,last_call_reminder");
@@ -135,7 +137,7 @@ export async function GET(req: NextRequest) {
         await sendCallReminder(m.email);
         sendPushToEmail(m.email, {
           title: "Hoy toca videollamada 📞",
-          body: "Nos vemos a las 17:30 (Madrid) en tu sesión con Aurena.",
+          body: `Nos vemos a las ${TEXTO_HORA_LLAMADA} (Madrid) en tu sesión con Aurena.`,
           // Al hub: ahí está la cuenta atrás y el botón de acceso a la sala.
           // (/miembros/agenda es el calendario de la coach y redirige a las clientas.)
           url: "/miembros",

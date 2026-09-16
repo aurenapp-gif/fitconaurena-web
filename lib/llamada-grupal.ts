@@ -1,5 +1,7 @@
 /**
- * La videollamada grupal: todos los jueves a las 17:30, hora de Madrid.
+ * La videollamada grupal: todos los domingos a las 19:30, hora de Madrid.
+ * El día y la hora viven aquí y solo aquí: cuenta atrás, recordatorios por
+ * correo y avisos push los leen de estas constantes.
  *
  * Sin dependencias de servidor: lo usan componentes cliente, que necesitan
  * recalcularlo cada segundo para la cuenta atrás.
@@ -10,8 +12,8 @@
  * Se obtiene leyendo la hora de pared de Madrid con `formatToParts` y
  * comparándola con la de UTC. Es importante NO parsear una fecha con
  * `new Date(cadena)`: eso la interpreta en la zona horaria del móvil de quien
- * mira, y la cuenta atrás salía desplazada (en España marcaba las 19:30 en vez
- * de las 17:30). Así el resultado es el mismo se mire desde donde se mire. */
+ * mira, y la cuenta atrás salía desplazada (en España marcaba dos horas de
+ * más). Así el resultado es el mismo se mire desde donde se mire. */
 function madridOffset(at: number): number {
   const p = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Madrid",
@@ -36,11 +38,20 @@ function madridWallToUTC(y: number, m: number, d: number, h: number, min: number
   return ts;
 }
 
+/** Día de la semana (nombre corto en inglés, como lo da Intl) y hora de Madrid. */
+export const DIA_LLAMADA = "Sun";
+export const HORA_LLAMADA = 19;
+export const MINUTO_LLAMADA = 30;
+/** Para los textos: «Todos los domingos a las 19:30». */
+export const TEXTO_DIA_LLAMADA = "domingos";
+export const TEXTO_DIA_LLAMADA_SINGULAR = "domingo";
+export const TEXTO_HORA_LLAMADA = "19:30";
+
 /** Cuánto dura la llamada: hasta entonces sigue contando como «en directo». */
 export const DURACION_MS = 2 * 3600000;
 
-/** Próximo jueves a las 17:30 (hora de Madrid), como timestamp. Sigue siendo
- * «esta» hasta dos horas después de empezar. */
+/** Próxima llamada (domingo a las 19:30, hora de Madrid), como timestamp.
+ * Sigue siendo «esta» hasta dos horas después de empezar. */
 export function proximaLlamada(now: number): number {
   for (let i = 0; i < 14; i++) {
     const base = new Date(now + i * 86400000);
@@ -52,20 +63,20 @@ export function proximaLlamada(now: number): number {
       weekday: "short",
     }).formatToParts(base);
     const get = (t: string) => parts.find((x) => x.type === t)!.value;
-    if (get("weekday") !== "Thu") continue;
-    const t = madridWallToUTC(+get("year"), +get("month"), +get("day"), 17, 30);
+    if (get("weekday") !== DIA_LLAMADA) continue;
+    const t = madridWallToUTC(+get("year"), +get("month"), +get("day"), HORA_LLAMADA, MINUTO_LLAMADA);
     if (t > now - DURACION_MS) return t;
   }
   return now;
 }
 
-/** «Jueves 11 de septiembre», en horario de Madrid. */
+/** «Domingo 13 de septiembre», en horario de Madrid. */
 export function diaLlamada(ts: number): string {
   const s = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long" }).format(new Date(ts));
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Frase corta con lo que falta: «en 6 días», «hoy a las 17:30», «en 2 h». */
+/** Frase corta con lo que falta: «en 6 días», «en 2 h», «en directo». */
 export function faltaPara(ts: number, now: number): string {
   const diff = ts - now;
   if (diff <= 0) return "en directo";
