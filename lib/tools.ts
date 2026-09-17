@@ -1,64 +1,18 @@
 /**
- * Herramientas del programa: utilidades externas que la coach pone a
- * disposición de las clientas (asistentes de IA, calculadoras…).
+ * El interruptor de la sección de herramientas.
  *
- * La lista vive en el código a propósito: son pocas, cambian poco y así no
- * dependen de la base de datos ni de una pantalla de administración. Para
- * añadir una nueva, basta con sumar una entrada aquí.
+ * Las herramientas en sí viven en lib/herramientas.ts; aquí solo queda si la
+ * sección se enseña o no, que es lo que importó cuando hubo que apagarla.
+ *
+ * En septiembre de 2026 OpenAI retiró la opción de compartir GPT con otras
+ * personas («Solo yo» es lo único que queda) y los tres enlaces dejaron de
+ * abrirse. La sección estuvo con un aviso hasta que las herramientas pasaron a
+ * vivir dentro de la app (lib/herramientas.ts), que además es mejor: un GPT
+ * público no podía saber qué plan tenía cada clienta.
+ *
+ * Se deja el interruptor por si algún día hay que apagarlas otra vez.
  */
-
-export type Tool = {
-  /** Identificador estable, se usa en el registro de actividad. */
-  id: string;
-  name: string;
-  description: string;
-  url: string;
-  icon: string;
-  /** Aviso breve de cómo usarla, si aporta algo. */
-  hint?: string;
-};
-
-/**
- * Interruptor de la sección. En septiembre de 2026 OpenAI retiró la opción de
- * compartir GPT con otras personas («Solo yo» es lo único que queda), así que
- * los tres enlaces dejaron de abrirse para las clientas. Hasta traer las
- * herramientas dentro de la app, la sección enseña un aviso y ningún botón.
- */
-export const HERRAMIENTAS_ACTIVAS = false;
+export const HERRAMIENTAS_ACTIVAS = true;
 
 export const AVISO_HERRAMIENTAS =
   "Por motivos ajenos al programa, las herramientas están desactivadas por mantenimiento hasta que encontremos una solución. Te avisaremos en cuanto vuelvan a estar disponibles.";
-
-export const TOOLS: Tool[] = [
-  {
-    id: "carta-libre",
-    name: "Carta libre",
-    description:
-      "Hazme una foto a la carta y te digo exactamente qué pedir para disfrutar sin frenar tu progreso.",
-    url: "https://chatgpt.com/g/g-6a82c7c33c188191b0de038eebd6eb70-carta-libre-by-fitcondamian",
-    icon: "🍽️",
-    hint: "Se abre en ChatGPT. Sube la foto de la carta y te dirá qué pedir.",
-  },
-  {
-    id: "entrenamiento",
-    name: "Entrenamiento",
-    description:
-      "Dudas con algún ejercicio: mándame una foto y te explico la técnica, qué no fallar y por cuál sustituirlo.",
-    url: "https://chatgpt.com/g/g-6a830314d184819182a93bc2518c45a9-entrenamiento-fitcondamian",
-    icon: "🏋️",
-    hint: "Se abre en ChatGPT. Para que tu coach revise tu técnica en vídeo, usa «Revisión de técnica».",
-  },
-  {
-    id: "despensa",
-    name: "No he ido a la compra",
-    description:
-      "¿Nevera vacía y ninguna receta del plan a mano? Hazle una foto a lo que tengas y te monto platos equilibrados con eso, sin saltarte el plan.",
-    url: "https://chatgpt.com/g/g-6a8d9ea3a3d081919feef151c866c52d-no-he-ido-a-la-compra-solucionalo-con-una-foto",
-    icon: "🧊",
-    hint: "Se abre en ChatGPT. Foto a la nevera y a la despensa, cuanto más se vea mejor.",
-  },
-];
-
-export function findTool(id: string): Tool | undefined {
-  return TOOLS.find((t) => t.id === id);
-}
