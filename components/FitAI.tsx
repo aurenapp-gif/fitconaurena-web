@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { MAX_PREGUNTA } from "@/lib/asistente";
+import { MAX_PREGUNTA } from "@/lib/fitai";
 
 type Mensaje = { role: "user" | "assistant"; content: string };
 
 /**
- * La conversación con la asistente del programa.
+ * La conversación con FitAI.
  *
  * La respuesta se va escribiendo según llega, no de golpe al final: una espera
  * de ocho segundos con un punto parpadeando parece que se ha roto algo.
  */
-export default function Asistente({ nombre, sugerencias }: { nombre: string; sugerencias: string[] }) {
+export default function FitAI({ nombre, sugerencias }: { nombre: string; sugerencias: string[] }) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -32,7 +32,7 @@ export default function Asistente({ nombre, sugerencias }: { nombre: string; sug
     setMensajes([...historial, { role: "assistant", content: "" }]);
     setEnviando(true);
     try {
-      const res = await fetch("/api/miembros/asistente", {
+      const res = await fetch("/api/miembros/fitai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensajes: historial }),
@@ -72,7 +72,7 @@ export default function Asistente({ nombre, sugerencias }: { nombre: string; sug
       {vacia ? (
         <div className="bg-surface rounded-[14px] p-4">
           <p className="text-[17px] text-ink leading-snug">
-            Hola, {nombre}. Pregúntame lo que quieras sobre cómo funciona el programa y te lo resuelvo al momento.
+            Hola, {nombre}. Soy FitAI. Pregúntame lo que quieras sobre cómo funciona el programa y te lo resuelvo al momento.
           </p>
           <p className="text-[15px] text-ink-muted mt-1">
             Para lo tuyo en concreto —tu plan, una molestia, cambiar una dosis— te diré que hables con tu coach, porque eso lo decide ella.
