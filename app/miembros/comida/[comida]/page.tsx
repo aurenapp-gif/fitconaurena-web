@@ -6,7 +6,7 @@ import MarcarComida from "@/components/MarcarComida";
 import { Grupo, NotaCoach } from "@/components/Grupo";
 import { requireMember } from "@/lib/guard";
 import { isAdmin, adminEmails } from "@/lib/members";
-import { sbSelect } from "@/lib/supabase";
+import { isMissingTable, sbSelect } from "@/lib/supabase";
 import { leerPlan } from "@/lib/planes";
 import { claveComida, comidasDeHoy, momentoDe } from "@/lib/dia";
 import { hoyMadrid } from "@/lib/renovaciones";
@@ -26,7 +26,8 @@ export default async function ComidaPage({ params }: { params: { comida: string 
   const [planes, marcadas, coach] = await Promise.all([
     sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,estructura,created_at&member_email=eq.${e}&type=eq.nutricion&order=created_at.desc&limit=1`)
       .catch(() => [] as Plan[]),
-    sbSelect<{ comida: string }>("meal_logs", `select=comida&member_email=eq.${e}&day=eq.${hoy}`).catch(() => [] as { comida: string }[]),
+    sbSelect<{ comida: string }>("meal_logs", `select=comida&member_email=eq.${e}&day=eq.${hoy}`)
+      .catch((err) => (isMissingTable(err) ? null : ([] as { comida: string }[]))),
     sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(adminEmails()[0] ?? "")}`)
       .then((r) => r[0]?.display_name ?? null).catch(() => null),
   ]);
@@ -38,7 +39,8 @@ export default async function ComidaPage({ params }: { params: { comida: string 
   const comida = hoyComidas?.comidas.find((c) => claveComida(c.nombre) === clave);
   if (!comida) notFound();
 
-  const hecha = marcadas.some((m) => m.comida === clave);
+  const puedeMarcar = marcadas !== null;
+  const hecha = (marcadas ?? []).some((m) => m.comida === clave);
   const varias = comida.opciones.length > 1;
 
   return (
@@ -78,9 +80,14 @@ export default async function ComidaPage({ params }: { params: { comida: string 
               </p>
             )}
 
-            {plan?.note?.trim() && <NotaCoach inicial={(coach ?? "C").slice(0, 1)} texto={plan.note.trim()} />}
+            {plan?.note?.trim() && (
+              <div>
+                <span className="group-label">Nota de {coach ?? "tu coach"} en este plan</span>
+                <NotaCoach inicial={(coach ?? "C").slice(0, 1)} texto={plan.note.trim()} />
+              </div>
+            )}
 
-            <MarcarComida nombre={comida.nombre} hecha={hecha} />
+            {puedeMarcar && <MarcarComida nombre={comida.nombre} hecha={hecha} />}
 
             <Link href="/miembros/fitai" className="bg-brand-soft rounded-[14px] p-4 flex items-center gap-3">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-brand))" strokeWidth="1.7"
