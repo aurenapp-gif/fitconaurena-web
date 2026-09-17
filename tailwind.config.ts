@@ -43,6 +43,8 @@ const config: Config = {
         danger: { DEFAULT: t("--c-danger"), soft: t("--c-danger-soft") },
         warn: { DEFAULT: t("--c-warn"), soft: t("--c-warn-soft") },
         success: { DEFAULT: t("--c-success"), soft: t("--c-success-soft") },
+        // El salvia de los rellenos. Ver el comentario de globals.css.
+        sage: t("--c-sage"),
       },
       fontFamily: {
         sans: ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
