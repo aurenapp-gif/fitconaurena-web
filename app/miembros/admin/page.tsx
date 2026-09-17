@@ -40,7 +40,7 @@ export default async function AdminPage() {
   const since = isoDaysAgo(15);
 
   // Todas las lecturas independientes del panel, en paralelo (antes iban en cascada).
-  const [checkins, members, profiles, recentList, pending, templates, totalSigned] = await Promise.all([
+  const [checkins, members, profiles, recentList, pending, templates, totalSigned, tecnicasPendientes, habitos30] = await Promise.all([
     sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10")
       .catch((e) => { console.error("[admin] checkins", e); return [] as CheckIn[]; }),
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email)))
@@ -55,6 +55,14 @@ export default async function AdminPage() {
       .catch((e) => { console.error("[admin] contract templates", e); return [] as ContractTemplate[]; }),
     sbSelect<{ id: string }>("contract_signatures", "select=id")
       .then((r) => r.length).catch(() => 0),
+    // Vídeos de técnica esperando corrección.
+    sbSelect<{ id: string; member_email: string; created_at: string }>(
+      "technique_reviews", "select=id,member_email,created_at&coach_reply=is.null&order=created_at.asc"
+    ).catch(() => [] as { id: string; member_email: string; created_at: string }[]),
+    // Un mes de hábitos, para saber quién se está descolgando.
+    sbSelect<{ member_email: string; day: string }>(
+      "habit_logs", `select=member_email,day&day=gte.${isoDaysAgo(30)}`
+    ).catch(() => [] as { member_email: string; day: string }[]),
   ]);
 
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
@@ -70,6 +78,47 @@ export default async function AdminPage() {
     .filter((x) => x.r.days != null && x.r.days <= 5)
     .sort((a, b) => (a.r.days as number) - (b.r.days as number));
   const noCheckin = members.filter((m) => !recentSet.has(m.email));
+
+  // QUIÉN SE ESTÁ DESCOLGANDO. El último día que apuntó algo, por clienta. Solo
+  // cuentan las que alguna vez han apuntado: a una recién dada de alta no se
+  // la marca como perdida el primer día.
+  const ultimoDia = new Map<string, string>();
+  for (const h of habitos30) {
+    const previo = ultimoDia.get(h.member_email);
+    if (!previo || h.day > previo) ultimoDia.set(h.member_email, h.day);
+  }
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const diasSin = (d: string) => Math.round((Date.parse(`${hoyStr}T00:00:00Z`) - Date.parse(`${d}T00:00:00Z`)) / 86400000);
+  const descolgadas = members
+    .map((m) => ({ m, dia: ultimoDia.get(m.email) }))
+    .filter((x): x is { m: { email: string; name: string }; dia: string } => !!x.dia)
+    .map((x) => ({ ...x, dias: diasSin(x.dia) }))
+    .filter((x) => x.dias >= 6)
+    .sort((a, b) => b.dias - a.dias);
+
+  /** Lo que la coach tiene esperando, de lo más antiguo a lo más nuevo. */
+  const esperando = [
+    pendingCount > 0 && {
+      icono: "revision" as const,
+      texto: `${pendingCount} ${pendingCount === 1 ? "revisión sin responder" : "revisiones sin responder"}`,
+      sub: checkins.find((c) => !c.coach_reply)
+        ? `La más antigua, de ${nameOf([...checkins].reverse().find((c) => !c.coach_reply)!.member_email)}`
+        : undefined,
+      href: "/miembros/checkins",
+    },
+    tecnicasPendientes.length > 0 && {
+      icono: "video" as const,
+      texto: `${tecnicasPendientes.length} ${tecnicasPendientes.length === 1 ? "vídeo de técnica" : "vídeos de técnica"}`,
+      sub: tecnicasPendientes.slice(0, 2).map((t) => nameOf(t.member_email)).join(", "),
+      href: "/miembros/tecnica",
+    },
+    renewals.length > 0 && {
+      icono: "plan" as const,
+      texto: `${renewals.length} ${renewals.length === 1 ? "plan caduca" : "planes caducan"} esta semana`,
+      sub: renewals.slice(0, 2).map((x) => nameOf(x.m.email)).join(", "),
+      href: "/miembros/clientas",
+    },
+  ].filter(Boolean) as { icono: "revision" | "video" | "plan"; texto: string; sub?: string; href: string }[];
 
   const stats = [
     { value: pendingCount, label: "check-ins pendientes", urgent: pendingCount > 0 },
@@ -93,6 +142,62 @@ export default async function AdminPage() {
               <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
             </div>
           </div>
+
+          {/* LO PRIMERO: lo que te está esperando. El panel enseñaba datos; lo
+              que hace falta al abrirlo es saber qué hay que hacer. */}
+          {(esperando.length > 0 || descolgadas.length > 0) && (
+            <section className="mb-8">
+              <h2 className="font-bold text-ink mb-1">
+                {esperando.length > 0
+                  ? `Tienes ${esperando.length} ${esperando.length === 1 ? "cosa esperando" : "cosas esperando"}`
+                  : "Nada pendiente de responder"}
+              </h2>
+              <p className="text-xs text-ink-muted mb-3">Lo que no avanza si no lo tocas tú.</p>
+
+              {esperando.length > 0 && (
+                <div className="bg-surface rounded-[14px] px-4 mb-3">
+                  {esperando.map((x, i) => (
+                    <Link key={x.href + i} href={x.href}
+                      className={`flex items-center gap-3.5 py-3.5 ${i ? "border-t border-line" : ""}`}>
+                      <span aria-hidden="true" className={`w-10 h-10 rounded-[12px] grid place-items-center shrink-0 ${
+                        x.icono === "revision" ? "bg-warn-soft" : x.icono === "video" ? "bg-brand-soft" : "bg-success-soft"}`}>
+                        {x.icono === "revision" && (
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-warn))" strokeWidth="1.8"><rect x="5" y="4" width="14" height="17" rx="2.4" /><path d="M9 13l2.2 2.2L15.2 11" /></svg>
+                        )}
+                        {x.icono === "video" && (
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-brand))" strokeWidth="1.8"><rect x="3" y="6" width="13" height="12" rx="2.6" /><path d="M16 11l5-3v8l-5-3z" /></svg>
+                        )}
+                        {x.icono === "plan" && (
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-success))" strokeWidth="1.8"><path d="M5.6 4.4h9l4.8 4.8v10.4H5.6z" /><path d="M14.2 4.4v5h5" /></svg>
+                        )}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[17px] font-semibold text-ink">{x.texto}</span>
+                        {x.sub && <span className="block text-[15px] text-ink-muted truncate">{x.sub}</span>}
+                      </span>
+                      <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" strokeWidth="2"
+                        strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0" aria-hidden="true">
+                        <path d="M1.5 1.5L7 7.5l-5.5 6" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Quien se está descolgando. No se va de golpe: deja de apuntar,
+                  deja de subir la revisión, y un mes después no renueva. */}
+              {descolgadas.slice(0, 4).map((d) => (
+                <Link key={d.m.email} href={`/miembros/clientas/${encodeURIComponent(d.m.email)}`}
+                  className="flex items-center gap-3 bg-danger-soft rounded-[14px] px-4 py-3.5 mb-2">
+                  <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-danger shrink-0" />
+                  <span className="flex-1 min-w-0 text-[16px] text-danger truncate">
+                    {nameOf(d.m.email)} lleva {d.dias} días sin apuntar nada
+                  </span>
+                  <span className="text-[15px] font-semibold text-danger shrink-0">Ver</span>
+                </Link>
+              ))}
+            </section>
+          )}
 
           {/* Lo que preguntan a FitAI */}
           {preguntas.length > 0 && (
