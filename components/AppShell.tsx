@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
  * que es quien la ha comprobado en el servidor.
  */
 
-type Icono = "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "salir";
+type Icono = "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "salir";
 type Item = { href: string; label: string; icon: Icono; coach?: boolean };
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -31,6 +31,7 @@ const LINEA: Record<Icono, JSX.Element> = {
   revisiones: <><rect x="3.8" y="5" width="16.4" height="16" rx="2.2" /><path d="M8 5V4a1.2 1.2 0 0 1 1.2-1.2h5.6A1.2 1.2 0 0 1 16 4v1" /><path d="m8.8 13.2 2.4 2.4 4.4-4.8" /></>,
   avisos: <><path d="M6.4 13.6V9.2a5.6 5.6 0 0 1 11.2 0v4.4l1.7 2.2H4.7z" /><path d="M10 19.3a2 2 0 0 0 4 0" /></>,
   mas: <><circle cx="12" cy="12" r="8.7" /><circle cx="7.8" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="16.2" cy="12" r="1.3" fill="currentColor" stroke="none" /></>,
+  entreno: <><path d="M4.4 9.6v4.8M7.2 7.4v9.2M16.8 7.4v9.2M19.6 9.6v4.8M7.2 12h9.6" /></>,
   fitai: <><path d="M20.3 12.2c0 4-3.7 7.2-8.3 7.2-1 0-2-.15-2.9-.42L4.2 20.4l1.5-3.7A6.9 6.9 0 0 1 3.7 12.2c0-4 3.7-7.2 8.3-7.2s8.3 3.2 8.3 7.2z" /><path d="M8.6 12.1h.01M12 12.1h.01M15.4 12.1h.01" /></>,
   dudas: <><circle cx="12" cy="12" r="8.7" /><path d="M9.6 9.2a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 16.8h.01" /></>,
   tecnica: <><rect x="3.5" y="6" width="12.5" height="12" rx="2.2" /><path d="M16 10l4.5-2.6v9.2L16 14z" /></>,
@@ -71,6 +72,7 @@ const PESTANAS: Item[] = [
 
 // Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
 const RESTO: Item[] = [
+  { href: "/miembros/entreno", label: "Entreno", icon: "entreno" },
   { href: "/miembros/fitai", label: "FitAI", icon: "fitai" },
   { href: "/miembros/dudas", label: "Dudas", icon: "dudas" },
   { href: "/miembros/tecnica", label: "Técnica", icon: "tecnica" },
