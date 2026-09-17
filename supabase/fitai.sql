@@ -29,3 +29,10 @@ create index if not exists fitai_messages_fecha_idx
 
 -- Cerrada al público, como el resto: solo entra el servidor con su clave.
 alter table public.fitai_messages enable row level security;
+
+-- El plan transcrito a texto, para que FitAI pueda responder «¿cuánto arroz me
+-- toca?» en vez de «mira tu plan». Se rellena solo: la primera vez que hace
+-- falta el plan se lee el archivo, se guarda aquí y ya no se vuelve a leer.
+-- No hay que rellenar nada a mano ni volver a subir los planes de nadie.
+alter table public.plans add column if not exists contenido text;
+alter table public.plans add column if not exists contenido_at timestamptz;
