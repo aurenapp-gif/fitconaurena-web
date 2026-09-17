@@ -17,6 +17,7 @@ import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones
 import { fechaCorta } from "@/lib/renovaciones";
 import { comparar, objetivoDe } from "@/lib/progreso";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio, type Progreso } from "@/lib/entreno";
+import { claveEjercicio, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Revisiones", robots: { index: false, follow: false } };
@@ -141,9 +142,12 @@ export default async function CheckinsPage({
       : "select=*&order=created_at.desc&limit=50"
     : `select=*&member_email=eq.${encodeURIComponent(email)}&order=created_at.asc`;
   const desde30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  // Desde el inicio de la quincena en curso: son los entrenos que cuentan para
+  // ESTA revisión, no los del periodo anterior.
+  const desdeQuincena = `${periodoDe(todayMadrid()).inicio}T00:00:00Z`;
   const coachEmail = adminEmails()[0];
 
-  const [rows, perfil, planEntreno, suenos, coachNombre] = await Promise.all([
+  const [rows, perfil, planEntreno, suenos, seriesEntreno, coachNombre] = await Promise.all([
     sbSelect<CheckIn>("check_ins", q).catch((e) => { console.error("[checkins] error", e); return [] as CheckIn[]; }),
     admin
       ? Promise.resolve(null)
@@ -158,6 +162,13 @@ export default async function CheckinsPage({
       ? sbSelect<{ sleep: number | null }>("habit_logs", `select=sleep&member_email=eq.${encodeURIComponent(quien)}&day=gte.${desde30}&sleep=not.is.null`)
           .catch(() => [] as { sleep: number | null }[])
       : Promise.resolve([] as { sleep: number | null }[]),
+    // Los entrenos que ha apuntado desde la revisión anterior. De aquí sale el
+    // formulario ya relleno, que es lo que la app le promete al terminar de
+    // entrenar: «cuando toque tu revisión, los pesos ya vendrán puestos».
+    quien
+      ? sbSelect<SerieGuardada>("workout_sets", `select=ejercicio,serie,peso,reps,created_at&member_email=eq.${encodeURIComponent(quien)}&created_at=gte.${desdeQuincena}&order=created_at.desc&limit=400`)
+          .catch(() => [] as SerieGuardada[])
+      : Promise.resolve([] as SerieGuardada[]),
     coachEmail
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
@@ -245,7 +256,21 @@ export default async function CheckinsPage({
   }
   const nombresPlan = nombresDe(planEntreno?.exercises);
   const previos = new Map((ultimoConEjercicios ?? []).map((e) => [e.name.toLowerCase(), e]));
-  const ejerciciosForm: Ejercicio[] = nombresPlan.map((n) => ({ name: n, weight: previos.get(n.toLowerCase())?.weight ?? null, reps: previos.get(n.toLowerCase())?.reps ?? null }));
+  // Lo que apuntó entrenando manda sobre lo de la revisión anterior: es de
+  // estas semanas y lo escribió con el peso en la mano. La revisión anterior
+  // se queda de respaldo para quien no use la pantalla de entreno.
+  const deSusEntrenos = ultimaVezPorEjercicio(seriesEntreno);
+  const ejerciciosForm: Ejercicio[] = nombresPlan.map((n) => {
+    const entrenado = deSusEntrenos.get(claveEjercicio(n));
+    const anterior = previos.get(n.toLowerCase());
+    return {
+      name: n,
+      weight: entrenado?.peso ?? anterior?.weight ?? null,
+      reps: entrenado?.reps ?? anterior?.reps ?? null,
+    };
+  });
+  /** Cuántos vienen ya puestos de sus entrenos, para decírselo sin mentir. */
+  const rellenadosDeEntrenos = nombresPlan.filter((n) => deSusEntrenos.has(claveEjercicio(n))).length;
   const ultimaConEntreno = [...cronologicas].reverse().find((r) => entrenoDe.has(r.id));
 
   // Peso de la clienta filtrada, para su gráfica.
@@ -357,7 +382,7 @@ export default async function CheckinsPage({
               {nombresPlan.length === 0 && mine.length === 0 && (
                 <p className="text-[13px] text-ink-muted px-4">Cuando tu coach suba tu plan de entrenamiento con sus ejercicios, aquí apuntarás tus pesos y repeticiones en cada revisión.</p>
               )}
-              <CheckinForm plegado={mine.length > 0} ejercicios={ejerciciosForm} />
+              <CheckinForm plegado={mine.length > 0} ejercicios={ejerciciosForm} deEntrenos={rellenadosDeEntrenos} />
             </div>
           )}
 

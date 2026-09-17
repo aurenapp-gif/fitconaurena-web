@@ -25,6 +25,7 @@ import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
 import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe } from "@/lib/renovaciones";
+import { claveEjercicio, textoPeso, textoUltimaVez, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio } from "@/lib/entreno";
 import EntrenoProgreso from "@/components/EntrenoProgreso";
 
@@ -115,11 +116,17 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   // Evidencia de uso del servicio. Cada consulta cae por su cuenta si su tabla
   // aún no existe, para que la ficha se siga viendo entera.
-  const [activity, habitDays, techniques] = await Promise.all([
+  const [activity, habitDays, seriesEntreno, techniques] = await Promise.all([
     sbSelect<Activity>("activity_log", `select=action,detail,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc&limit=200`)
       .catch(() => [] as Activity[]),
     sbSelect<{ day: string }>("habit_logs", `select=day&member_email=eq.${encodeURIComponent(member)}`)
       .catch(() => [] as { day: string }[]),
+    // Lo que ha apuntado entrenando. Antes había que esperar a la revisión
+    // para saber si progresaba; esto se ve el mismo día.
+    sbSelect<SerieGuardada & { session_id: string }>(
+      "workout_sets",
+      `select=session_id,ejercicio,serie,peso,reps,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc&limit=600`
+    ).catch(() => [] as (SerieGuardada & { session_id: string })[]),
     sbSelect<{ created_at: string }>("technique_reviews", `select=created_at&member_email=eq.${encodeURIComponent(member)}`)
       .catch(() => [] as { created_at: string }[]),
   ]);
@@ -180,6 +187,22 @@ export default async function ClientaPage({ params }: { params: { email: string 
     const p = planes.find((x) => x.type === t);
     return p ? diaDe(p.created_at) : null;
   };
+  // Lo que ha levantado entrenando, por ejercicio, con su fecha.
+  const ultimoPorEjercicio = ultimaVezPorEjercicio(seriesEntreno);
+  const sesionesContadas = new Set(seriesEntreno.map((x) => x.session_id)).size;
+  const nombreDeClave = new Map<string, string>();
+  for (const x of seriesEntreno) {
+    const k = claveEjercicio(x.ejercicio);
+    if (k && !nombreDeClave.has(k)) nombreDeClave.set(k, x.ejercicio);
+  }
+  const apuntadoEntrenando: { nombre: string; resumen: string; cuando: string }[] = [];
+  nombreDeClave.forEach((nombre, clave) => {
+    const u = ultimoPorEjercicio.get(clave);
+    if (u && apuntadoEntrenando.length < 12) {
+      apuntadoEntrenando.push({ nombre, resumen: textoUltimaVez(u), cuando: fmtDate(u.cuando) });
+    }
+  });
+
   const renovAlimentacion = renovacionAlimentacion(ultimoDe("nutricion"), hoy);
   const planEnt = planes.find((x) => x.type === "entrenamiento") ?? null;
   const renovEntrenamiento = renovacionEntrenamiento(ultimoDe("entrenamiento"), hoy, planEnt?.semanas ?? null);
@@ -358,7 +381,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
             <p className="text-xs text-ink-subtle mb-4">
               Se cuenta desde el último plan que le subiste. Al subirle uno nuevo, el contador vuelve a empezar solo.
             </p>
-            <Renovaciones alimentacion={renovAlimentacion} entrenamiento={renovEntrenamiento} />
+            <Renovaciones alimentacion={renovAlimentacion} entrenamiento={renovEntrenamiento} semanas={planEnt?.semanas ?? null} />
           </div>
 
           {/* Progresión de entrenamiento: lo que apunta en cada revisión */}
@@ -368,13 +391,31 @@ export default async function ClientaPage({ params }: { params: { email: string 
               {ejerciciosPlan.length > 0 && (
                 <p className="text-xs text-ink-muted mb-3">Ejercicios del plan vigente: {ejerciciosPlan.join(" · ")}</p>
               )}
+              {apuntadoEntrenando.length > 0 && (
+                <div className="rounded-xl bg-page p-4 mb-4">
+                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">
+                    Lo que ha apuntado entrenando · {sesionesContadas} {sesionesContadas === 1 ? "sesión" : "sesiones"}
+                  </p>
+                  <ul className="flex flex-col gap-1.5">
+                    {apuntadoEntrenando.map((e) => (
+                      <li key={e.nombre} className="flex items-baseline gap-3 text-sm">
+                        <span className="flex-1 min-w-0 truncate text-ink">{e.nombre}</span>
+                        <span className="text-ink-muted">{e.resumen}</span>
+                        <span className="text-ink-subtle text-xs whitespace-nowrap">{e.cuando}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {entrenoUltimo.length > 0 ? (
                 <>
                   <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">Última revisión con ejercicios ({entrenoFecha}) frente a la anterior</p>
                   <div className="rounded-xl bg-page"><EntrenoProgreso progreso={entrenoUltimo} /></div>
                 </>
-              ) : (
+              ) : apuntadoEntrenando.length === 0 ? (
                 <p className="text-sm text-ink-muted">Todavía no ha apuntado pesos ni repeticiones. Le saldrán en su próxima revisión.</p>
+              ) : (
+                <p className="text-sm text-ink-muted">Su primera revisión con ejercicios llegará con los pesos ya puestos.</p>
               )}
             </div>
           )}

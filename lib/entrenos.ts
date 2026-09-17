@@ -169,9 +169,12 @@ export function segundosDescanso(texto: string | null): number | null {
   return s >= 5 && s <= 600 ? s : null;
 }
 
-/** Cuánto duró la sesión, redondeado a minutos: «48 min», «1 h 12 min». */
+/** Cuánto duró la sesión: «48 min», «1 h 12 min». */
 export function duracion(inicio: string, fin: string): string {
   const min = Math.max(0, Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60000));
+  // «0 min» se lee como si no hubiera entrenado. Por debajo del minuto se dice
+  // con palabras, que además es lo único honesto.
+  if (min < 1) return "menos de un minuto";
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const r = min % 60;

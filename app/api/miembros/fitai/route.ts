@@ -235,6 +235,14 @@ export async function POST(req: NextRequest) {
         console.error("[fitai] error a mitad", err);
         const aviso = "\n\nSe me ha cortado la respuesta. Vuelve a preguntármelo, por favor.";
         controller.enqueue(encoder.encode(aviso));
+        // Nadie se queda mirando una burbuja vacía. Si el modelo no ha
+        // escrito nada —pasa cuando algo se tuerce por detrás— se dice, y se
+        // dice de forma que ella sepa qué hacer.
+        if (!completa.trim()) {
+          const aviso = "Se me ha quedado la cabeza en blanco. Vuelve a preguntármelo, por favor.";
+          completa = aviso;
+          controller.enqueue(encoder.encode(aviso));
+        }
       } finally {
         await sbInsert("fitai_messages", {
           member_email: email,

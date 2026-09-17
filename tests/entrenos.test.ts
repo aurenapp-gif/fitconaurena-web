@@ -116,3 +116,11 @@ test("el descanso del plan, en segundos", () => {
   assert.equal(segundosDescanso("2 s"), null, "dos segundos no es un descanso");
   assert.equal(segundosDescanso("30 min"), null, "media hora tampoco: será otra cosa escrita ahí");
 });
+
+test("una duración por debajo del minuto se dice con palabras", () => {
+  assert.equal(
+    duracion("2026-09-17T18:00:00Z", "2026-09-17T18:00:16Z"), "menos de un minuto",
+    "«0 min» se lee como si no hubiera entrenado"
+  );
+  assert.equal(duracion("2026-09-17T18:00:00Z", "2026-09-17T18:01:00Z"), "1 min");
+});
