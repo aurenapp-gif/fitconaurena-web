@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { litros, pasos as fmtPasos, miles } from "@/lib/suplementos";
 import { ENERGIA, litrosDeVasos, textoLitros, type DiaSemana } from "@/lib/habitos";
 import { Barra, Grupo } from "@/components/Grupo";
+import { aPunto, filtraDecimal, filtraEntero } from "@/lib/numeros";
 
 type Today = { water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null };
 
@@ -51,7 +52,7 @@ export default function HabitsTracker({
         body: JSON.stringify({
           water,
           steps: steps === "" ? null : Number(steps),
-          sleep: sleep === "" ? null : Number(sleep.replace(",", ".")),
+          sleep: sleep === "" ? null : Number(aPunto(sleep)),
           cycle_day: ciclo === "" ? null : Number(ciclo),
           energy: energia,
         }),
@@ -106,7 +107,9 @@ export default function HabitsTracker({
         </div>
       </Grupo>
 
-      <Grupo label="Agua" foot={aguaObjetivo != null ? `Tu coach te ha puesto ${litros(aguaObjetivo)} al día. Cada paso es un vaso (0,25 L).` : "Cada paso es un vaso (0,25 L)."}>
+      {/* «Cada paso» se leía como los pasos del día, que están en el grupo de
+          justo debajo. Aquí un paso era una pulsación del botón. */}
+      <Grupo label="Agua" foot={aguaObjetivo != null ? `Tu coach te ha puesto ${litros(aguaObjetivo)} al día. Cada toque suma un vaso (0,25 L).` : "Cada toque suma un vaso (0,25 L)."}>
         <div className={fila}>
           <span>Litros</span>
           <div className="flex items-center gap-3.5">
@@ -126,7 +129,7 @@ export default function HabitsTracker({
           <span>Hoy</span>
           <div className="flex items-center gap-3">
             {pasosObjetivo != null && pastilla(pasosOk, `de ${miles(pasosObjetivo)}`)}
-            <input type="number" inputMode="numeric" value={steps} onChange={(e) => setSteps(e.target.value)} placeholder={pasosObjetivo != null ? miles(pasosObjetivo) : "8000"} aria-label="Pasos de hoy" className={campo} />
+            <input type="text" inputMode="numeric" value={steps} onChange={(e) => setSteps(filtraEntero(e.target.value))} placeholder={pasosObjetivo != null ? miles(pasosObjetivo) : "8000"} aria-label="Pasos de hoy" className={campo} />
           </div>
         </label>
         {pasosObjetivo != null && <div className="px-4 pb-3 -mt-1"><Barra pct={pasosPct} /></div>}
@@ -135,11 +138,11 @@ export default function HabitsTracker({
       <Grupo label="Descanso y ciclo" foot="El ciclo es opcional. Apuntarlo ayuda a entender el peso y la energía de cada semana, y solo lo veis tú y tu coach.">
         <label className={fila}>
           <span>Horas de sueño</span>
-          <input type="number" inputMode="decimal" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="7,5" aria-label="Horas de sueño" className={campo} />
+          <input type="text" inputMode="decimal" value={sleep} onChange={(e) => setSleep(filtraDecimal(e.target.value))} placeholder="7,5" aria-label="Horas de sueño" className={campo} />
         </label>
         <label className={fila}>
           <span className="min-w-0"><span className="block">Día del ciclo</span><span className="block text-[13px] text-ink-muted">Opcional</span></span>
-          <input type="number" inputMode="numeric" min={1} max={45} value={ciclo} onChange={(e) => setCiclo(e.target.value)} placeholder="—" aria-label="Día del ciclo" className={campo} />
+          <input type="text" inputMode="numeric" value={ciclo} onChange={(e) => setCiclo(filtraEntero(e.target.value))} placeholder="—" aria-label="Día del ciclo" className={campo} />
         </label>
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2"><span className="text-[17px] text-ink">Energía de hoy</span></div>

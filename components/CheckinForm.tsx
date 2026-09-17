@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { resizeImage } from "@/lib/image";
 import type { Ejercicio } from "@/lib/entreno";
+import { aPunto, filtraDecimal, filtraEntero } from "@/lib/numeros";
 
 const PHOTOS = [
   { field: "photo_front", label: "Frente" },
@@ -65,14 +66,20 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
     setCelebrate("");
     try {
       const fd = new FormData();
-      fd.append("weight", weight);
+      // La coma se traduce aquí, al salir: en pantalla ella ve lo que ha
+      // escrito, y el servidor recibe un número que entiende.
+      fd.append("weight", aPunto(weight));
       fd.append("note", note);
       for (const m of MEASURES) {
-        const v = (measures[m.field] ?? "").trim();
+        const v = aPunto(measures[m.field] ?? "");
         if (v) fd.append(m.field, v);
       }
       if (entrenoLleno.length) {
-        fd.append("exercises", JSON.stringify(entrenoLleno.map((x) => ({ name: x.name, weight: x.weight.trim() || null, reps: x.reps.trim() || null }))));
+        fd.append("exercises", JSON.stringify(entrenoLleno.map((x) => ({
+          name: x.name,
+          weight: aPunto(x.weight) || null,
+          reps: x.reps.trim() || null,
+        }))));
       }
       for (const p of PHOTOS) {
         const f = files[p.field];
@@ -149,8 +156,8 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
 
         <div className="flex flex-col gap-1">
           <input
-            type="number" step="0.1" inputMode="decimal" value={weight}
-            onChange={(e) => setWeight(e.target.value)} placeholder="Peso en kg (opcional)" aria-label="Peso en kg (opcional)"
+            type="text" inputMode="decimal" value={weight}
+            onChange={(e) => setWeight(filtraDecimal(e.target.value))} placeholder="Peso en kg (opcional)" aria-label="Peso en kg (opcional)"
             className={campo}
           />
           <p className="text-[13px] text-ink-muted px-1">
@@ -177,9 +184,9 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
                   <label key={m.field} className="flex flex-col gap-1">
                     <span className="text-[13px] text-ink-muted">{m.label}</span>
                     <input
-                      type="number" step="0.1" inputMode="decimal"
+                      type="text" inputMode="decimal"
                       value={measures[m.field] ?? ""}
-                      onChange={(e) => setMeasures((v) => ({ ...v, [m.field]: e.target.value }))}
+                      onChange={(e) => setMeasures((v) => ({ ...v, [m.field]: filtraDecimal(e.target.value) }))}
                       placeholder="cm" aria-label={`${m.label} en cm`}
                       className={`${campoChico} bg-surface text-left`}
                     />
@@ -203,13 +210,13 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
                 <div key={x.name} className="flex items-center gap-2 py-2">
                   <span className="flex-1 min-w-0 text-[15px] text-ink truncate">{x.name}</span>
                   <label className="flex items-center gap-1 w-[92px] shrink-0">
-                    <input type="number" step="0.5" inputMode="decimal" value={x.weight} aria-label={`${x.name}: peso en kg`} placeholder="kg"
-                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, weight: e.target.value } : y)))} className={`${campoChico} bg-surface`} />
+                    <input type="text" inputMode="decimal" value={x.weight} aria-label={`${x.name}: peso en kg`} placeholder="kg"
+                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, weight: filtraDecimal(e.target.value) } : y)))} className={`${campoChico} bg-surface`} />
                     <span className="text-[13px] text-ink-muted">kg</span>
                   </label>
                   <label className="flex items-center gap-1 w-[92px] shrink-0">
-                    <input type="number" step="1" inputMode="numeric" value={x.reps} aria-label={`${x.name}: repeticiones`} placeholder="reps"
-                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, reps: e.target.value } : y)))} className={`${campoChico} bg-surface`} />
+                    <input type="text" inputMode="numeric" value={x.reps} aria-label={`${x.name}: repeticiones`} placeholder="reps"
+                      onChange={(e) => setEntreno((arr) => arr.map((y, j) => (j === i ? { ...y, reps: filtraEntero(e.target.value) } : y)))} className={`${campoChico} bg-surface`} />
                     <span className="text-[13px] text-ink-muted">rep</span>
                   </label>
                 </div>
