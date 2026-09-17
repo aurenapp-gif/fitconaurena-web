@@ -10,7 +10,7 @@ import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
 import { miles } from "@/lib/suplementos";
-import { rachaDias, semanaDe } from "@/lib/habitos";
+import { LITROS_POR_VASO, litrosDeVasos, rachaDias, semanaDe, textoLitros } from "@/lib/habitos";
 import { HERRAMIENTAS_ACTIVAS } from "@/lib/tools";
 import { enlaceSala } from "@/lib/ajustes";
 
@@ -25,10 +25,11 @@ type Profile = {
   photo_path: string | null;
   questionnaire: Questionnaire | null;
   steps_target?: number | null;
+  water_target_l?: number | null;
 };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null };
 type Revision = { created_at: string; coach_reply: string | null; coach_reply_at: string | null };
-type Habito = { day: string; steps: number | null };
+type Habito = { day: string; steps: number | null; water: number | null };
 
 /** «Viernes, 4 de septiembre», en horario de Madrid. */
 function hoyLargo(): string {
@@ -64,7 +65,7 @@ export default async function MiembrosPage() {
   // Todo lo de la clienta en una sola ida y vuelta. Cada consulta falla por su
   // cuenta: un fallo en una no deja la pantalla en blanco.
   const [profile, planes, revision, habitos, pendingDocs, coach] = await Promise.all([
-    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,steps_target&email=eq.${e}`)
+    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,steps_target,water_target_l&email=eq.${e}`)
       .then((r) => r[0] ?? null)
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
@@ -80,7 +81,7 @@ export default async function MiembrosPage() {
           .catch((err) => { console.error("[inicio] check_ins", err); return null; }),
     admin
       ? Promise.resolve([] as Habito[])
-      : sbSelect<Habito>("habit_logs", `select=day,steps&member_email=eq.${e}&day=gte.${desde}&order=day.asc`)
+      : sbSelect<Habito>("habit_logs", `select=day,steps,water&member_email=eq.${e}&day=gte.${desde}&order=day.asc`)
           .catch((err) => { console.error("[inicio] habits", err); return [] as Habito[]; }),
     // Las clientas exentas (las de antes) no quedan bloqueadas, así que si la
     // coach les asigna un contrato hay que avisarlas aquí de forma visible.
@@ -115,8 +116,13 @@ export default async function MiembrosPage() {
   // ---- Lo de hoy -----------------------------------------------------------
   const hechaEstaQuincena = !!revision && diaDe(revision.created_at) >= periodo.inicio;
   const prox = proximaRevision(hoy, hechaEstaQuincena);
-  const pasosHoy = habitos.find((h) => h.day === hoy)?.steps ?? null;
+  const deHoy = habitos.find((h) => h.day === hoy) ?? null;
+  const pasosHoy = deHoy?.steps ?? null;
   const pasosObjetivo = profile?.steps_target ?? null;
+  // El agua es lo que más veces toca al día; faltaba en el inicio y estaban
+  // los pasos, que se apuntan una vez.
+  const vasosHoy = deHoy?.water ?? null;
+  const aguaObjetivo = profile?.water_target_l ?? null;
 
   // ---- Planes vigentes -----------------------------------------------------
   const nut = planes.find((p) => p.type === "nutricion") ?? null;
@@ -227,6 +233,17 @@ export default async function MiembrosPage() {
                   detalle={prox.pendiente ? (periodo.dia === 0 ? "hoy" : "sin subir") : prox.dias === 1 ? "mañana" : `en ${prox.dias} días`}
                   tono={prox.pendiente ? "warn" : "muted"} />
                 <CallCountdown variant="fila" callUrl={sala} />
+                <Link href="/miembros/perfil?tab=habitos" className="block px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3 text-[17px]">
+                    <span className="text-ink">Agua</span>
+                    {vasosHoy != null ? (
+                      <span className="text-ink-subtle"><span className="text-ink">{textoLitros(litrosDeVasos(vasosHoy))}</span>{aguaObjetivo ? ` de ${textoLitros(aguaObjetivo)}` : ""}</span>
+                    ) : (
+                      <span className="text-brand">Apuntar</span>
+                    )}
+                  </div>
+                  {aguaObjetivo ? <Barra pct={vasosHoy != null ? (LITROS_POR_VASO * vasosHoy / aguaObjetivo) * 100 : 0} className="mt-2" /> : null}
+                </Link>
                 <Link href="/miembros/perfil?tab=habitos" className="block px-4 py-3">
                   <div className="flex items-baseline justify-between gap-3 text-[17px]">
                     <span className="text-ink">Pasos</span>
