@@ -58,6 +58,12 @@ const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
 
 /** Un valor numérico de verdad. `Number(null)` es 0 y pasaría por un peso de
  * cero kilos: una revisión sin peso no puede acabar dibujada como «0,0». */
+/** «68,4 kg», con coma, que es como se lee aquí. Sin dato, un guion. */
+function kilos(v: unknown): string {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? `${n.toLocaleString("es-ES", { maximumFractionDigits: 1 })} kg` : "—";
+}
+
 function hayNumero(v: unknown): boolean {
   if (v === null || v === undefined || v === "") return false;
   const n = Number(v);
@@ -283,8 +289,12 @@ export default async function CheckinsPage({
   const validWeights = mine.filter((r) => hayNumero(r.weight)).map((r) => Number(r.weight));
   const firstWeight = validWeights.length ? validWeights[0] : null;
   const lastWeight = validWeights.length ? validWeights[validWeights.length - 1] : null;
+  // Con una sola revisión no hay cambio que enseñar: la primera y la última son
+  // la misma, y salía «· 0,0» como si no hubiera avanzado nada.
   const weightDelta =
-    firstWeight != null && lastWeight != null ? Math.round((lastWeight - firstWeight) * 10) / 10 : null;
+    validWeights.length >= 2 && firstWeight != null && lastWeight != null
+      ? Math.round((lastWeight - firstWeight) * 10) / 10
+      : null;
   const seguidas = admin ? 0 : revisionesSeguidas(mine.map((r) => r.created_at), hoy);
   // Cintura: primera vs última medida registrada (medida estrella del progreso).
   const cinturas = mine.filter((r) => hayNumero(r.waist)).map((r) => ({ date: fmt(r.created_at), value: Number(r.waist) }));
@@ -471,7 +481,7 @@ export default async function CheckinsPage({
                       )}
                       {!admin && <span className="text-[17px] font-semibold text-ink">{fechaLarga(it.created_at)}</span>}
                       {it.weight != null && (admin || !ocultarPeso) && (
-                        <span className={admin ? "text-sm font-semibold text-brand" : "text-[15px] text-ink-muted"}>{it.weight} kg</span>
+                        <span className={admin ? "text-sm font-semibold text-brand" : "text-[15px] text-ink-muted"}>{kilos(it.weight)}</span>
                       )}
                     </div>
                     <span className="text-[13px] text-ink-muted">{admin ? fmt(it.created_at) : ""}</span>
