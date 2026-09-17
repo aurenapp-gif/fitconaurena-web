@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { SEMANAS_ENTRENAMIENTO, SEMANAS_OPCIONES } from "@/lib/renovaciones";
 import { useEffect, useRef, useState } from "react";
 
 // Se sube al cambiar el flujo de subida. Sale en pantalla, en pequeño, para
@@ -116,6 +117,8 @@ export default function PlanUpload({ member }: { member: string }) {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [ejercicios, setEjercicios] = useState("");
+  // Cuántas semanas dura este bloque de entrenamiento. Doce es lo de siempre.
+  const [semanas, setSemanas] = useState(SEMANAS_ENTRENAMIENTO);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "subiendo" | "error">("idle");
   const [msg, setMsg] = useState("");
@@ -281,7 +284,7 @@ export default function PlanUpload({ member }: { member: string }) {
       try {
         const fd = new FormData();
         fd.append("member", member); fd.append("type", type);
-        fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios);
+        fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios); fd.append("semanas", String(semanas));
         fd.append("file", contenido, f.name);
         const res = await fetch("/api/miembros/clientas/plan", { method: "POST", body: fd });
         if (res.ok) return true;
@@ -310,7 +313,7 @@ export default function PlanUpload({ member }: { member: string }) {
         try {
           const fd = new FormData();
           fd.append("member", member); fd.append("type", type);
-          fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios);
+          fd.append("title", title); fd.append("note", note); fd.append("exercises", ejercicios); fd.append("semanas", String(semanas));
           fd.append("file", contenido, f.name);
           const req = new XMLHttpRequest();
           req.open("POST", "/api/miembros/clientas/plan");
@@ -380,7 +383,7 @@ export default function PlanUpload({ member }: { member: string }) {
         const res = await fetch("/api/miembros/clientas/plan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ member, type, title, note, exercises: ejercicios, path: datos.path, pathToken: datos.pathToken }),
+          body: JSON.stringify({ member, type, title, note, exercises: ejercicios, semanas, path: datos.path, pathToken: datos.pathToken }),
         });
         if (res.ok) return true;
         const d = await res.json().catch(() => ({}));
@@ -435,6 +438,17 @@ export default function PlanUpload({ member }: { member: string }) {
       />
       {type === "entrenamiento" && (
         <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm text-ink">Dura</span>
+            <select value={semanas} onChange={(e) => setSemanas(Number(e.target.value))} className={cls}>
+              {SEMANAS_OPCIONES.map((n) => (
+                <option key={n} value={n}>{n} semanas</option>
+              ))}
+            </select>
+          </label>
+          <p className="text-xs text-ink-subtle mb-1">
+            De aquí sale la fecha en que le toca el bloque siguiente, y la que ella ve en «vigente hasta».
+          </p>
           <textarea
             value={ejercicios}
             onChange={(e) => setEjercicios(e.target.value)}

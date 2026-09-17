@@ -26,6 +26,8 @@ type Plan = {
   note: string | null;
   file_path: string | null;
   contenido?: string | null;
+  estructura?: unknown;
+  semanas?: number | null;
   created_at: string;
   exercises?: unknown;
 };
@@ -79,9 +81,10 @@ async function datosDe(email: string): Promise<ContextoClienta> {
       questionnaire: Questionnaire | null;
     }>("profiles", `select=display_name,created_at,water_target_l,steps_target,questionnaire&email=eq.${e}`)
       .then((r) => r[0] ?? null).catch(() => null),
-    // `contenido` puede no existir todavía (falta supabase/fitai.sql). Si la
-    // columna falta, PostgREST devuelve 400, así que se reintenta sin ella.
-    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
+    // Las columnas de la lectura pueden no existir todavía (falta ejecutar
+    // supabase/planes.sql). PostgREST devuelve 400, así que se reintenta sin
+    // ellas: FitAI responde igual, solo sin el detalle del plan.
+    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,estructura,semanas,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
       .catch(() => sbSelect<Plan>("plans", `select=id,type,title,note,file_path,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
         .catch(() => [] as Plan[])),
     sbSelect<Revision>("check_ins", `select=*&member_email=eq.${e}&order=created_at.desc&limit=4`).catch(() => [] as Revision[]),
@@ -93,13 +96,13 @@ async function datosDe(email: string): Promise<ContextoClienta> {
   const nut = planes.find((p) => p.type === "nutricion") ?? null;
   const ent = planes.find((p) => p.type === "entrenamiento") ?? null;
   const renNut = renovacionAlimentacion(nut ? diaDe(nut.created_at) : null, hoyMadrid());
-  const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoyMadrid());
+  const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoyMadrid(), ent?.semanas ?? null);
   const ultima = revisiones[0] ?? null;
   const hecha = !!ultima && diaDe(ultima.created_at) >= periodoDe(hoy).inicio;
   const prox = proximaRevision(hoy, hecha);
 
-  // Los dos planes se transcriben a la vez; si uno falla, el otro sigue.
-  const [txtNut, txtEnt] = await Promise.all([
+  // Los dos planes se leen a la vez; si uno falla, el otro sigue.
+  const [leidoNut, leidoEnt] = await Promise.all([
     nut ? leerPlan(nut).catch(() => null) : Promise.resolve(null),
     ent ? leerPlan(ent).catch(() => null) : Promise.resolve(null),
   ]);
@@ -130,10 +133,10 @@ async function datosDe(email: string): Promise<ContextoClienta> {
       .map((r) => r.slice(0, 700)),
     planNutricion: nut ? `${nut.title?.trim() || "sin título"}, subido el ${fechaCorta(diaDe(nut.created_at))}${renNut.toca ? `; se renueva el ${fechaCorta(renNut.toca)}` : ""}` : null,
     notaNutricion: nut?.note?.trim().slice(0, 800) || null,
-    contenidoNutricion: txtNut,
+    contenidoNutricion: leidoNut?.texto ?? null,
     planEntrenamiento: ent ? `${ent.title?.trim() || "sin título"}, subido el ${fechaCorta(diaDe(ent.created_at))}${renEnt.toca ? `; vigente hasta el ${fechaCorta(renEnt.toca)}` : ""}` : null,
     notaEntrenamiento: ent?.note?.trim().slice(0, 800) || null,
-    contenidoEntrenamiento: txtEnt,
+    contenidoEntrenamiento: leidoEnt?.texto ?? null,
     ejercicios: nombresDe(ent?.exercises),
     agua: perfil?.water_target_l != null ? litros(perfil.water_target_l) : null,
     pasos: perfil?.steps_target != null ? textoPasos(perfil.steps_target) : null,

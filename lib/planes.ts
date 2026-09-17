@@ -1,42 +1,48 @@
 /**
- * Leer el plan que la coach subió.
+ * Leer el plan que la coach subió y convertirlo en datos.
  *
  * Los planes son archivos: un PDF, una foto de una hoja, a veces un Word. Para
- * que FitAI pueda responder «¿cuánto arroz me toca en la comida?» hay que
- * convertir ese archivo en texto.
+ * que la app pueda enseñar «hoy te tocan 120 g de arroz» o «sentadilla, 4×8»,
+ * y para que FitAI pueda responder a eso, hay que leerlos.
  *
- * Se hace UNA vez por plan y se guarda en la propia fila (`plans.contenido`).
- * Transcribir en cada pregunta costaría dinero y segundos cada vez, y el plan
- * no cambia: cuando la coach sube uno nuevo, es una fila nueva.
+ * Se hace UNA vez por plan y se guarda en la propia fila (`plans.estructura` y
+ * `plans.contenido`). El plan no cambia: cuando la coach sube uno nuevo, es
+ * una fila nueva con su propia lectura. Así nadie paga dos veces por lo mismo
+ * y, sobre todo, el plan de una clienta no puede acabar en la pantalla de otra.
  *
- * Si algo falla —archivo enorme, formato raro, la columna todavía no existe—
- * se devuelve null y FitAI sigue funcionando con el resto: sabe que tiene un
- * plan y de cuándo es, pero no lo que pone dentro. Nunca se rompe la respuesta
- * por esto.
+ * Si algo falla —archivo enorme, Word, foto ilegible— se devuelve null y la
+ * app sigue con el PDF de siempre. Un plan mal leído es peor que uno sin leer.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { sbDownload, sbUpdate } from "@/lib/supabase";
+import {
+  ESQUEMA_ENTRENAMIENTO, ESQUEMA_NUTRICION,
+  INSTRUCCION_ENTRENAMIENTO, INSTRUCCION_NUTRICION,
+  normaliza, textoDeEstructura, type Estructura,
+} from "@/lib/plan-estructura";
 
-/** Transcribir es copiar, no razonar: el modelo pequeño va sobrado y es barato. */
-const MODELO_LECTURA = "claude-haiku-4-5-20251001";
+/**
+ * Leer un plan es copiar números que una persona se va a comer o levantar. Un
+ * «120» donde ponía «220» no se nota hasta que es tarde, así que aquí no se
+ * ahorra en modelo.
+ */
+const MODELO_LECTURA = "claude-opus-5";
 
 /**
  * Tope de tamaño. El archivo viaja a la API en base64, que abulta un tercio
- * más, y por encima de esto la petición empieza a ser un problema. Un plan
- * normal pesa unos cientos de kilobytes; los que se pasan suelen ser fotos sin
- * comprimir.
+ * más. Un plan normal pesa unos cientos de kilobytes; los que se pasan suelen
+ * ser fotos sin comprimir.
  */
 export const MAX_BYTES_PLAN = 8 * 1024 * 1024;
 
-/** Lo que se guarda como mucho. De sobra para un plan de un mes. */
-export const MAX_CONTENIDO = 8000;
+/** Lo que se guarda como mucho en texto. De sobra para un plan de un mes. */
+export const MAX_CONTENIDO = 12000;
 
 /**
- * Si la columna `contenido` todavía no existe (falta ejecutar
- * supabase/fitai.sql), guardar falla y el plan se volvería a transcribir en
- * CADA pregunta, que es dinero tirado. Al primer fallo se deja de intentar en
- * esta instancia y se sigue leyendo sin guardar.
+ * Si las columnas todavía no existen (falta ejecutar supabase/planes.sql),
+ * guardar falla y el plan se releería en CADA pregunta, que es dinero tirado.
+ * Al primer fallo se deja de intentar en esta instancia.
  */
 let sePuedeGuardar = true;
 
@@ -45,9 +51,19 @@ export type PlanLeible = {
   type: string;
   file_path: string | null;
   contenido?: string | null;
+  estructura?: unknown;
 };
 
-type Formato = { clase: "pdf" } | { clase: "imagen"; medio: string } | null;
+export type PlanLeido = {
+  /** El plan en datos, si se ha podido entender. */
+  estructura: Estructura | null;
+  /** El mismo plan en texto, que es lo que lee FitAI. */
+  texto: string | null;
+};
+
+const VACIO: PlanLeido = { estructura: null, texto: null };
+
+type Formato = { clase: "pdf" } | { clase: "imagen"; medio: "image/jpeg" | "image/png" | "image/webp" | "image/gif" } | null;
 
 /** Qué es el archivo, por su extensión. Word y demás se quedan fuera. */
 function formatoDe(path: string): Formato {
@@ -60,70 +76,97 @@ function formatoDe(path: string): Formato {
   return null;
 }
 
-const INSTRUCCION = `Transcribe este plan a texto plano, entero y sin resumir.
-
-Mantén las cantidades exactas (gramos, mililitros, piezas), las series, las repeticiones, los descansos y los nombres tal y como están escritos. Respeta la estructura: días, comidas, bloques de entrenamiento.
-
-No añadas comentarios, consejos ni interpretaciones tuyas. No corrijas nada aunque te parezca un error. Solo transcribe lo que hay.
-
-Si el archivo no se lee bien o no es un plan, responde únicamente: NO_LEGIBLE`;
+/** Lo ya guardado, si la lectura se hizo en su día. */
+function guardado(plan: PlanLeible): PlanLeido | null {
+  const e = plan.estructura;
+  if (e && typeof e === "object") {
+    const tipo = plan.type === "nutricion" ? "nutricion" : "entrenamiento";
+    const est = normaliza(tipo, e);
+    if (est) return { estructura: est, texto: plan.contenido || textoDeEstructura(est) };
+  }
+  // Planes leídos antes de que existiera la estructura: al menos tienen texto.
+  return plan.contenido ? { estructura: null, texto: plan.contenido } : null;
+}
 
 /**
- * El texto del plan, transcribiéndolo la primera vez y reutilizándolo después.
- *
- * `guardar: false` sirve para el momento de la subida, donde interesa no
- * escribir dos veces la misma fila.
+ * El plan en datos, leyéndolo la primera vez y reutilizándolo después.
  */
-export async function leerPlan(plan: PlanLeible): Promise<string | null> {
-  if (plan.contenido) return plan.contenido;
-  if (!plan.file_path) return null;
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
+  const ya = guardado(plan);
+  if (ya) return ya;
 
+  if (!plan.file_path || !process.env.ANTHROPIC_API_KEY) return VACIO;
   const formato = formatoDe(plan.file_path);
-  if (!formato) return null;
+  if (!formato) return VACIO;
+
+  const tipo = plan.type === "nutricion" ? "nutricion" : "entrenamiento";
 
   try {
     const bytes = await sbDownload("planes", plan.file_path);
     if (bytes.byteLength > MAX_BYTES_PLAN) {
-      console.error(`[planes] ${plan.id} pesa ${bytes.byteLength} bytes, no se transcribe`);
-      return null;
+      console.error(`[planes] ${plan.id} pesa ${bytes.byteLength} bytes, no se lee`);
+      return VACIO;
     }
     const datos = Buffer.from(bytes).toString("base64");
 
     const adjunto: Anthropic.ContentBlockParam =
       formato.clase === "pdf"
         ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: datos } }
-        : { type: "image", source: { type: "base64", media_type: formato.medio as "image/jpeg", data: datos } };
+        : { type: "image", source: { type: "base64", media_type: formato.medio, data: datos } };
 
     const client = new Anthropic();
-    const res = await client.messages.create({
+    // Con streaming: un plan largo puede tardar y pasarse del tiempo de una
+    // petición normal.
+    const stream = client.messages.stream({
       model: MODELO_LECTURA,
-      max_tokens: 8000,
-      messages: [{ role: "user", content: [adjunto, { type: "text", text: INSTRUCCION }] }],
+      max_tokens: 32000,
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: tipo === "nutricion" ? ESQUEMA_NUTRICION : ESQUEMA_ENTRENAMIENTO,
+        },
+      },
+      messages: [{
+        role: "user",
+        content: [adjunto, { type: "text", text: tipo === "nutricion" ? INSTRUCCION_NUTRICION : INSTRUCCION_ENTRENAMIENTO }],
+      }],
     });
+    const res = await stream.finalMessage();
 
-    const texto = res.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .trim()
-      .slice(0, MAX_CONTENIDO);
+    if (res.stop_reason === "refusal") {
+      console.error(`[planes] ${plan.id}: la lectura fue rechazada`);
+      return VACIO;
+    }
+    const crudo = res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+    if (!crudo) return VACIO;
 
-    if (!texto || texto.includes("NO_LEGIBLE")) return null;
+    let bruto: unknown;
+    try { bruto = JSON.parse(crudo); } catch {
+      console.error(`[planes] ${plan.id}: la respuesta no era JSON`);
+      return VACIO;
+    }
 
-    // Se guarda para no volver a pagarlo.
+    const estructura = normaliza(tipo, bruto);
+    if (!estructura) {
+      console.error(`[planes] ${plan.id}: ilegible o vacío`);
+      return VACIO;
+    }
+    const texto = textoDeEstructura(estructura).slice(0, MAX_CONTENIDO);
+
     if (sePuedeGuardar) {
       await sbUpdate("plans", `id=eq.${encodeURIComponent(plan.id)}`, {
+        estructura,
         contenido: texto,
         contenido_at: new Date().toISOString(),
       }).catch((e) => {
         sePuedeGuardar = false;
-        console.error("[planes] no se pudo guardar el contenido; ¿falta supabase/fitai.sql?", e);
+        console.error("[planes] no se pudo guardar la lectura; ¿falta supabase/planes.sql?", e);
       });
     }
 
-    return texto;
+    return { estructura, texto };
   } catch (e) {
     console.error(`[planes] no se pudo leer ${plan.id}`, e);
-    return null;
+    return VACIO;
   }
 }

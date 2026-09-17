@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, 
 export const dynamic = "force-dynamic";
 
 type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null; water_target_l?: number | null; steps_target?: number | null; hide_weight?: boolean | null };
-type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown };
+type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null };
 type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null };
 
 const fechaLarga = (iso: string) => new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" });
@@ -181,7 +181,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");
   const hoy = hoyMadrid();
   const renNut = renovacionAlimentacion(nutPlans[0] ? diaDe(nutPlans[0].created_at) : null, hoy);
-  const renEnt = renovacionEntrenamiento(entPlans[0] ? diaDe(entPlans[0].created_at) : null, hoy);
+  const renEnt = renovacionEntrenamiento(entPlans[0] ? diaDe(entPlans[0].created_at) : null, hoy, entPlans[0]?.semanas ?? null);
 
   const loggedDays = new Set(habitRows.map((r) => r.day));
   const todayRow = habitRows.find((r) => r.day === hoy);

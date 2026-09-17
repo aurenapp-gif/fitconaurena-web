@@ -4,6 +4,7 @@ import { isAccessRevoked } from "@/lib/guard";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbUpsert, sbSelect, sbUpdate, sbDelete, sbDeleteObject } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
+import { semanasValidas } from "@/lib/renovaciones";
 import { sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 import { verifyPath } from "@/lib/token";
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
   const esFormulario = (req.headers.get("content-type") ?? "").includes("multipart/form-data");
 
   let member = "", type = "", title = "", note = "", path = "", ejerciciosTxt = "";
+  let semanas: unknown = null;
   let archivo: File | null = null;
 
   if (esFormulario) {
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
     title = String(form.get("title") ?? "").trim().slice(0, 120);
     note = String(form.get("note") ?? "").trim().slice(0, 1000);
     ejerciciosTxt = String(form.get("exercises") ?? "").slice(0, 4000);
+    semanas = form.get("semanas");
     const f = form.get("file");
     if (!(f instanceof File) || f.size === 0) {
       return NextResponse.json({ error: "Adjunta el archivo del plan." }, { status: 400 });
@@ -49,13 +52,14 @@ export async function POST(req: NextRequest) {
     if (invalido) return NextResponse.json({ error: invalido }, { status: 400 });
     archivo = f;
   } else {
-    let body: { member?: unknown; type?: unknown; title?: unknown; note?: unknown; path?: unknown; pathToken?: unknown; exercises?: unknown };
+    let body: { member?: unknown; type?: unknown; title?: unknown; note?: unknown; path?: unknown; pathToken?: unknown; exercises?: unknown; semanas?: unknown };
     try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
     member = normalizeEmail(typeof body.member === "string" ? body.member : "");
     type = typeof body.type === "string" ? body.type : "";
     title = (typeof body.title === "string" ? body.title : "").trim().slice(0, 120);
     note = (typeof body.note === "string" ? body.note : "").trim().slice(0, 1000);
     ejerciciosTxt = (typeof body.exercises === "string" ? body.exercises : "").slice(0, 4000);
+    semanas = body.semanas;
     path = typeof body.path === "string" ? body.path : "";
     const pathToken = typeof body.pathToken === "string" ? body.pathToken : "";
     // La ruta tiene que ser una emitida por /sign: si no, cualquiera con sesión
@@ -82,8 +86,10 @@ export async function POST(req: NextRequest) {
     // Los ejercicios solo tienen sentido en un plan de entrenamiento: son los
     // que la clienta rellenará (peso y repeticiones) en cada revisión.
     const exercises = type === "entrenamiento" ? parseEjerciciosTexto(ejerciciosTxt) : [];
+    // Solo el entrenamiento tiene duración; la alimentación es siempre mensual.
+    const duracion = type === "entrenamiento" ? { semanas: semanasValidas(semanas) } : {};
     try {
-      await sbInsert("plans", { ...row, note: note || null, exercises: exercises.length ? exercises : null });
+      await sbInsert("plans", { ...row, ...duracion, note: note || null, exercises: exercises.length ? exercises : null });
     } catch (e) {
       // Si alguna columna todavía no existe (falta ejecutar la migración
       // supabase/plan-comentario.sql o supabase/para-ellas.sql), no bloqueamos

@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 type Prof = { email: string; display_name: string | null; renewal_date: string | null };
 type PlanRow = { member_email: string; created_at: string };
-type PlanTipo = { member_email: string; type: string; created_at: string };
+type PlanTipo = { member_email: string; type: string; created_at: string; semanas?: number | null };
 /** Una fila por clienta, ya sumada por la base de datos. */
 type Uso = {
   member_email: string;
@@ -61,8 +61,10 @@ export default async function ClientasPage() {
     // Para las renovaciones hace falta el ÚLTIMO plan de cada tipo, sin el
     // corte de dos meses de arriba: una alimentación de mayo sin renovar es
     // justo lo que hay que ver. Solo tres columnas, así que sale barato.
-    sbSelect<PlanTipo>("plans", "select=member_email,type,created_at&order=created_at.desc")
-      .catch((e) => { console.error("[clientas] planes por tipo", e); return [] as PlanTipo[]; }),
+    sbSelect<PlanTipo>("plans", "select=member_email,type,created_at,semanas&order=created_at.desc")
+      // `semanas` puede no existir todavía (falta supabase/planes.sql).
+      .catch(() => sbSelect<PlanTipo>("plans", "select=member_email,type,created_at&order=created_at.desc")
+        .catch((e) => { console.error("[clientas] planes por tipo", e); return [] as PlanTipo[]; })),
   ]);
   const contractTpls = templates.filter((t) => t.kind === "contrato").map((t) => ({ id: t.id, title: t.title }));
   const hasAnexo = templates.some((t) => t.kind === "anexo_salud");
@@ -71,9 +73,10 @@ export default async function ClientasPage() {
   // vez que aparece una pareja (clienta, tipo) es su último plan de ese tipo.
   const hoy = hoyMadrid();
   const ultimoPlan = new Map<string, string>();
+  const semanasPlan = new Map<string, number | null>();
   for (const p of planesTipo) {
     const clave = `${p.member_email}|${p.type}`;
-    if (!ultimoPlan.has(clave)) ultimoPlan.set(clave, diaDe(p.created_at));
+    if (!ultimoPlan.has(clave)) { ultimoPlan.set(clave, diaDe(p.created_at)); semanasPlan.set(clave, p.semanas ?? null); }
   }
 
   const profByEmail = new Map(profiles.map((p) => [p.email, p]));
@@ -128,7 +131,7 @@ export default async function ClientasPage() {
         email: m.email,
         nombre: p?.display_name || m.name,
         alimentacion: renovacionAlimentacion(ultimoPlan.get(`${m.email}|nutricion`) ?? null, hoy),
-        entrenamiento: renovacionEntrenamiento(ultimoPlan.get(`${m.email}|entrenamiento`) ?? null, hoy),
+        entrenamiento: renovacionEntrenamiento(ultimoPlan.get(`${m.email}|entrenamiento`) ?? null, hoy, semanasPlan.get(`${m.email}|entrenamiento`) ?? null),
       };
     })
     .filter((f) =>

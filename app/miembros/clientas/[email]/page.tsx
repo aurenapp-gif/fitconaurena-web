@@ -39,7 +39,7 @@ type Prof = {
   full_name?: string | null; address?: string | null; postal_code?: string | null;
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
 };
-type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown };
+type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null };
 type CheckIn = { weight: number | null; created_at: string; exercises?: unknown };
 type Activity = { action: string; detail: string | null; created_at: string };
 
@@ -181,7 +181,8 @@ export default async function ClientaPage({ params }: { params: { email: string 
     return p ? diaDe(p.created_at) : null;
   };
   const renovAlimentacion = renovacionAlimentacion(ultimoDe("nutricion"), hoy);
-  const renovEntrenamiento = renovacionEntrenamiento(ultimoDe("entrenamiento"), hoy);
+  const planEnt = planes.find((x) => x.type === "entrenamiento") ?? null;
+  const renovEntrenamiento = renovacionEntrenamiento(ultimoDe("entrenamiento"), hoy, planEnt?.semanas ?? null);
 
   // PORCENTAJE DEL SERVICIO CONSUMIDO — fiel al apartado 6 de los Términos:
   // estrategia y planificación son el 70 %, seguimiento el 30 %.
