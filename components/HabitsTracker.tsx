@@ -107,7 +107,9 @@ export default function HabitsTracker({
         </div>
       </Grupo>
 
-      <Grupo label="Agua" foot={aguaObjetivo != null ? `Tu coach te ha puesto ${litros(aguaObjetivo)} al día. Cada paso es un vaso (0,25 L).` : "Cada paso es un vaso (0,25 L)."}>
+      {/* «Cada paso» se leía como los pasos del día, que están en el grupo de
+          justo debajo. Aquí un paso era una pulsación del botón. */}
+      <Grupo label="Agua" foot={aguaObjetivo != null ? `Tu coach te ha puesto ${litros(aguaObjetivo)} al día. Cada toque suma un vaso (0,25 L).` : "Cada toque suma un vaso (0,25 L)."}>
         <div className={fila}>
           <span>Litros</span>
           <div className="flex items-center gap-3.5">
