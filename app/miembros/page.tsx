@@ -277,6 +277,7 @@ export default async function MiembrosPage() {
               </Grupo>
 
               <Grupo label="Más">
+                <Fila href="/miembros/asistente" titulo="Asistente" sub="Tus dudas del programa, al momento" />
                 <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
                 <Fila href="/miembros/dudas" titulo="Dudas" sub="Pregunta sin dar la cara" />
                 <Fila href="/miembros/herramientas" titulo="Herramientas" sub={HERRAMIENTAS_ACTIVAS ? "Qué pedir fuera, cómo hacer un ejercicio…" : "En mantenimiento temporal"} />

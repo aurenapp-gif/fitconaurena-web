@@ -32,6 +32,10 @@ export default async function AdminPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
   const salaGuardada = await leerAjuste(AJUSTE_SALA);
+  // Lo que le preguntan a la asistente: es donde se ve qué no está claro.
+  const preguntas = await sbSelect<{ id: string; member_email: string; question: string; derivada: boolean; created_at: string }>(
+    "assistant_messages", "select=id,member_email,question,derivada,created_at&order=created_at.desc&limit=12"
+  ).catch(() => [] as { id: string; member_email: string; question: string; derivada: boolean; created_at: string }[]);
 
   const since = isoDaysAgo(15);
 
@@ -89,6 +93,27 @@ export default async function AdminPage() {
               <Link href="/miembros/agenda" className="btn-brand text-sm px-5 py-2.5">Agenda</Link>
             </div>
           </div>
+
+          {/* Lo que preguntan a la asistente */}
+          {preguntas.length > 0 && (
+            <section className="card-dark p-6 !transform-none mb-8">
+              <h2 className="font-bold text-ink mb-1">Lo que le preguntan a la asistente</h2>
+              <p className="text-xs text-ink-muted mb-4">
+                Las últimas {preguntas.length}. Las marcadas son las que no supo resolver y derivó a ti: si una se repite, merece un comunicado o un minuto en la llamada.
+              </p>
+              <div className="flex flex-col gap-2">
+                {preguntas.map((q) => (
+                  <div key={q.id} className="rounded-lg border border-line px-4 py-2.5">
+                    <p className="text-sm text-ink">{q.question}</p>
+                    <p className="text-xs text-ink-subtle mt-1">
+                      {q.member_email} · {new Date(q.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" })}
+                      {q.derivada && <span className="text-warn"> · te la derivó</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Videollamada grupal: el enlace de la sala, editable sin tocar Vercel */}
           <section className="card-dark p-6 !transform-none mb-8">
