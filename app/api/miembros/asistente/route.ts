@@ -1,0 +1,160 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySession, adminEmails } from "@/lib/members";
+import { isAccessRevoked } from "@/lib/guard";
+import { rateLimit } from "@/lib/ratelimit";
+import { sbInsert, sbSelect } from "@/lib/supabase";
+import { contexto, sistemaEstable, pareceDerivada, LIMITE_HORA, MAX_HISTORIAL, MAX_PREGUNTA, type ContextoClienta } from "@/lib/asistente";
+import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
+import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
+import { litros, pasos as textoPasos, pauta, type Supplement } from "@/lib/suplementos";
+import { nombresDe } from "@/lib/entreno";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MODELO = "claude-opus-5";
+
+type Plan = { type: "nutricion" | "entrenamiento"; title: string | null; created_at: string; exercises?: unknown };
+
+/**
+ * El contexto de la clienta se arma AQUÍ, en el servidor, a partir de la
+ * sesión. Nunca llega del navegador: si viniera de ahí, cualquiera podría
+ * pedirle a la asistente que hablara de los datos de otra.
+ */
+async function datosDe(email: string): Promise<ContextoClienta> {
+  const e = encodeURIComponent(email);
+  const hoy = todayMadrid();
+  const [perfil, planes, ultima, suplementos] = await Promise.all([
+    sbSelect<{ display_name: string | null; water_target_l: number | null; steps_target: number | null }>(
+      "profiles", `select=display_name,water_target_l,steps_target&email=eq.${e}`
+    ).then((r) => r[0] ?? null).catch(() => null),
+    sbSelect<Plan>("plans", `select=type,title,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`).catch(() => [] as Plan[]),
+    sbSelect<{ created_at: string }>("check_ins", `select=created_at&member_email=eq.${e}&order=created_at.desc&limit=1`)
+      .then((r) => r[0]?.created_at ?? null).catch(() => null),
+    sbSelect<Supplement>("member_supplements", `select=*&member_email=eq.${e}&order=created_at.asc`).catch(() => [] as Supplement[]),
+  ]);
+
+  const nut = planes.find((p) => p.type === "nutricion") ?? null;
+  const ent = planes.find((p) => p.type === "entrenamiento") ?? null;
+  const renNut = renovacionAlimentacion(nut ? diaDe(nut.created_at) : null, hoyMadrid());
+  const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoyMadrid());
+  const hecha = !!ultima && diaDe(ultima) >= periodoDe(hoy).inicio;
+  const prox = proximaRevision(hoy, hecha);
+
+  return {
+    nombre: perfil?.display_name || email.split("@")[0],
+    proximaRevision: fechaCorta(prox.fecha),
+    revisionPendiente: prox.pendiente,
+    planNutricion: nut ? `${nut.title?.trim() || "sin título"}${renNut.toca ? `, se renueva el ${fechaCorta(renNut.toca)}` : ""}` : null,
+    planEntrenamiento: ent ? `${ent.title?.trim() || "sin título"}${renEnt.toca ? `, vigente hasta el ${fechaCorta(renEnt.toca)}` : ""}` : null,
+    agua: perfil?.water_target_l != null ? litros(perfil.water_target_l) : null,
+    pasos: perfil?.steps_target != null ? textoPasos(perfil.steps_target) : null,
+    suplementos: suplementos.map((s) => `${s.name}${pauta(s) ? ` (${pauta(s)})` : ""}`),
+    ejercicios: nombresDe(ent?.exercises),
+  };
+}
+
+export async function POST(req: NextRequest) {
+  const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("[asistente] falta ANTHROPIC_API_KEY");
+    return NextResponse.json({ error: "La asistente todavía no está configurada. Díselo a tu coach." }, { status: 503 });
+  }
+  if (!rateLimit(`asistente:${email}`, LIMITE_HORA, 3600_000)) {
+    return NextResponse.json({ error: "Has preguntado mucho seguido. Prueba dentro de un rato." }, { status: 429 });
+  }
+
+  let body: { mensajes?: unknown };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+
+  // Solo se aceptan los dos roles de una conversación y texto plano: nada de
+  // bloques de contenido montados desde el navegador.
+  const crudos = Array.isArray(body.mensajes) ? body.mensajes : [];
+  const mensajes: Anthropic.MessageParam[] = [];
+  for (const m of crudos.slice(-MAX_HISTORIAL)) {
+    const o = (m && typeof m === "object" ? m : {}) as Record<string, unknown>;
+    const rol = o.role === "assistant" ? "assistant" : "user";
+    const texto = typeof o.content === "string" ? o.content.trim().slice(0, MAX_PREGUNTA) : "";
+    if (texto) mensajes.push({ role: rol, content: texto });
+  }
+  while (mensajes.length && mensajes[0].role === "assistant") mensajes.shift();
+  const ultima = mensajes[mensajes.length - 1];
+  if (!ultima || ultima.role !== "user") {
+    return NextResponse.json({ error: "Escribe tu pregunta." }, { status: 400 });
+  }
+  const pregunta = String(ultima.content);
+
+  const coach = (await sbSelect<{ display_name: string | null }>(
+    "profiles", `select=display_name&email=eq.${encodeURIComponent(adminEmails()[0] ?? "")}`
+  ).then((r) => r[0]?.display_name ?? null).catch(() => null)) || "tu coach";
+
+  const datos = await datosDe(email);
+  const client = new Anthropic();
+
+  let stream;
+  try {
+    stream = client.beta.messages.stream({
+      model: MODELO,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      max_tokens: 8000,
+      // Pregunta corta, respuesta corta: no hace falta que se lo piense mucho.
+      // Con el pensamiento apagado del todo, Opus 5 a veces cuela etiquetas
+      // internas en la respuesta, así que se baja el esfuerzo en su lugar.
+      output_config: { effort: "low" },
+      system: [
+        // Lo que no cambia va primero y cacheado: se paga una vez y las demás
+        // preguntas salen mucho más baratas.
+        { type: "text", text: sistemaEstable(coach), cache_control: { type: "ephemeral" } },
+        { type: "text", text: contexto(datos) },
+      ],
+      messages: mensajes,
+    });
+  } catch (err) {
+    console.error("[asistente] no se pudo empezar", err);
+    return NextResponse.json({ error: "No se ha podido responder ahora mismo. Inténtalo en un momento." }, { status: 502 });
+  }
+
+  // Se va mandando la respuesta según se escribe, y al terminar se guarda para
+  // que la coach vea qué le preguntan.
+  const encoder = new TextEncoder();
+  const salida = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let completa = "";
+      try {
+        for await (const evento of stream) {
+          if (evento.type === "content_block_delta" && evento.delta.type === "text_delta") {
+            completa += evento.delta.text;
+            controller.enqueue(encoder.encode(evento.delta.text));
+          }
+        }
+        const final = await stream.finalMessage();
+        if (final.stop_reason === "refusal") {
+          const aviso = "Prefiero no responder a eso. Si es algo del programa, díselo a tu coach y te lo resuelve.";
+          completa = aviso;
+          controller.enqueue(encoder.encode(aviso));
+        }
+      } catch (err) {
+        console.error("[asistente] error a mitad", err);
+        const aviso = "\n\nSe me ha cortado la respuesta. Vuelve a preguntármelo, por favor.";
+        controller.enqueue(encoder.encode(aviso));
+      } finally {
+        await sbInsert("assistant_messages", {
+          member_email: email,
+          question: pregunta,
+          answer: completa || null,
+          derivada: pareceDerivada(completa),
+        }).catch((e) => console.error("[asistente] registro", e));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(salida, {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
