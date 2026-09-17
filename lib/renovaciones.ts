@@ -28,8 +28,26 @@ export const DIA_ALIMENTACION = 1;
  */
 export const MARGEN_ALIMENTACION = 10;
 
-/** Semanas entre planes de entrenamiento. */
+/**
+ * Semanas entre planes de entrenamiento.
+ *
+ * No es un número fijo: un bloque dura entre ocho y doce semanas según lo que
+ * la coach haya planteado. Se elige al subir el plan y se guarda con él, así
+ * que cada bloque lleva su propia cuenta y no hay que recordar nada.
+ *
+ * Los planes subidos antes de que esto existiera no tienen el dato: para ellos
+ * vale el valor de siempre, doce.
+ */
 export const SEMANAS_ENTRENAMIENTO = 12;
+
+/** Lo que puede elegir la coach al subir un plan de entrenamiento. */
+export const SEMANAS_OPCIONES = [8, 10, 12] as const;
+
+/** Un número de semanas válido, o el de siempre si viene cualquier otra cosa. */
+export function semanasValidas(v: unknown): number {
+  const n = Number(v);
+  return (SEMANAS_OPCIONES as readonly number[]).includes(n) ? n : SEMANAS_ENTRENAMIENTO;
+}
 
 export type Urgencia = "sin-plan" | "vencida" | "hoy" | "pronto" | "ok";
 
@@ -118,12 +136,16 @@ export function renovacionAlimentacion(ultima: string | null, hoy: string): Reno
   return { ultima, toca, dias, urgencia: urgenciaDe(dias), texto: textoDe(dias), nota };
 }
 
-/** Cuándo toca la próxima planificación de ENTRENAMIENTO (doce semanas). */
-export function renovacionEntrenamiento(ultima: string | null, hoy: string): Renovacion {
+/**
+ * Cuándo toca la próxima planificación de ENTRENAMIENTO.
+ *
+ * @param semanas  las que dure ESE bloque (8, 10 o 12). Sin dato, doce.
+ */
+export function renovacionEntrenamiento(ultima: string | null, hoy: string, semanas?: number | null): Renovacion {
   if (!ultima) {
     return { ultima: null, toca: null, dias: null, urgencia: "sin-plan", texto: "Sin plan todavía" };
   }
-  const toca = sumaDias(ultima, SEMANAS_ENTRENAMIENTO * 7);
+  const toca = sumaDias(ultima, semanasValidas(semanas ?? SEMANAS_ENTRENAMIENTO) * 7);
   const dias = diasEntre(hoy, toca);
   return { ultima, toca, dias, urgencia: urgenciaDe(dias), texto: textoDe(dias) };
 }

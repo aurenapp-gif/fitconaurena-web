@@ -1,6 +1,6 @@
 name: CI
 
-# Verifica tipos, lint y build en cada push y PR, para no romper nunca main.
+# Verifica tipos, lint, pruebas y build en cada push y PR, para no romper nunca main.
 on:
   push:
     branches: [main]
@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm test
       - run: npm run build
         env:
           # Build no necesita secretos reales; valores dummy para que no falle.

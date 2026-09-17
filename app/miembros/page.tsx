@@ -26,7 +26,7 @@ type Profile = {
   questionnaire: Questionnaire | null;
   steps_target?: number | null;
 };
-type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string };
+type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null };
 type Revision = { created_at: string; coach_reply: string | null; coach_reply_at: string | null };
 type Habito = { day: string; steps: number | null };
 
@@ -69,7 +69,9 @@ export default async function MiembrosPage() {
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
       ? Promise.resolve([] as Plan[])
-      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at&member_email=eq.${e}&order=created_at.desc&limit=40`)
+      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at,semanas&member_email=eq.${e}&order=created_at.desc&limit=40`)
+          // `semanas` puede no existir todavía (falta supabase/planes.sql).
+          .catch(() => sbSelect<Plan>("plans", `select=id,type,title,note,created_at&member_email=eq.${e}&order=created_at.desc&limit=40`))
           .catch((err) => { console.error("[inicio] plans", err); return [] as Plan[]; }),
     admin
       ? Promise.resolve(null as Revision | null)
@@ -120,7 +122,7 @@ export default async function MiembrosPage() {
   const nut = planes.find((p) => p.type === "nutricion") ?? null;
   const ent = planes.find((p) => p.type === "entrenamiento") ?? null;
   const renNut = renovacionAlimentacion(nut ? diaDe(nut.created_at) : null, hoy);
-  const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoy);
+  const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoy, ent?.semanas ?? null);
 
   // ---- De tu coach: lo último que le ha escrito ----------------------------
   const notaCoach = revision?.coach_reply
