@@ -5,6 +5,7 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbUpsert, sbSelect, sbUpdate, sbDelete, sbDeleteObject } from "@/lib/supabase";
 import { plusOneMonthISO } from "@/lib/profile";
 import { semanasValidas } from "@/lib/renovaciones";
+import { leerPlan } from "@/lib/planes";
 import { sendPlanUpdateEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 import { verifyPath } from "@/lib/token";
@@ -88,18 +89,40 @@ export async function POST(req: NextRequest) {
     const exercises = type === "entrenamiento" ? parseEjerciciosTexto(ejerciciosTxt) : [];
     // Solo el entrenamiento tiene duración; la alimentación es siempre mensual.
     const duracion = type === "entrenamiento" ? { semanas: semanasValidas(semanas) } : {};
+    let creado: { id?: string } | null = null;
     try {
-      await sbInsert("plans", { ...row, ...duracion, note: note || null, exercises: exercises.length ? exercises : null });
+      creado = await sbInsert<{ id?: string }>("plans", { ...row, ...duracion, note: note || null, exercises: exercises.length ? exercises : null });
     } catch (e) {
       // Si alguna columna todavía no existe (falta ejecutar la migración
       // supabase/plan-comentario.sql o supabase/para-ellas.sql), no bloqueamos
       // la subida: el plan se guarda igual, solo sin ese dato.
       console.error("[clientas/plan] insert completo falló; reintento reducido", e);
       try {
-        await sbInsert("plans", { ...row, note: note || null });
+        creado = await sbInsert<{ id?: string }>("plans", { ...row, note: note || null });
       } catch {
-        await sbInsert("plans", row);
+        creado = await sbInsert<{ id?: string }>("plans", row);
       }
+    }
+
+    // LEER EL PLAN AHORA, no cuando ella entre.
+    //
+    // Se leía la primera vez que hacía falta, y eso caía siempre del lado de la
+    // clienta: trece segundos mirando una pantalla en blanco al abrir su
+    // entreno, y su primera pregunta a FitAI saliendo vacía porque el plan
+    // todavía no estaba listo. Aquí el que espera es quien acaba de subir un
+    // archivo, que es quien lo entiende.
+    //
+    // Con tope: si el archivo se resiste, la subida termina igual y la lectura
+    // se hará luego por el camino de siempre. Subir el plan nunca puede fallar
+    // por esto.
+    if (creado?.id) {
+      const plan = { id: creado.id, type, file_path: path };
+      await Promise.race([
+        leerPlan(plan).then((l) => {
+          console.log(`[clientas/plan] ${type} ${creado?.id}: ${l.estructura ? "leído" : "no se pudo leer"}`);
+        }).catch((e) => console.error("[clientas/plan] lectura", e)),
+        new Promise((r) => setTimeout(r, 35000)),
+      ]);
     }
     // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes. Además
     // detiene la secuencia de avisos de espera (plan_notice_stage=24).

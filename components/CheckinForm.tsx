@@ -33,7 +33,7 @@ const MEASURES = [
  * `ejercicios` son los del plan de entrenamiento vigente, prerrellenados con
  * lo que apuntó en la revisión anterior: solo cambia lo que haya cambiado.
  */
-export default function CheckinForm({ plegado = false, ejercicios = [] }: { plegado?: boolean; ejercicios?: Ejercicio[] }) {
+export default function CheckinForm({ plegado = false, ejercicios = [], deEntrenos = 0 }: { plegado?: boolean; ejercicios?: Ejercicio[]; deEntrenos?: number }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [abierto, setAbierto] = useState(!plegado);
@@ -194,7 +194,9 @@ export default function CheckinForm({ plegado = false, ejercicios = [] }: { pleg
           <div className="rounded-[11px] bg-page p-4">
             <p className="text-[15px] font-semibold text-ink mb-0.5">Tu entrenamiento</p>
             <p className="text-[13px] text-ink-muted mb-3">
-              Para cada ejercicio, el peso y las repeticiones de tu mejor serie estas semanas. Viene rellenado con la revisión anterior: cambia solo lo que haya cambiado.
+              {deEntrenos > 0
+                ? `Ya viene relleno con lo que apuntaste entrenando: ${deEntrenos === 1 ? "un ejercicio" : `${deEntrenos} ejercicios`} con tu mejor serie de estas semanas. Cambia solo lo que no cuadre.`
+                : "Para cada ejercicio, el peso y las repeticiones de tu mejor serie estas semanas. Viene rellenado con la revisión anterior: cambia solo lo que haya cambiado."}
             </p>
             <div className="flex flex-col divide-y divide-line">
               {entreno.map((x, i) => (

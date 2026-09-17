@@ -36,15 +36,17 @@ function Bloque({ icono, titulo, cada, r }: { icono: string; titulo: string; cad
  * cada tipo, así que subir uno nuevo vuelve a poner el contador a cero solo.
  */
 export default function Renovaciones({
-  alimentacion, entrenamiento,
+  alimentacion, entrenamiento, semanas,
 }: {
   alimentacion: Renovacion;
   entrenamiento: Renovacion;
+  /** Las que dura SU bloque. Sin dato (planes antiguos), las de siempre. */
+  semanas?: number | null;
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Bloque icono="🥗" titulo="Alimentación" cada="Se cambia el día 1 de cada mes." r={alimentacion} />
-      <Bloque icono="🏋️" titulo="Entrenamiento" cada={`Se cambia cada ${SEMANAS_ENTRENAMIENTO} semanas.`} r={entrenamiento} />
+      <Bloque icono="🏋️" titulo="Entrenamiento" cada={`Este bloque dura ${semanas ?? SEMANAS_ENTRENAMIENTO} semanas.`} r={entrenamiento} />
     </div>
   );
 }
