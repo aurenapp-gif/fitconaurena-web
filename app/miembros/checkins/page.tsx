@@ -14,10 +14,12 @@ import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
-import { fechaCorta } from "@/lib/renovaciones";
+import { diaDe, fechaCorta } from "@/lib/renovaciones";
 import { comparar, objetivoDe } from "@/lib/progreso";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio, type Progreso } from "@/lib/entreno";
 import { claveEjercicio, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
+import { avancePorEjercicio, textoAvance } from "@/lib/progreso-entreno";
+import Comparador, { type FotoRevision } from "@/components/Comparador";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Revisiones", robots: { index: false, follow: false } };
@@ -151,6 +153,9 @@ export default async function CheckinsPage({
   // Desde el inicio de la quincena en curso: son los entrenos que cuentan para
   // ESTA revisión, no los del periodo anterior.
   const desdeQuincena = `${periodoDe(todayMadrid()).inicio}T00:00:00Z`;
+  // Medio año de entrenos para el «en qué avanzas más». Más atrás deja de
+  // decir nada: un plan de hace un año no se parece al de ahora.
+  const desdeEntrenos = new Date(Date.now() - 183 * 86400000).toISOString();
   const coachEmail = adminEmails()[0];
 
   const [rows, perfil, planEntreno, suenos, seriesEntreno, coachNombre] = await Promise.all([
@@ -168,11 +173,11 @@ export default async function CheckinsPage({
       ? sbSelect<{ sleep: number | null }>("habit_logs", `select=sleep&member_email=eq.${encodeURIComponent(quien)}&day=gte.${desde30}&sleep=not.is.null`)
           .catch(() => [] as { sleep: number | null }[])
       : Promise.resolve([] as { sleep: number | null }[]),
-    // Los entrenos que ha apuntado desde la revisión anterior. De aquí sale el
-    // formulario ya relleno, que es lo que la app le promete al terminar de
-    // entrenar: «cuando toque tu revisión, los pesos ya vendrán puestos».
+    // Sus entrenos. De los de esta quincena sale el formulario ya relleno —lo
+    // que la app le promete al terminar de entrenar— y del historial entero
+    // sale en qué ejercicios avanza más.
     quien
-      ? sbSelect<SerieGuardada>("workout_sets", `select=ejercicio,serie,peso,reps,created_at&member_email=eq.${encodeURIComponent(quien)}&created_at=gte.${desdeQuincena}&order=created_at.desc&limit=400`)
+      ? sbSelect<SerieGuardada>("workout_sets", `select=ejercicio,serie,peso,reps,created_at&member_email=eq.${encodeURIComponent(quien)}&created_at=gte.${desdeEntrenos}&order=created_at.desc&limit=1500`)
           .catch(() => [] as SerieGuardada[])
       : Promise.resolve([] as SerieGuardada[]),
     coachEmail
@@ -265,7 +270,7 @@ export default async function CheckinsPage({
   // Lo que apuntó entrenando manda sobre lo de la revisión anterior: es de
   // estas semanas y lo escribió con el peso en la mano. La revisión anterior
   // se queda de respaldo para quien no use la pantalla de entreno.
-  const deSusEntrenos = ultimaVezPorEjercicio(seriesEntreno);
+  const deSusEntrenos = ultimaVezPorEjercicio(seriesEntreno.filter((x) => x.created_at >= desdeQuincena));
   const ejerciciosForm: Ejercicio[] = nombresPlan.map((n) => {
     const entrenado = deSusEntrenos.get(claveEjercicio(n));
     const anterior = previos.get(n.toLowerCase());
@@ -306,6 +311,27 @@ export default async function CheckinsPage({
     signThumb(firstWithFront?.photo_front ?? null, 700),
     signThumb(lastWithFront?.photo_front ?? null, 700),
   ]);
+
+  // Sus fotos para el comparador: todas las revisiones que tengan alguna, con
+  // su cintura al lado para poder decirle cuántos centímetros van entre las dos.
+  const fotosComparador: FotoRevision[] = admin ? [] : await Promise.all(
+    mine
+      .filter((r) => r.photo_front || r.photo_side || r.photo_back)
+      .map(async (r) => {
+        const [frente, perfil, espaldas] = await Promise.all([
+          signThumb(r.photo_front, 700), signThumb(r.photo_side, 700), signThumb(r.photo_back, 700),
+        ]);
+        return {
+          fecha: r.created_at,
+          etiqueta: fechaCorta(diaDe(r.created_at)),
+          frente, perfil, espaldas,
+          cintura: hayNumero(r.waist) ? Number(r.waist) : null,
+        };
+      })
+  );
+
+  // En qué avanza más y en qué menos, de sus entrenos.
+  const avances = admin ? [] : avancePorEjercicio(seriesEntreno).slice(0, 6);
 
   return (
     <>
@@ -362,6 +388,43 @@ export default async function CheckinsPage({
                     : periodo.dia === 0 ? "Hoy toca. Peso opcional y tres fotos: frente, perfil y espaldas." : `Sigue sin subir. Peso opcional y tres fotos: frente, perfil y espaldas.`}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Sus fotos, lo primero: es lo que de verdad enseña el cambio */}
+          {!admin && fotosComparador.length >= 2 && (
+            <div className="mb-5">
+              <span className="group-label">Antes y ahora</span>
+              <Comparador fotos={fotosComparador} />
+            </div>
+          )}
+
+          {/* En qué avanza, de sus entrenos */}
+          {!admin && avances.length > 0 && (
+            <div className="mb-5">
+              <span className="group-label">Dónde más avanzas</span>
+              <div className="bg-surface rounded-[14px] p-4 flex flex-col gap-3">
+                {avances.map((a) => {
+                  const ancho = Math.max(4, Math.min(100, Math.abs(a.pct) * 2.5));
+                  const sube = a.pct > 0;
+                  return (
+                    <div key={a.nombre} className="flex items-center gap-3">
+                      <span className="w-[104px] shrink-0 text-[15px] text-ink truncate">{a.nombre}</span>
+                      <span className="flex-1 h-[6px] rounded-full bg-page overflow-hidden">
+                        <span className="block h-[6px] rounded-full"
+                          style={{ width: `${ancho}%`, background: sube ? "rgb(var(--c-success))" : "rgb(var(--c-warn))" }} />
+                      </span>
+                      <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        sube ? "bg-success-soft text-success" : a.pct === 0 ? "bg-page text-ink-muted" : "bg-warn-soft text-warn"}`}>
+                        {textoAvance(a.pct)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="group-foot">
+                Comparando tu mejor serie de cada día, desde la primera vez que lo hiciste. Cuenta el peso y las repeticiones, no solo los kilos.
+              </p>
             </div>
           )}
 
