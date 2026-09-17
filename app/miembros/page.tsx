@@ -279,6 +279,7 @@ export default async function MiembrosPage() {
               </Grupo>
 
               <Grupo label="Más">
+                <Fila href="/miembros/entreno" titulo="Mi entreno" sub={ent ? "Apunta tus pesos mientras entrenas" : "Cuando tengas plan de entrenamiento"} />
                 <Fila href="/miembros/fitai" titulo="FitAI" sub="Tus dudas del programa, al momento" />
                 <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
                 <Fila href="/miembros/dudas" titulo="Dudas" sub="Pregunta sin dar la cara" />
