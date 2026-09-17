@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
-import Asistente from "@/components/Asistente";
+import FitAI from "@/components/FitAI";
 import { requireMember } from "@/lib/guard";
 import { isAdmin } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe } from "@/lib/renovaciones";
 
-export const metadata: Metadata = { title: "Asistente", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "FitAI", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function AsistentePage() {
+export default async function FitAIPage() {
   const email = await requireMember();
   const admin = isAdmin(email);
   const e = encodeURIComponent(email);
@@ -39,9 +39,9 @@ export default async function AsistentePage() {
       <AppShell admin={admin} />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
-          <h1 className="page-title mb-1">Asistente</h1>
+          <h1 className="page-title mb-1">FitAI</h1>
           <p className="text-[15px] text-ink-muted mb-5">Tus dudas del programa, resueltas al momento y a cualquier hora.</p>
-          <Asistente nombre={nombre} sugerencias={sugerencias} />
+          <FitAI nombre={nombre} sugerencias={sugerencias} />
         </div>
       </main>
     </>

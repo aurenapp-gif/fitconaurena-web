@@ -4,7 +4,7 @@ import { SESSION_COOKIE, verifySession, adminEmails } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { rateLimit } from "@/lib/ratelimit";
 import { sbInsert, sbSelect } from "@/lib/supabase";
-import { contexto, sistemaEstable, pareceDerivada, LIMITE_HORA, MAX_HISTORIAL, MAX_PREGUNTA, type ContextoClienta } from "@/lib/asistente";
+import { contexto, sistemaEstable, pareceDerivada, LIMITE_HORA, MAX_HISTORIAL, MAX_PREGUNTA, type ContextoClienta } from "@/lib/fitai";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
 import { litros, pasos as textoPasos, pauta, type Supplement } from "@/lib/suplementos";
@@ -20,7 +20,7 @@ type Plan = { type: "nutricion" | "entrenamiento"; title: string | null; created
 /**
  * El contexto de la clienta se arma AQUÍ, en el servidor, a partir de la
  * sesión. Nunca llega del navegador: si viniera de ahí, cualquiera podría
- * pedirle a la asistente que hablara de los datos de otra.
+ * pedirle a FitAI que hablara de los datos de otra.
  */
 async function datosDe(email: string): Promise<ContextoClienta> {
   const e = encodeURIComponent(email);
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("[asistente] falta ANTHROPIC_API_KEY");
-    return NextResponse.json({ error: "La asistente todavía no está configurada. Díselo a tu coach." }, { status: 503 });
+    console.error("[fitai] falta ANTHROPIC_API_KEY");
+    return NextResponse.json({ error: "FitAI todavía no está configurado. Díselo a tu coach." }, { status: 503 });
   }
-  if (!rateLimit(`asistente:${email}`, LIMITE_HORA, 3600_000)) {
+  if (!rateLimit(`fitai:${email}`, LIMITE_HORA, 3600_000)) {
     return NextResponse.json({ error: "Has preguntado mucho seguido. Prueba dentro de un rato." }, { status: 429 });
   }
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       messages: mensajes,
     });
   } catch (err) {
-    console.error("[asistente] no se pudo empezar", err);
+    console.error("[fitai] no se pudo empezar", err);
     return NextResponse.json({ error: "No se ha podido responder ahora mismo. Inténtalo en un momento." }, { status: 502 });
   }
 
@@ -139,16 +139,16 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(aviso));
         }
       } catch (err) {
-        console.error("[asistente] error a mitad", err);
+        console.error("[fitai] error a mitad", err);
         const aviso = "\n\nSe me ha cortado la respuesta. Vuelve a preguntármelo, por favor.";
         controller.enqueue(encoder.encode(aviso));
       } finally {
-        await sbInsert("assistant_messages", {
+        await sbInsert("fitai_messages", {
           member_email: email,
           question: pregunta,
           answer: completa || null,
           derivada: pareceDerivada(completa),
-        }).catch((e) => console.error("[asistente] registro", e));
+        }).catch((e) => console.error("[fitai] registro", e));
         controller.close();
       }
     },

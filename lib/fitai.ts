@@ -1,6 +1,6 @@
 /**
- * La asistente del programa: responde a las clientas sobre cómo funciona el
- * servicio, a cualquier hora, cuando la coach no está.
+ * FitAI: responde a las clientas sobre cómo funciona el servicio, a cualquier
+ * hora, cuando la coach no está.
  *
  * Dos piezas separadas a propósito:
  *
@@ -12,8 +12,8 @@
  *
  * Las reglas del servicio no se escriben a mano aquí: se leen de donde ya
  * viven (revisiones, renovaciones, llamada grupal), para que cambiar el día de
- * la llamada o el ciclo de los planes no deje a la asistente diciendo lo
- * contrario que la app.
+ * la llamada o el ciclo de los planes no deje a FitAI diciendo lo contrario
+ * que la app.
  */
 
 import { NORMA, REVIEW_DAYS } from "@/lib/revisiones";
@@ -33,8 +33,8 @@ export const MAX_PREGUNTA = 1000;
 export const LIMITE_HORA = 30;
 
 /**
- * Cómo funciona el programa. Esto es lo único que la asistente sabe: si algo
- * no está aquí, lo deriva a la coach en lugar de inventárselo.
+ * Cómo funciona el programa. Esto es lo único que FitAI sabe: si algo no está
+ * aquí, lo deriva a la coach en lugar de inventárselo.
  */
 export function conocimiento(coach: string): string {
   return `# El programa FITCON
@@ -99,7 +99,7 @@ export type ContextoClienta = {
   ejercicios: string[];
 };
 
-/** Lo que la asistente sabe de ELLA. Solo sus datos, nunca los de otra. */
+/** Lo que FitAI sabe de ELLA. Solo sus datos, nunca los de otra. */
 export function contexto(c: ContextoClienta): string {
   const l = [
     `Se llama ${c.nombre}. Háblale de tú y en femenino, por su nombre.`,
@@ -123,18 +123,18 @@ export function contexto(c: ContextoClienta): string {
  */
 export const COMPORTAMIENTO = `# Quién eres
 
-Eres la asistente del área privada de las clientas del programa FITCON. Resuelves dudas sobre CÓMO FUNCIONA el servicio y la app a cualquier hora, cuando la coach no está disponible.
+Te llamas FitAI. Eres la inteligencia artificial del área privada de las clientas del programa FITCON, y resuelves dudas sobre CÓMO FUNCIONA el servicio y la app a cualquier hora, cuando la coach no está disponible. Si te preguntan qué eres, dilo sin misterio: eres FitAI, la ayuda del programa, y no eres su coach.
 
 # Cómo hablas
 
-- En español de España, de tú, en femenino, cercana y directa. Como la coach: cero paternalismo, cero charla motivacional de plantilla.
+- En español de España, de tú y hablándole en femenino. Con cercanía y al grano, como la coach: cero paternalismo, cero charla motivacional de plantilla.
 - Breve. Dos o tres frases resuelven casi todo. Si hace falta una lista, tres puntos como mucho.
 - Nada de emoji, negritas ni títulos. Texto normal.
 - Si te preguntan por una pantalla, di dónde está («en Perfil, pestaña Hábitos»).
 
 # Lo que NUNCA haces
 
-- No eres su coach ni su médica. No das consejo médico ni nutricional personalizado, no diagnosticas, no interpretas síntomas ni análisis.
+- No eres su coach ni personal sanitario. No das consejo médico ni nutricional personalizado, no diagnosticas, no interpretas síntomas ni análisis.
 - No cambias, ajustas ni interpretas su plan de alimentación o entrenamiento, ni las dosis de sus suplementos. Eso lo decide su coach, que conoce su caso.
 - No te inventas nada. Si algo no está en lo que sabes del programa, dilo con naturalidad y dile que se lo pregunte a su coach.
 - No hablas de precios, facturación, bajas, devoluciones ni de las condiciones del contrato. Ahí siempre: que hable con su coach.
@@ -156,9 +156,9 @@ export function sistemaEstable(coach: string): string {
   return `${COMPORTAMIENTO}\n\n${conocimiento(coach)}`;
 }
 
-/** Heurística para marcar en el registro de la coach las preguntas que la
- * asistente no resolvió. No es exacta ni pretende serlo: sirve para que ella
- * vea de un vistazo qué se le está escapando. */
+/** Heurística para marcar en el registro de la coach las preguntas que FitAI
+ * no resolvió. No es exacta ni pretende serlo: sirve para que ella vea de un
+ * vistazo qué se le está escapando. */
 export function pareceDerivada(respuesta: string): boolean {
   const t = respuesta.toLowerCase();
   return /tu coach|con la coach|deja(r)? tu duda|en la llamada|pregúntaselo|pregúntale/.test(t);

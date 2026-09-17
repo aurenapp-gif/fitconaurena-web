@@ -32,9 +32,9 @@ export default async function AdminPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
   const salaGuardada = await leerAjuste(AJUSTE_SALA);
-  // Lo que le preguntan a la asistente: es donde se ve qué no está claro.
+  // Lo que le preguntan a FitAI: es donde se ve qué no está claro.
   const preguntas = await sbSelect<{ id: string; member_email: string; question: string; derivada: boolean; created_at: string }>(
-    "assistant_messages", "select=id,member_email,question,derivada,created_at&order=created_at.desc&limit=12"
+    "fitai_messages", "select=id,member_email,question,derivada,created_at&order=created_at.desc&limit=12"
   ).catch(() => [] as { id: string; member_email: string; question: string; derivada: boolean; created_at: string }[]);
 
   const since = isoDaysAgo(15);
@@ -94,10 +94,10 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          {/* Lo que preguntan a la asistente */}
+          {/* Lo que preguntan a FitAI */}
           {preguntas.length > 0 && (
             <section className="card-dark p-6 !transform-none mb-8">
-              <h2 className="font-bold text-ink mb-1">Lo que le preguntan a la asistente</h2>
+              <h2 className="font-bold text-ink mb-1">Lo que le preguntan a FitAI</h2>
               <p className="text-xs text-ink-muted mb-4">
                 Las últimas {preguntas.length}. Las marcadas son las que no supo resolver y derivó a ti: si una se repite, merece un comunicado o un minuto en la llamada.
               </p>
