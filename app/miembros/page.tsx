@@ -13,6 +13,9 @@ import { miles } from "@/lib/suplementos";
 import { LITROS_POR_VASO, litrosDeVasos, rachaDias, semanaDe, textoLitros } from "@/lib/habitos";
 import { HERRAMIENTAS_ACTIVAS } from "@/lib/tools";
 import { enlaceSala } from "@/lib/ajustes";
+import { leerPlan } from "@/lib/planes";
+import { claveComida, comidasDeHoy, momentoDe, resumenComida } from "@/lib/dia";
+import ComidasDelDia, { type FilaComida } from "@/components/ComidasDelDia";
 
 export const metadata: Metadata = {
   title: "Área de miembros",
@@ -27,7 +30,7 @@ type Profile = {
   steps_target?: number | null;
   water_target_l?: number | null;
 };
-type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null };
+type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null; contenido?: string | null; estructura?: unknown };
 type Revision = { created_at: string; coach_reply: string | null; coach_reply_at: string | null };
 type Habito = { day: string; steps: number | null; water: number | null };
 
@@ -64,13 +67,13 @@ export default async function MiembrosPage() {
 
   // Todo lo de la clienta en una sola ida y vuelta. Cada consulta falla por su
   // cuenta: un fallo en una no deja la pantalla en blanco.
-  const [profile, planes, revision, habitos, pendingDocs, coach] = await Promise.all([
+  const [profile, planes, revision, habitos, pendingDocs, coach, comidasHechas] = await Promise.all([
     sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,steps_target,water_target_l&email=eq.${e}`)
       .then((r) => r[0] ?? null)
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
       ? Promise.resolve([] as Plan[])
-      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at,semanas&member_email=eq.${e}&order=created_at.desc&limit=40`)
+      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at,semanas,contenido,estructura&member_email=eq.${e}&order=created_at.desc&limit=40`)
           // `semanas` puede no existir todavía (falta supabase/planes.sql).
           .catch(() => sbSelect<Plan>("plans", `select=id,type,title,note,created_at&member_email=eq.${e}&order=created_at.desc&limit=40`))
           .catch((err) => { console.error("[inicio] plans", err); return [] as Plan[]; }),
@@ -93,6 +96,12 @@ export default async function MiembrosPage() {
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
       : Promise.resolve(null),
+    // Lo que ya ha marcado hoy. Si falta supabase/dia.sql, se queda vacío y el
+    // día se enseña igual, solo sin los tics.
+    admin
+      ? Promise.resolve([] as { comida: string }[])
+      : sbSelect<{ comida: string }>("meal_logs", `select=comida&member_email=eq.${e}&day=eq.${hoy}`)
+          .catch(() => [] as { comida: string }[]),
   ]);
 
   const name = profile?.display_name || email.split("@")[0];
@@ -126,6 +135,18 @@ export default async function MiembrosPage() {
 
   // ---- Planes vigentes -----------------------------------------------------
   const nut = planes.find((p) => p.type === "nutricion") ?? null;
+  // El plan ya está leído (se lee al subirlo), así que esto no hace esperar a
+  // nadie: solo saca de la base lo que le toca hoy.
+  const leidoNut = nut ? await leerPlan({ id: nut.id, type: "nutricion", file_path: null, contenido: nut.contenido, estructura: nut.estructura }).catch(() => null) : null;
+  const hoyComidas = comidasDeHoy(leidoNut?.estructura?.tipo === "nutricion" ? leidoNut.estructura : null, hoy);
+  const marcadas = new Set(comidasHechas.map((m) => m.comida));
+  const filasComida: FilaComida[] = (hoyComidas?.comidas ?? []).map((c) => ({
+    clave: claveComida(c.nombre),
+    nombre: c.nombre,
+    momento: momentoDe(c),
+    resumen: resumenComida(c),
+    hecha: marcadas.has(claveComida(c.nombre)),
+  }));
   const ent = planes.find((p) => p.type === "entrenamiento") ?? null;
   const renNut = renovacionAlimentacion(nut ? diaDe(nut.created_at) : null, hoy);
   const renEnt = renovacionEntrenamiento(ent ? diaDe(ent.created_at) : null, hoy, ent?.semanas ?? null);
@@ -226,6 +247,14 @@ export default async function MiembrosPage() {
                   <p className="text-[14px] text-warn">{constancia.s}</p>
                 </div>
               </Link>
+
+              {/* Lo que come hoy, que es la pregunta de cada día */}
+              {filasComida.length > 0 && (
+                <div>
+                  <span className="group-label">{hoyComidas?.dia && !/^todos/i.test(hoyComidas.dia) ? `Hoy · ${hoyComidas.dia}` : "Hoy comes"}</span>
+                  <ComidasDelDia comidas={filasComida} />
+                </div>
+              )}
 
               {/* Lo de hoy */}
               <Grupo label="Hoy">
