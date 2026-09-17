@@ -68,6 +68,10 @@ export default function Comparador({ fotos }: { fotos: FotoRevision[] }) {
 
       {cm !== null && cm !== 0 && (
         <div className="rounded-[13px] bg-white/10 px-4 py-3">
+          {/* Esta tarjeta es lo único oscuro de la app, como en el diseño: una
+              foto de cuerpo entero sobre fondo claro no se ve. Los tokens están
+              calibrados para fondo blanco, así que aquí van los dos tonos
+              aclarados para que se lean sobre negro. */}
           <p className="text-[21px] font-bold tracking-tight" style={{ color: cm > 0 ? "#A9C8AD" : "#E3C08C" }}>
             {cm > 0 ? `${cm.toLocaleString("es-ES")} centímetros menos` : `${Math.abs(cm).toLocaleString("es-ES")} centímetros más`}
           </p>
@@ -79,7 +83,7 @@ export default function Comparador({ fotos }: { fotos: FotoRevision[] }) {
         <div>
           <label htmlFor="comparar-con" className="block text-[13px] uppercase tracking-wide text-page/60">Comparar con</label>
           <input id="comparar-con" type="range" min={0} max={conEsta.length - 2} value={Math.min(i, conEsta.length - 2)}
-            onChange={(e) => setI(Number(e.target.value))} className="w-full mt-2" style={{ accentColor: "#8FAE93" }} />
+            onChange={(e) => setI(Number(e.target.value))} className="w-full mt-2" style={{ accentColor: "rgb(var(--c-sage))" }} />
           <div className="flex justify-between text-[13px] text-page/60 mt-0.5">
             <span>{conEsta[0].etiqueta}</span>
             <span>{ahora.etiqueta}</span>

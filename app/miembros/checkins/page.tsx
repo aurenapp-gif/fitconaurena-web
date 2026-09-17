@@ -412,7 +412,7 @@ export default async function CheckinsPage({
                       <span className="w-[104px] shrink-0 text-[15px] text-ink truncate">{a.nombre}</span>
                       <span className="flex-1 h-[6px] rounded-full bg-page overflow-hidden">
                         <span className="block h-[6px] rounded-full"
-                          style={{ width: `${ancho}%`, background: sube ? "rgb(var(--c-success))" : "rgb(var(--c-warn))" }} />
+                          style={{ width: `${ancho}%`, background: sube ? "rgb(var(--c-sage))" : "rgb(var(--c-warn))" }} />
                       </span>
                       <span className={`text-[13px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                         sube ? "bg-success-soft text-success" : a.pct === 0 ? "bg-page text-ink-muted" : "bg-warn-soft text-warn"}`}>

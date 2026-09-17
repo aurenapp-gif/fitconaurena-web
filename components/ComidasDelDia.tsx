@@ -54,7 +54,7 @@ export default function ComidasDelDia({ comidas }: { comidas: FilaComida[] }) {
                 aria-pressed={hecha}
                 aria-label={`${c.nombre}: ${hecha ? "quitar de hechas" : "marcar como hecha"}`}
                 className={`w-[26px] h-[26px] rounded-full shrink-0 grid place-items-center ${
-                  hecha ? "bg-success text-white" : "border-2 border-line"}`}
+                  hecha ? "bg-sage text-white" : "border-2 border-line"}`}
               >
                 {hecha && (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4"

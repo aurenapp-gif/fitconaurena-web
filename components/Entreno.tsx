@@ -257,7 +257,7 @@ export default function Entreno({ dias, planId, planTitulo, sinPlan, ultimaVez, 
             <button key={e.nombre + i} type="button" disabled={!sesion} onClick={() => setAbierto(i)}
               className={`w-full flex items-center gap-3 py-3 text-left min-h-[56px] ${i ? "border-t border-line" : ""} ${sesion ? "" : "opacity-70"}`}>
               <span aria-hidden="true" className={`w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center ${
-                hecho ? "bg-success text-white" : "border-2 border-line"}`}>
+                hecho ? "bg-sage text-white" : "border-2 border-line"}`}>
                 {hecho && <Tic />}
               </span>
               <span className="flex-1 min-w-0">
@@ -546,7 +546,7 @@ function FilaSerie({
         className={campo} />
       <span className="flex-1" />
       <span aria-hidden="true" className={`w-6 h-6 rounded-full shrink-0 grid place-items-center ${
-        guardando ? "border-2 border-brand animate-pulse" : hecha ? "bg-success text-white" : "border-2 border-line"}`}>
+        guardando ? "border-2 border-brand animate-pulse" : hecha ? "bg-sage text-white" : "border-2 border-line"}`}>
         {hecha && !guardando && <Tic />}
       </span>
     </div>
