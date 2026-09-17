@@ -6,7 +6,7 @@ import { Barra, Fila, FilaAccion, Grupo, NotaCoach } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { questionnaireComplete, type Questionnaire } from "@/lib/profile";
-import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
 import { miles } from "@/lib/suplementos";
@@ -96,12 +96,13 @@ export default async function MiembrosPage() {
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
       : Promise.resolve(null),
-    // Lo que ya ha marcado hoy. Si falta supabase/dia.sql, se queda vacío y el
-    // día se enseña igual, solo sin los tics.
+    // Lo que ya ha marcado hoy. Si la tabla todavía no existe (falta ejecutar
+    // supabase/dia.sql) se devuelve null, y el día se enseña SIN los tics: un
+    // botón que falla al tocarlo es peor que no tenerlo.
     admin
       ? Promise.resolve([] as { comida: string }[])
       : sbSelect<{ comida: string }>("meal_logs", `select=comida&member_email=eq.${e}&day=eq.${hoy}`)
-          .catch(() => [] as { comida: string }[]),
+          .catch((err) => (isMissingTable(err) ? null : ([] as { comida: string }[]))),
   ]);
 
   const name = profile?.display_name || email.split("@")[0];
@@ -139,7 +140,8 @@ export default async function MiembrosPage() {
   // nadie: solo saca de la base lo que le toca hoy.
   const leidoNut = nut ? await leerPlan({ id: nut.id, type: "nutricion", file_path: null, contenido: nut.contenido, estructura: nut.estructura }).catch(() => null) : null;
   const hoyComidas = comidasDeHoy(leidoNut?.estructura?.tipo === "nutricion" ? leidoNut.estructura : null, hoy);
-  const marcadas = new Set(comidasHechas.map((m) => m.comida));
+  const puedeMarcar = comidasHechas !== null;
+  const marcadas = new Set((comidasHechas ?? []).map((m) => m.comida));
   const filasComida: FilaComida[] = (hoyComidas?.comidas ?? []).map((c) => ({
     clave: claveComida(c.nombre),
     nombre: c.nombre,
@@ -252,7 +254,7 @@ export default async function MiembrosPage() {
               {filasComida.length > 0 && (
                 <div>
                   <span className="group-label">{hoyComidas?.dia && !/^todos/i.test(hoyComidas.dia) ? `Hoy · ${hoyComidas.dia}` : "Hoy comes"}</span>
-                  <ComidasDelDia comidas={filasComida} />
+                  <ComidasDelDia comidas={filasComida} puedeMarcar={puedeMarcar} />
                 </div>
               )}
 
