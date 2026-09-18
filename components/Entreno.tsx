@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { claveEjercicio, compara, duracion, segundosDescanso, textoPeso, textoUltimaVez, type UltimaVez } from "@/lib/entrenos";
+import { enCola } from "@/lib/cola";
 import type { DiaEntrenamiento, Ejercicio } from "@/lib/plan-estructura";
 
 type SerieApuntada = { ejercicio: string; serie: number; peso: number | null; reps: number | null };
@@ -351,6 +352,8 @@ function VistaEjercicio({
   const [guardando, setGuardando] = useState<number | null>(null);
   /** Cuándo empezó el descanso y qué serie toca luego. Null = no hay cuenta. */
   const [descanso, setDescanso] = useState<{ desde: number; siguiente: number } | null>(null);
+  /** Una fila de envíos por serie: dos guardados de la misma no se adelantan. */
+  const colas = useRef(new Map<string, Promise<unknown>>());
 
   const valor = (n: number) => apuntadas.find((a) => a.serie === n) ?? null;
 
@@ -359,7 +362,8 @@ function VistaEjercicio({
     setGuardando(n);
     setError("");
     try {
-      await llamar({ accion: "serie", sesion, ejercicio: ejercicio.nombre, serie: n, peso, reps });
+      await enCola(colas.current, String(n), () =>
+        llamar({ accion: "serie", sesion, ejercicio: ejercicio.nombre, serie: n, peso, reps }));
       guardada({
         ejercicio: ejercicio.nombre,
         serie: n,
@@ -380,7 +384,8 @@ function VistaEjercicio({
   async function borrar(n: number) {
     if (!sesion) return;
     try {
-      await llamar({ accion: "quitar-serie", sesion, ejercicio: ejercicio.nombre, serie: n });
+      await enCola(colas.current, String(n), () =>
+        llamar({ accion: "quitar-serie", sesion, ejercicio: ejercicio.nombre, serie: n }));
       quitada(ejercicio.nombre, n);
     } catch { /* si falla, la serie sigue ahí: no se miente sobre lo guardado */ }
   }
