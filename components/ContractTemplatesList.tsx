@@ -4,11 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ContractTemplate } from "@/lib/contract";
 
+/** La plantilla con su enlace firmado, si se ha podido generar. */
+type ConEnlace = ContractTemplate & { url?: string };
+
 /**
- * Listado de plantillas subidas. Solo la coach. Cada una se puede eliminar (si
- * tiene firmas asociadas, queda desactivada como histórico en vez de borrarse).
+ * Listado de plantillas subidas. Solo la coach. Cada una se puede abrir para
+ * leerla y eliminar (si tiene firmas asociadas, queda desactivada como
+ * histórico en vez de borrarse).
  */
-export default function ContractTemplatesList({ templates }: { templates: ContractTemplate[] }) {
+export default function ContractTemplatesList({ templates }: { templates: ConEnlace[] }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [err, setErr] = useState<string>("");
@@ -41,10 +45,18 @@ export default function ContractTemplatesList({ templates }: { templates: Contra
             </div>
             <p className="text-sm font-bold text-ink truncate mt-1">{t.title}</p>
           </div>
-          <button type="button" onClick={() => remove(t.id, t.title)} disabled={pending === t.id}
-            className="min-h-[40px] inline-flex items-center text-xs text-danger font-bold shrink-0 hover:opacity-80 disabled:opacity-40">
-            {pending === t.id ? "Eliminando…" : "Eliminar"}
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {t.url && (
+              <a href={t.url} target="_blank" rel="noopener noreferrer"
+                className="min-h-[40px] inline-flex items-center text-xs text-brand font-bold hover:opacity-80">
+                Ver
+              </a>
+            )}
+            <button type="button" onClick={() => remove(t.id, t.title)} disabled={pending === t.id}
+              className="min-h-[40px] inline-flex items-center text-xs text-danger font-bold hover:opacity-80 disabled:opacity-40">
+              {pending === t.id ? "Eliminando…" : "Eliminar"}
+            </button>
+          </div>
         </div>
       ))}
       {err && <p className="text-xs text-danger">{err}</p>}

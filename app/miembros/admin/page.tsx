@@ -10,8 +10,8 @@ import { AJUSTE_SALA, leerAjuste } from "@/lib/ajustes";
 import { TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
-import { sbSelect } from "@/lib/supabase";
-import { type ContractTemplate } from "@/lib/contract";
+import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { CONTRACT_BUCKET, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Panel admin", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -64,6 +64,16 @@ export default async function AdminPage() {
       "habit_logs", `select=member_email,day&day=gte.${isoDaysAgo(30)}`
     ).catch(() => [] as { member_email: string; day: string }[]),
   ]);
+
+  // Cada plantilla, con un enlace firmado para poder leerla. Hasta ahora solo
+  // se veía el título: no había forma de comprobar qué dice el contrato que se
+  // está a punto de asignar.
+  const plantillas = await Promise.all(
+    templates.map(async (t) => ({
+      ...t,
+      url: await sbSignedUrl(CONTRACT_BUCKET, t.file_path, 3600).catch(() => undefined),
+    }))
+  );
 
   const byEmail = new Map(profiles.map((p) => [p.email, p]));
   const nameOf = (e: string) => byEmail.get(e)?.display_name || members.find((m) => m.email === e)?.name || e;
@@ -296,7 +306,7 @@ export default async function AdminPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-ink-subtle uppercase tracking-wide mb-2">Plantillas actuales</p>
-                  <ContractTemplatesList templates={templates} />
+                  <ContractTemplatesList templates={plantillas} />
                 </div>
               </div>
             </div>
