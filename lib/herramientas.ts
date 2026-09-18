@@ -22,7 +22,9 @@ export type Herramienta = {
   icon: string;
   /** Qué foto espera. Es lo primero que se lee al abrirla. */
   pide: string;
-  /** Ejemplos de lo que puede escribir junto a la foto. */
+  /** Marca de agua de la casilla de la nota: ejemplos de lo que puede
+   *  escribir junto a la foto. Corta, que la casilla es de una línea y lo que
+   *  no cabe no se lee. */
   ejemplo: string;
   /** Instrucciones para el modelo. Lo común va aparte, en COMUN. */
   instrucciones: string;
@@ -39,7 +41,7 @@ export const HERRAMIENTAS: Herramienta[] = [
     description: "Hazle una foto a la carta y te digo qué pedir para disfrutar sin frenar tu progreso.",
     icon: "🍽️",
     pide: "Una foto de la carta. Si es larga, fotografía la parte que te interese.",
-    ejemplo: "Es una cena · Hoy he entrenado · Vamos a compartir",
+    ejemplo: "Es una cena · Somos dos",
     instrucciones: `Está en un restaurante mirando la carta y quiere pedir sin salirse de su plan.
 
 Elige DOS opciones concretas de esa carta, por su nombre tal y como aparece, y di por qué van bien: qué tienen de la comida que le toca. Si conviene, dile cómo pedirlo (a la plancha en vez de frito, la salsa aparte, cambiar la guarnición).
@@ -56,7 +58,7 @@ No calcules calorías ni macros: su plan va por raciones y alimentos, no por nú
     description: "Una foto de la máquina o del ejercicio y te explico cómo se hace y por cuál cambiarlo.",
     icon: "🏋️",
     pide: "Una foto de la máquina, del banco o de la posición que no tienes clara.",
-    ejemplo: "No sé si la altura está bien · Está ocupada, ¿por cuál la cambio? · Me molesta la rodilla",
+    ejemplo: "Me molesta la rodilla",
     instrucciones: `Le ha hecho una foto a una máquina o a un ejercicio y no lo tiene claro.
 
 Di qué es lo que se ve, y explica en pocos pasos cómo se hace: postura, por dónde empieza el movimiento y los dos o tres fallos que más se cometen.
@@ -73,7 +75,7 @@ Si no se ve bien qué máquina es, dilo y pide otra foto.`,
     description: "Foto a la nevera y te monto algo con lo que tengas, sin saltarte el plan.",
     icon: "🧊",
     pide: "Una foto de la nevera o de la despensa. Cuanto más se vea, mejor.",
-    ejemplo: "Es para la cena · Tengo veinte minutos · Somos dos",
+    ejemplo: "Es para la cena · Somos dos",
     instrucciones: `Tiene la nevera medio vacía y no le apetece salir.
 
 Di primero qué ves que le sirva. Luego propón UNA comida que pueda hacer con eso y que encaje con la que le toca de su plan, con las cantidades de SU plan cuando el alimento coincida. Si algo del plan no lo tiene, di con qué de lo que ve lo sustituye y en qué cantidad aproximada.
