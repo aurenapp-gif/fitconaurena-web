@@ -207,6 +207,10 @@ export default function Entreno({ dias, planId, planTitulo, sinPlan, ultimaVez, 
     const e = dia.ejercicios[abierto];
     return (
       <VistaEjercicio
+        // Cada ejercicio estrena vista. Sin esto React reaprovecha la de
+        // antes —y con ella las casillas, el descanso a medias y el error de
+        // la anterior— al pasar al siguiente.
+        key={`${diaIdx}:${abierto}:${e.nombre}`}
         ejercicio={e}
         posicion={`${abierto + 1} de ${dia.ejercicios.length}`}
         ultima={ultima.get(claveEjercicio(e.nombre)) ?? null}
@@ -511,15 +515,14 @@ function FilaSerie({
   onGuardar: (peso: string, reps: string) => void;
   onBorrar: () => void;
 }) {
+  // Lo escrito manda: las casillas se siembran una vez con lo que ya hubiera
+  // guardado y a partir de ahí solo las toca ella. Antes se volvían a sembrar
+  // cada vez que llegaba la respuesta del guardado, y al salir del peso —que
+  // guarda con las repeticiones todavía vacías— esa respuesta borraba las
+  // repeticiones que estaba tecleando. La serie se quedaba en «45 kg × ?».
   const [peso, setPeso] = useState(inicial?.peso != null ? String(inicial.peso).replace(".", ",") : "");
   const [reps, setReps] = useState(inicial?.reps != null ? String(inicial.reps) : "");
   const guardado = useRef(`${inicial?.peso ?? ""}|${inicial?.reps ?? ""}`);
-
-  useEffect(() => {
-    setPeso(inicial?.peso != null ? String(inicial.peso).replace(".", ",") : "");
-    setReps(inicial?.reps != null ? String(inicial.reps) : "");
-    guardado.current = `${inicial?.peso ?? ""}|${inicial?.reps ?? ""}`;
-  }, [inicial?.peso, inicial?.reps]);
 
   const hecha = inicial !== null;
 
