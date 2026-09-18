@@ -91,7 +91,14 @@ export default function TechniqueUpload() {
       <div className="flex flex-col gap-3">
         <input type="text" value={exercise} onChange={(e) => setExercise(e.target.value)} placeholder="Ejercicio (ej. Sentadilla)" aria-label="Ejercicio" maxLength={120} className={inputCls} />
         <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="¿Algo que quieras que mire? (opcional)" aria-label="Nota" rows={2} maxLength={1000} className={inputCls} />
-        <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo" className="text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-4 file:py-2 file:font-bold file:text-white" />
+        {/* El campo de fichero lo rotula el navegador en su idioma. El botón
+            es nuestro para que ponga lo mismo en todos los móviles. */}
+        <label className="cursor-pointer">
+          <span className="block rounded-xl bg-brand-soft text-brand text-sm font-bold text-center py-3">
+            {file ? file.name : "Elegir el vídeo"}
+          </span>
+          <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Vídeo" className="sr-only" />
+        </label>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <button type="submit" disabled={busy} className="btn-brand text-sm px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed self-start">{label}</button>
       </div>

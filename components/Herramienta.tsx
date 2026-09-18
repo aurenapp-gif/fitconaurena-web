@@ -69,15 +69,24 @@ export default function Herramienta({ def }: { def: Def }) {
       </div>
 
       <div className="bg-surface rounded-[14px] p-4 flex flex-col gap-3">
-        <label className="block">
-          <span className="sr-only">Elegir foto</span>
+        {/*
+          El botón es nuestro y el campo va escondido detrás. El campo de
+          verdad lo pinta el navegador con las palabras de su idioma —en un
+          móvil en inglés ponía «Choose File · No file chosen»—, y aquí no se
+          habla inglés.
+        */}
+        <label className="block cursor-pointer">
+          <span className="block w-full rounded-[11px] bg-brand-soft text-brand text-[16px] font-semibold text-center py-3.5">
+            {foto ? "Elegir otra foto" : "Hacer o elegir una foto"}
+          </span>
           <input
             ref={campoRef}
             type="file"
             accept="image/*"
             capture="environment"
+            aria-label={foto ? "Elegir otra foto" : "Hacer o elegir una foto"}
             onChange={(e) => elegir(e.target.files?.[0] ?? null)}
-            className="block w-full text-[15px] text-ink-muted file:mr-3 file:rounded-[11px] file:border-0 file:bg-brand file:px-4 file:py-2.5 file:text-white file:text-[15px] file:font-semibold"
+            className="sr-only"
           />
         </label>
         {/* eslint-disable-next-line @next/next/no-img-element */}
