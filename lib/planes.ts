@@ -51,6 +51,7 @@ export type PlanLeible = {
   type: string;
   file_path: string | null;
   contenido?: string | null;
+  contenido_at?: string | null;
   estructura?: unknown;
 };
 
@@ -85,7 +86,28 @@ function guardado(plan: PlanLeible): PlanLeido | null {
     if (est) return { estructura: est, texto: plan.contenido || textoDeEstructura(est) };
   }
   // Planes leídos antes de que existiera la estructura: al menos tienen texto.
-  return plan.contenido ? { estructura: null, texto: plan.contenido } : null;
+  if (plan.contenido) return { estructura: null, texto: plan.contenido };
+  // Fecha de lectura pero nada leído: ya se intentó y ese archivo no se deja
+  // entender. Volver a intentarlo da el mismo resultado, así que no se repite:
+  // antes se releía entero en CADA visita suya y en CADA pregunta a FitAI, con
+  // lo que eso tarda y lo que cuesta.
+  if (plan.contenido_at) return VACIO;
+  return null;
+}
+
+/**
+ * Dejar constancia de que este archivo se intentó leer y no salió.
+ *
+ * Solo para los fallos que no van a cambiar por reintentar —no se entiende, es
+ * demasiado grande, el modelo se negó—. Un fallo de red no se marca: ese sí
+ * merece otra oportunidad.
+ */
+async function marcaIlegible(id: string): Promise<void> {
+  if (!sePuedeGuardar) return;
+  await sbUpdate("plans", `id=eq.${encodeURIComponent(id)}`, {
+    contenido: null,
+    contenido_at: new Date().toISOString(),
+  }).catch((e) => console.error("[planes] no se pudo marcar como ilegible", e));
 }
 
 /**
@@ -105,6 +127,7 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
     const bytes = await sbDownload("planes", plan.file_path);
     if (bytes.byteLength > MAX_BYTES_PLAN) {
       console.error(`[planes] ${plan.id} pesa ${bytes.byteLength} bytes, no se lee`);
+      await marcaIlegible(plan.id);
       return VACIO;
     }
     const datos = Buffer.from(bytes).toString("base64");
@@ -135,6 +158,7 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
 
     if (res.stop_reason === "refusal") {
       console.error(`[planes] ${plan.id}: la lectura fue rechazada`);
+      await marcaIlegible(plan.id);
       return VACIO;
     }
     const crudo = res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
@@ -149,6 +173,7 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
     const estructura = normaliza(tipo, bruto);
     if (!estructura) {
       console.error(`[planes] ${plan.id}: ilegible o vacío`);
+      await marcaIlegible(plan.id);
       return VACIO;
     }
     const texto = textoDeEstructura(estructura).slice(0, MAX_CONTENIDO);

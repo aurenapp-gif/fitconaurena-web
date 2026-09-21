@@ -15,7 +15,7 @@ import { lineaItem } from "@/lib/plan-estructura";
 export const metadata: Metadata = { title: "Tu comida", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-type Plan = { id: string; type: string; title: string | null; note: string | null; file_path: string | null; contenido?: string | null; estructura?: unknown; created_at: string };
+type Plan = { id: string; type: string; title: string | null; note: string | null; file_path: string | null; contenido?: string | null; contenido_at?: string | null; estructura?: unknown; created_at: string };
 
 export default async function ComidaPage({ params }: { params: { comida: string } }) {
   const email = await requireMember();
@@ -24,7 +24,7 @@ export default async function ComidaPage({ params }: { params: { comida: string 
   const clave = claveComida(decodeURIComponent(params.comida));
 
   const [planes, marcadas, coach] = await Promise.all([
-    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,estructura,created_at&member_email=eq.${e}&type=eq.nutricion&order=created_at.desc&limit=1`)
+    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,contenido_at,estructura,created_at&member_email=eq.${e}&type=eq.nutricion&order=created_at.desc&limit=1`)
       .catch(() => [] as Plan[]),
     sbSelect<{ comida: string }>("meal_logs", `select=comida&member_email=eq.${e}&day=eq.${hoy}`)
       .catch((err) => (isMissingTable(err) ? null : ([] as { comida: string }[]))),

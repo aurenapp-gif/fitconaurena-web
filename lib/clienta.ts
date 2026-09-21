@@ -27,6 +27,7 @@ type Plan = {
   note: string | null;
   file_path: string | null;
   contenido?: string | null;
+  contenido_at?: string | null;
   estructura?: unknown;
   semanas?: number | null;
   created_at: string;
@@ -85,7 +86,7 @@ export async function datosDe(email: string): Promise<ContextoClienta> {
     // Las columnas de la lectura pueden no existir todavía (falta ejecutar
     // supabase/planes.sql). PostgREST devuelve 400, así que se reintenta sin
     // ellas: FitAI responde igual, solo sin el detalle del plan.
-    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,estructura,semanas,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
+    sbSelect<Plan>("plans", `select=id,type,title,note,file_path,contenido,contenido_at,estructura,semanas,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
       .catch(() => sbSelect<Plan>("plans", `select=id,type,title,note,file_path,created_at,exercises&member_email=eq.${e}&order=created_at.desc&limit=20`)
         .catch(() => [] as Plan[])),
     sbSelect<Revision>("check_ins", `select=*&member_email=eq.${e}&order=created_at.desc&limit=4`).catch(() => [] as Revision[]),
