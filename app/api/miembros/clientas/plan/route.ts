@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
@@ -104,25 +105,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // LEER EL PLAN AHORA, no cuando ella entre.
+    // LEER EL PLAN AL SUBIRLO, PERO SIN QUE NADIE ESPERE.
     //
-    // Se leía la primera vez que hacía falta, y eso caía siempre del lado de la
-    // clienta: trece segundos mirando una pantalla en blanco al abrir su
-    // entreno, y su primera pregunta a FitAI saliendo vacía porque el plan
-    // todavía no estaba listo. Aquí el que espera es quien acaba de subir un
-    // archivo, que es quien lo entiende.
+    // Leerlo cuando hacía falta dejaba a la clienta trece segundos mirando una
+    // pantalla en blanco al abrir su entreno. Leerlo aquí lo arregló, pero
+    // dentro de la respuesta: la coach se quedaba con el botón en «Subiendo…»
+    // entre diez y treinta y cinco segundos, cuando el archivo llevaba dos
+    // segundos en su sitio. Medido en producción: un plan de dos páginas, 11 s;
+    // uno de quince, 19 s.
     //
-    // Con tope: si el archivo se resiste, la subida termina igual y la lectura
-    // se hará luego por el camino de siempre. Subir el plan nunca puede fallar
-    // por esto.
+    // Ahora la lectura sale por detrás: se responde en cuanto el plan está
+    // guardado y la plataforma mantiene viva la función hasta que la lectura
+    // termina. Si se cortara, no se pierde nada: el plan está subido y la
+    // lectura se rehace sola la primera vez que haga falta.
     if (creado?.id) {
       const plan = { id: creado.id, type, file_path: path };
-      await Promise.race([
-        leerPlan(plan).then((l) => {
-          console.log(`[clientas/plan] ${type} ${creado?.id}: ${l.estructura ? "leído" : "no se pudo leer"}`);
-        }).catch((e) => console.error("[clientas/plan] lectura", e)),
-        new Promise((r) => setTimeout(r, 35000)),
-      ]);
+      const lectura = leerPlan(plan)
+        .then((l) => console.log(`[clientas/plan] ${type} ${creado?.id}: ${l.estructura ? "leído" : "no se pudo leer"}`))
+        .catch((e) => console.error("[clientas/plan] lectura", e));
+      try {
+        waitUntil(lectura);
+      } catch {
+        // Fuera de Vercel (en local) no hay a quién pedírselo: el proceso sigue
+        // vivo por su cuenta y la lectura termina igual.
+      }
     }
     // Renovar el plan reinicia el ciclo: próxima renovación a +1 mes. Además
     // detiene la secuencia de avisos de espera (plan_notice_stage=24).
@@ -142,18 +148,23 @@ export async function POST(req: NextRequest) {
   // envío, el plan ya está subido igualmente). Se avisa SIEMPRE, indicando de
   // qué plan se trata: si se suben nutrición y entrenamiento, llegan los dos
   // avisos y ella sabe exactamente qué hay nuevo.
-  sendPlanUpdateEmail(member, {
-    subject: `¡Tu plan de ${kind} ya está disponible! 🎉`,
-    heading: "¡Tu plan ya está listo! 🎉",
-    message: `Tu coach acaba de subir tu plan de ${kind}. Entra a tu área para verlo y empezar.`,
-    cta: "Ver mi plan",
-  }).catch((e) => console.error("[clientas/plan] email", e));
-
-  sendPushToEmail(member, {
-    title: "¡Tu plan ya está listo! 🎉",
-    body: `Tu plan de ${kind} ya está en tu área privada.`,
-    url: "/miembros/perfil",
-  }).catch((e) => console.error("[clientas/plan] push", e));
+  const avisos = Promise.all([
+    sendPlanUpdateEmail(member, {
+      subject: `¡Tu plan de ${kind} ya está disponible! 🎉`,
+      heading: "¡Tu plan ya está listo! 🎉",
+      message: `Tu coach acaba de subir tu plan de ${kind}. Entra a tu área para verlo y empezar.`,
+      cta: "Ver mi plan",
+    }).catch((e) => console.error("[clientas/plan] email", e)),
+    sendPushToEmail(member, {
+      title: "¡Tu plan ya está listo! 🎉",
+      body: `Tu plan de ${kind} ya está en tu área privada.`,
+      url: "/miembros/perfil",
+    }).catch((e) => console.error("[clientas/plan] push", e)),
+  ]);
+  // Lanzados sin esperar, pero encargados a la plataforma: una función puede
+  // congelarse en cuanto responde, y un aviso a medio enviar se pierde sin que
+  // nadie se entere.
+  try { waitUntil(avisos); } catch { /* en local el proceso sigue vivo */ }
 
   return NextResponse.json({ ok: true });
 }
