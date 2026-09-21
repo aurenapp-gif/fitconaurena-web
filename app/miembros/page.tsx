@@ -30,7 +30,7 @@ type Profile = {
   steps_target?: number | null;
   water_target_l?: number | null;
 };
-type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null; contenido?: string | null; estructura?: unknown };
+type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null; contenido?: string | null; contenido_at?: string | null; estructura?: unknown };
 type Revision = { created_at: string; coach_reply: string | null; coach_reply_at: string | null };
 type Habito = { day: string; steps: number | null; water: number | null };
 
@@ -73,7 +73,7 @@ export default async function MiembrosPage() {
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
       ? Promise.resolve([] as Plan[])
-      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at,semanas,contenido,estructura&member_email=eq.${e}&order=created_at.desc&limit=40`)
+      : sbSelect<Plan>("plans", `select=id,type,title,note,created_at,semanas,contenido,contenido_at,estructura&member_email=eq.${e}&order=created_at.desc&limit=40`)
           // `semanas` puede no existir todavía (falta supabase/planes.sql).
           .catch(() => sbSelect<Plan>("plans", `select=id,type,title,note,created_at&member_email=eq.${e}&order=created_at.desc&limit=40`))
           .catch((err) => { console.error("[inicio] plans", err); return [] as Plan[]; }),
@@ -138,7 +138,7 @@ export default async function MiembrosPage() {
   const nut = planes.find((p) => p.type === "nutricion") ?? null;
   // El plan ya está leído (se lee al subirlo), así que esto no hace esperar a
   // nadie: solo saca de la base lo que le toca hoy.
-  const leidoNut = nut ? await leerPlan({ id: nut.id, type: "nutricion", file_path: null, contenido: nut.contenido, estructura: nut.estructura }).catch(() => null) : null;
+  const leidoNut = nut ? await leerPlan({ id: nut.id, type: "nutricion", file_path: null, contenido: nut.contenido, contenido_at: nut.contenido_at, estructura: nut.estructura }).catch(() => null) : null;
   const hoyComidas = comidasDeHoy(leidoNut?.estructura?.tipo === "nutricion" ? leidoNut.estructura : null, hoy);
   const puedeMarcar = comidasHechas !== null;
   const marcadas = new Set((comidasHechas ?? []).map((m) => m.comida));

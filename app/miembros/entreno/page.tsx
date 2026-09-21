@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 type Plan = {
   id: string; type: string; title: string | null; file_path: string | null;
-  contenido?: string | null; estructura?: unknown; created_at: string; exercises?: unknown;
+  contenido?: string | null; contenido_at?: string | null; estructura?: unknown; created_at: string; exercises?: unknown;
 };
 type Sesion = { id: string; dia: string | null; started_at: string; finished_at: string | null };
 
@@ -40,7 +40,7 @@ export default async function EntrenoPage() {
   const e = encodeURIComponent(email);
 
   const [planes, series, abiertas] = await Promise.all([
-    sbSelect<Plan>("plans", `select=id,type,title,file_path,contenido,estructura,created_at,exercises&member_email=eq.${e}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
+    sbSelect<Plan>("plans", `select=id,type,title,file_path,contenido,contenido_at,estructura,created_at,exercises&member_email=eq.${e}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
       // Las columnas de la lectura pueden no existir todavía (falta ejecutar
       // supabase/planes.sql). Sin ellas se sigue, con la lista de respaldo.
       .catch(() => sbSelect<Plan>("plans", `select=id,type,title,file_path,created_at,exercises&member_email=eq.${e}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
