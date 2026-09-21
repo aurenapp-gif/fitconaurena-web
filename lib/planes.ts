@@ -77,8 +77,15 @@ function formatoDe(path: string): Formato {
   return null;
 }
 
-/** Lo ya guardado, si la lectura se hizo en su día. */
-function guardado(plan: PlanLeible): PlanLeido | null {
+/**
+ * Lo ya guardado, si la lectura se hizo en su día.
+ *
+ * Tres respuestas, no dos: la lectura buena, `VACIO` para «ya se intentó y ese
+ * archivo no se deja entender» y `null` para «nunca se ha intentado». Se
+ * exporta para poder probar esa decisión, que es la que evita releer un plan
+ * ilegible en cada visita.
+ */
+export function lecturaGuardada(plan: PlanLeible): PlanLeido | null {
   const e = plan.estructura;
   if (e && typeof e === "object") {
     const tipo = plan.type === "nutricion" ? "nutricion" : "entrenamiento";
@@ -114,7 +121,7 @@ async function marcaIlegible(id: string): Promise<void> {
  * El plan en datos, leyéndolo la primera vez y reutilizándolo después.
  */
 export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
-  const ya = guardado(plan);
+  const ya = lecturaGuardada(plan);
   if (ya) return ya;
 
   if (!plan.file_path || !process.env.ANTHROPIC_API_KEY) return VACIO;
