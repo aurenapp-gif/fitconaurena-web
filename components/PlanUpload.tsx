@@ -14,6 +14,12 @@ const MAX_MB = 25;
 // Tope de las funciones de Vercel. Por debajo de esto el archivo puede viajar
 // dentro de la petición; por encima, no hay más remedio que ir directo.
 const MAX_SERVIDOR_MB = 4;
+/**
+ * Por encima de esto el plan se sube igual, pero NO se puede leer: el modelo
+ * que lo interpreta no admite adjuntos mayores. Es el mismo número que
+ * MAX_BYTES_PLAN en lib/planes.ts.
+ */
+const MAX_LEIBLE_MB = 8;
 // Mismos tipos que acepta el servidor (lib/upload.ts, regla "plan").
 const TIPOS_OK = [
   "application/pdf",
@@ -121,6 +127,8 @@ export default function PlanUpload({ member }: { member: string }) {
   const [semanas, setSemanas] = useState(SEMANAS_ENTRENAMIENTO);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "subiendo" | "error">("idle");
+  /** Se puede subir, pero saldrá sin leer. No bloquea: solo avisa. */
+  const [sinLectura, setSinLectura] = useState("");
   const [msg, setMsg] = useState("");
   const [encima, setEncima] = useState(false);
   const [preparando, setPreparando] = useState(false);
@@ -171,11 +179,33 @@ export default function PlanUpload({ member }: { member: string }) {
     return null;
   }
 
+  /**
+   * ¿Este plan va a poder leerse?
+   *
+   * Word y los archivos grandes se suben sin problema, pero la lectura no los
+   * admite: la clienta se queda con el documento para descargar y sin el
+   * entreno serie a serie ni las comidas del día. Antes no lo decía nadie y no
+   * había forma de enterarse.
+   */
+  function motivoSinLectura(f: File): string {
+    const esWord = /\.(docx?|rtf|odt)$/i.test(f.name) || /word|officedocument|msword/i.test(f.type);
+    if (esWord) {
+      return "Es un Word: se subirá y ella podrá descargarlo, pero no puedo leerlo por dentro, " +
+        "así que no verá su entreno serie a serie ni sus comidas del día. Expórtalo a PDF y sí.";
+    }
+    if (f.size > MAX_LEIBLE_MB * MB) {
+      return `Pesa ${(f.size / MB).toFixed(1)} MB y solo puedo leer hasta ${MAX_LEIBLE_MB} MB. Se subirá y ella ` +
+        "podrá descargarlo, pero no verá su entreno serie a serie ni sus comidas del día. Si lo comprimes, sí.";
+    }
+    return "";
+  }
+
   function elegir(f: File | null) {
     setFile(f);
     setStatus("idle");
     setMsg("");
     setIlegible(false);
+    setSinLectura(f ? motivoSinLectura(f) : "");
     lectura.current = null;
     if (!f) return;
     const motivo = motivoRechazo(f);
@@ -242,7 +272,7 @@ export default function PlanUpload({ member }: { member: string }) {
   }
 
   function hecho() {
-    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg(""); setIlegible(false);
+    setTitle(""); setNote(""); setFile(null); setStatus("idle"); setMsg(""); setIlegible(false); setSinLectura("");
     lectura.current = null;
     formRef.current?.reset();
     router.refresh();
@@ -516,6 +546,11 @@ export default function PlanUpload({ member }: { member: string }) {
         pila <strong className="text-ink-muted">Descargas del Dock</strong> o desde el Finder:
         esos sí entran.
       </p>
+      {sinLectura && status !== "error" && (
+        <p className="text-sm text-warn bg-warn-soft rounded-xl px-4 py-3">
+          <strong className="font-bold">Se subirá, pero no podré leerlo.</strong> {sinLectura}
+        </p>
+      )}
       {status === "error" && <p role="alert" className="text-sm text-danger">{msg}</p>}
       {ilegible && (
         <button
