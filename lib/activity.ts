@@ -9,12 +9,26 @@ export const ACTIONS = {
   contrato_abierto: "Ha abierto el contrato",
   herramienta_abierta: "Ha usado una herramienta",
   llamada_abierta: "Ha visto su llamada estratégica",
+  bienvenida: "Se le ha dado la bienvenida",
 } as const;
 
 export type Action = keyof typeof ACTIONS;
 
+/**
+ * Las que NO puede mandar el navegador.
+ *
+ * «bienvenida» no es algo que haga ella: es la marca de que ya se le mandó el
+ * correo de bienvenida, y por eso decide que no se vuelva a mandar. Si se
+ * admitiera desde fuera, cualquiera podría apuntarla antes de tiempo y dejar
+ * a una clienta sin su bienvenida.
+ */
+const SOLO_SERVIDOR: ReadonlySet<string> = new Set<Action>(["bienvenida"]);
+
+/** ¿Es una acción que puede apuntar la propia clienta desde su navegador? */
 export function isAction(v: unknown): v is Action {
-  return typeof v === "string" && Object.prototype.hasOwnProperty.call(ACTIONS, v);
+  return typeof v === "string"
+    && Object.prototype.hasOwnProperty.call(ACTIONS, v)
+    && !SOLO_SERVIDOR.has(v);
 }
 
 /**

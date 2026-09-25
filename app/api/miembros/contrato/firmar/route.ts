@@ -15,6 +15,8 @@ import {
 import { buildSignedContractPdf } from "@/lib/pdf";
 import { sendContractSignedNotice } from "@/lib/mailer";
 import { sendPushToEmails } from "@/lib/push";
+import { waitUntil } from "@vercel/functions";
+import { bienvenidaSiProcede } from "@/lib/bienvenida";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -166,6 +168,12 @@ export async function POST(req: NextRequest) {
     console.error("[contrato/firmar]", err);
     return NextResponse.json({ error: "No se pudo registrar tu firma. Inténtalo de nuevo." }, { status: 500 });
   }
+
+  // Si con esta firma ya no le queda nada pendiente, es que acaba de terminar
+  // el papeleo: le toca la bienvenida. Va por detrás de la respuesta —ella no
+  // tiene por qué esperar a un correo— pero encargada a la plataforma, que si
+  // no la función se congela al responder y el correo se pierde.
+  try { waitUntil(bienvenidaSiProcede(me)); } catch { void bienvenidaSiProcede(me); }
 
   // Aviso a la coach (no bloqueante).
   const admins = adminEmails();

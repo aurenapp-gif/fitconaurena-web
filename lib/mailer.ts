@@ -8,7 +8,7 @@
  */
 
 import { fetchWithTimeout } from "@/lib/http";
-import { TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
+import { TEXTO_DIA_LLAMADA, TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { enlaceSala } from "@/lib/ajustes";
 import { SITE_URL, MEMBER_AREA_URL } from "@/lib/config";
 
@@ -226,6 +226,99 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
     </div>
   </div>`;
   await send({ to, subject, html, text });
+}
+
+/**
+ * La bienvenida de verdad: cuando ya está todo firmado y entra a su área.
+ *
+ * El correo del alta es logística —«aquí tienes tu enlace»—. Este es el otro:
+ * llega cuando ha terminado de firmar, que es el momento en que deja de hacer
+ * papeleo y empieza el programa. Le dice qué tiene, por dónde empezar y que
+ * hay alguien al otro lado.
+ *
+ * `tienePlan` cambia una frase: prometerle un plan que su coach todavía no ha
+ * subido es la forma más rápida de que el primer día sea una decepción.
+ */
+export function bienvenidaFirmada(
+  opts: { nombre?: string | null; coach: string }
+): { subject: string; html: string; text: string } {
+  const nombre = (opts.nombre ?? "").trim().split(/\s+/)[0] || "";
+  const url = `${SITE_URL}/miembros`;
+  const coach = escapeHtml(opts.coach);
+
+  // Esto es una bienvenida, no un manual ni un aviso. Nada de contratos, nada
+  // de condiciones, nada de lo que le va a costar. Hoy solo toca celebrar que
+  // ha empezado.
+  const subject = nombre
+    ? `Bienvenida al Programa FITCON, ${nombre} 💚`
+    : "Bienvenida al Programa FITCON 💚";
+
+  const text =
+    `${nombre ? `Bienvenida, ${nombre}.` : "Bienvenida."}\n\n` +
+    `Hoy empieza tu transformación.\n\n` +
+    `No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto. Hoy.\n\n` +
+    `Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes ` +
+    `de buenas intenciones: es tu futuro. Tu energía, tus fuerzas, y la manera en que te vas a mirar al ` +
+    `espejo dentro de unos meses.\n\n` +
+    `Y no lo vas a hacer sola. Yo voy contigo, paso a paso, desde hoy.\n\n` +
+    `Dentro te espera todo lo tuyo, preparado para ti. Entra y empieza.\n\n` +
+    `${url}\n\n` +
+    `Esto es solo el principio${nombre ? `, ${nombre}` : ""}.\n\n` +
+    `Vamos a por ello. — ${opts.coach}`;
+
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:48px 24px;">
+    <div style="max-width:520px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 36px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+
+      <p style="margin:0 0 12px;color:#1CA0E3;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
+      <h1 style="font-size:34px;font-weight:800;margin:0 0 10px;line-height:1.1;letter-spacing:-0.8px;">
+        ${nombre ? `Bienvenida, ${escapeHtml(nombre)}` : "Bienvenida"} 💚
+      </h1>
+      <p style="font-size:22px;font-weight:700;color:#1CA0E3;margin:0 0 28px;line-height:1.3;letter-spacing:-0.3px;">
+        Hoy empieza tu transformación.
+      </p>
+
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
+        No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto.
+        <strong style="color:#ffffff;">Hoy.</strong>
+      </p>
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
+        Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes de
+        buenas intenciones: <strong style="color:#ffffff;">es tu futuro.</strong> Tu energía, tus fuerzas, y la
+        manera en que te vas a mirar al espejo dentro de unos meses.
+      </p>
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 34px;font-size:17px;">
+        Y no lo vas a hacer sola. <strong style="color:#ffffff;">Yo voy contigo</strong>, paso a paso, desde hoy.
+      </p>
+
+      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 22px;font-size:16px;">
+        Dentro te espera todo lo tuyo, preparado para ti.
+      </p>
+
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:18px 42px;border-radius:12px;font-size:17px;">
+        Entrar y empezar
+      </a>
+
+      <div style="height:1px;background:#1E1E1E;margin:40px 0 28px;"></div>
+
+      <p style="color:#ffffff;font-size:19px;font-weight:800;line-height:1.4;margin:0 0 10px;letter-spacing:-0.3px;">
+        Esto es solo el principio${nombre ? `, ${escapeHtml(nombre)}` : ""}.
+      </p>
+      <p style="color:#8A8A8A;font-size:16px;line-height:1.6;margin:0;">
+        Vamos a por ello. — <strong style="color:#D4D4D4;">${coach}</strong>
+      </p>
+    </div>
+  </div>`;
+
+  return { subject, html, text };
+}
+
+export async function sendBienvenidaFirmada(
+  to: string,
+  opts: { nombre?: string | null; coach: string }
+): Promise<void> {
+  await send({ to, ...bienvenidaFirmada(opts) });
 }
 
 /** Avisa a la clienta de que su coach respondió a su check-in. */

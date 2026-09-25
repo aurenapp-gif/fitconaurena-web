@@ -4,6 +4,8 @@ import { isAccessRevoked } from "@/lib/guard";
 import { sbUpsert, sbUpload, safePath } from "@/lib/supabase";
 import { validateUpload } from "@/lib/upload";
 import { TERMS_VERSION } from "@/lib/terms";
+import { waitUntil } from "@vercel/functions";
+import { bienvenidaSiProcede } from "@/lib/bienvenida";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -74,6 +76,11 @@ export async function POST(req: NextRequest) {
     console.error("[bienvenida]", err);
     return NextResponse.json({ error: "No se pudo guardar. Inténtalo de nuevo." }, { status: 500 });
   }
+
+  // A una clienta sin contrato que firmar, esta pantalla es su último paso:
+  // le toca la bienvenida ya. Si tiene contratos pendientes, aquí no se manda
+  // nada y saldrá al firmar el último.
+  try { waitUntil(bienvenidaSiProcede(email)); } catch { void bienvenidaSiProcede(email); }
 
   return NextResponse.json({ ok: true });
 }
