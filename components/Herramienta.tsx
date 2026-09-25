@@ -16,6 +16,8 @@ export default function Herramienta({ def }: { def: Def }) {
   const [foto, setFoto] = useState<File | null>(null);
   const [vista, setVista] = useState<string | null>(null);
   const [nota, setNota] = useState("");
+  /** Lo que ha contestado a las preguntas de arriba. Clave → opción elegida. */
+  const [respuestas, setRespuestas] = useState<Record<string, string>>({});
   const [respuesta, setRespuesta] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +40,7 @@ export default function Herramienta({ def }: { def: Def }) {
       fd.append("herramienta", def.id);
       fd.append("foto", await resizeImage(foto));
       fd.append("nota", nota);
+      fd.append("respuestas", JSON.stringify(respuestas));
       const res = await fetch("/api/miembros/herramientas", { method: "POST", body: fd });
       if (!res.ok || !res.body) {
         const d = await res.json().catch(() => ({}));
@@ -59,6 +62,9 @@ export default function Herramienta({ def }: { def: Def }) {
       setEnviando(false);
     }
   }
+
+  /** Preguntas sin contestar. El botón espera a que sean cero. */
+  const faltan = def.preguntas.filter((p) => !respuestas[p.clave]).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -92,8 +98,42 @@ export default function Herramienta({ def }: { def: Def }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {vista && <img src={vista} alt="La foto que vas a mandar" className="w-full max-h-72 object-contain rounded-[11px] bg-page" />}
 
+        {/*
+          Cuatro toques antes de mandar la foto.
+
+          De una foto sola sale media respuesta: da igual lo buena que sea la
+          foto de una nevera si no se sabe para cuántos es ni cuánto rato hay.
+          Van en botones y no en casillas de escribir a propósito: esto se usa
+          de pie, con una mano.
+        */}
+        {def.preguntas.map((p) => (
+          <div key={p.clave} className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-ink-muted">{p.etiqueta}</span>
+            <div className="flex flex-wrap gap-2">
+              {p.opciones.map((o) => {
+                const elegida = respuestas[p.clave] === o;
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    aria-pressed={elegida}
+                    onClick={() => setRespuestas((r) => ({ ...r, [p.clave]: o }))}
+                    className={`rounded-full px-3.5 py-2 text-[15px] min-h-[40px] transition-colors ${
+                      elegida
+                        ? "bg-brand text-white font-semibold"
+                        : "bg-page text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
         <label className="block">
-          <span className="block text-[13px] text-ink-muted mb-1">Algo que deba saber (opcional)</span>
+          <span className="block text-[13px] text-ink-muted mb-1">{def.notaEtiqueta}</span>
           <input
             value={nota}
             onChange={(e) => setNota(e.target.value)}
@@ -103,10 +143,22 @@ export default function Herramienta({ def }: { def: Def }) {
           />
         </label>
 
-        <button type="button" onClick={enviar} disabled={!foto || enviando}
+        <button type="button" onClick={enviar} disabled={!foto || enviando || faltan > 0}
           className="btn-brand w-full py-4 text-[17px] disabled:opacity-50">
           {enviando ? "Mirándola…" : "Mandársela a FitAI"}
         </button>
+        {/* Por qué está apagado el botón. Sin esto se queda mirándolo. */}
+        {!enviando && (faltan > 0 || !foto) && (
+          <p className="text-[13px] text-ink-muted text-center -mt-1">
+            {!foto && faltan > 0
+              ? "Haz la foto y contesta lo de arriba."
+              : !foto
+                ? "Solo falta la foto."
+                : faltan === 1
+                  ? "Falta una respuesta de arriba."
+                  : `Faltan ${faltan} respuestas de arriba.`}
+          </p>
+        )}
       </div>
 
       {error && <p role="alert" className="text-[15px] text-danger px-1">{error}</p>}
