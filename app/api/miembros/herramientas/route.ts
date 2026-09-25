@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { sbInsert, sbSelect } from "@/lib/supabase";
 import { contexto } from "@/lib/fitai";
 import { datosDe } from "@/lib/clienta";
-import { buscaHerramienta, comun, LIMITE_HORA, MAX_NOTA } from "@/lib/herramientas";
+import { buscaHerramienta, comun, resumenRespuestas, respuestasValidas, textoRespuestas, LIMITE_HORA, MAX_NOTA } from "@/lib/herramientas";
 import { validateUpload } from "@/lib/upload";
 
 export const runtime = "nodejs";
@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
 
   const nota = String(form.get("nota") ?? "").trim().slice(0, MAX_NOTA);
 
+  // Lo que ha contestado antes de mandar la foto. Se filtra contra las
+  // preguntas de ESTA herramienta: del navegador no se acepta texto libre
+  // disfrazado de respuesta.
+  let respuestasBrutas: unknown = null;
+  try { respuestasBrutas = JSON.parse(String(form.get("respuestas") ?? "{}")); } catch { respuestasBrutas = null; }
+  const respuestas = respuestasValidas(herramienta, respuestasBrutas);
+
   const coach = (await sbSelect<{ display_name: string | null }>(
     "profiles", `select=display_name&email=eq.${encodeURIComponent(adminEmails()[0] ?? "")}`
   ).then((r) => r[0]?.display_name ?? null).catch(() => null)) || "tu coach";
@@ -78,7 +85,7 @@ export async function POST(req: NextRequest) {
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: medio, data: Buffer.from(await foto.arrayBuffer()).toString("base64") } },
-          { type: "text", text: nota || "Dime qué hago con esto." },
+          { type: "text", text: [textoRespuestas(respuestas), nota, "Dime qué hago con esto."].filter(Boolean).join("\n\n") },
         ],
       }],
     });
@@ -117,7 +124,9 @@ export async function POST(req: NextRequest) {
         // con FitAI. La foto NO se guarda: no hace falta para eso.
         await sbInsert("fitai_messages", {
           member_email: email,
-          question: `[${herramienta.name}] ${nota || "(solo la foto)"}`,
+          // La coach ve también lo que contestó: sin eso, media respuesta no
+          // se entiende al leerla desde el panel.
+          question: `[${herramienta.name}] ${[resumenRespuestas(respuestas), nota].filter(Boolean).join(" — ") || "(solo la foto)"}`,
           answer: completa,
           derivada: false,
         }).catch((e) => console.error("[herramientas] registro", e));
