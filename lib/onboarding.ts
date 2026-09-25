@@ -26,19 +26,19 @@ export const ONBOARDING: VideoOnboarding[] = [
     id: "primeros-pasos",
     titulo: "Primeros pasos",
     descripcion: "Cómo moverte por aquí y qué hacer esta primera semana.",
-    url: "",
+    url: "https://vimeo.com/1230178643/2b6fe4e656",
   },
   {
     id: "estrategia",
     titulo: "Estrategia y plan de acción",
     descripcion: "Por qué tu plan es el que es y cómo vamos a llegar a tu objetivo.",
-    url: "",
+    url: "https://vimeo.com/1230178676/603f138a62",
   },
   {
     id: "kpis",
     titulo: "KPIs y objetivos diarios",
     descripcion: "Qué medimos cada día y cada quince, y por qué eso es lo que marca el progreso.",
-    url: "",
+    url: "https://vimeo.com/1230178688/a91e43ed40",
   },
 ];
 
