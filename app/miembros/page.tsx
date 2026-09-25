@@ -5,7 +5,8 @@ import CallCountdown from "@/components/CallCountdown";
 import { Barra, Fila, FilaAccion, Grupo, NotaCoach } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { questionnaireComplete, type Questionnaire } from "@/lib/profile";
+import { type Questionnaire } from "@/lib/profile";
+import { onboardingDisponible } from "@/lib/onboarding";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
@@ -160,15 +161,25 @@ export default async function MiembrosPage() {
       ? { texto: (nut?.note || ent?.note) as string, fecha: fechaCortaDe((nut?.note ? nut : ent)!.created_at), href: "/miembros/perfil" }
       : null;
 
-  // ---- Primeros pasos ------------------------------------------------------
-  const quesDone = questionnaireComplete(profile?.questionnaire ?? {});
-  const pasos = [
-    { label: "Sube tu foto de perfil", done: !!profile?.photo_path, href: "/miembros/perfil?tab=cuestionario" },
-    { label: "Completa tu cuestionario", done: quesDone, href: "/miembros/perfil?tab=cuestionario" },
-    { label: "Haz tu primera revisión", done: !!revision, href: "/miembros/checkins" },
-  ];
-  const hechos = pasos.filter((s) => s.done).length;
-  const showChecklist = !admin && hechos < pasos.length;
+  // ---- Onboarding ----------------------------------------------------------
+  //
+  // Donde antes había una lista de deberes que se iba tachando sola —sube la
+  // foto, rellena el cuestionario, haz la revisión— ahora hay tres vídeos. La
+  // lista le decía lo que le faltaba; los vídeos le explican qué va a hacer y
+  // por qué, que es lo que de verdad no sabe el primer día.
+  //
+  // Desaparece cuando los ha visto los tres, igual que desaparecía la lista.
+  const videos = onboardingDisponible();
+  const vistos = videos.length
+    ? new Set(
+        (await sbSelect<{ detail: string | null }>(
+          "activity_log",
+          `select=detail&member_email=eq.${e}&action=eq.onboarding_visto`
+        ).catch(() => [])).map((r) => r.detail).filter((d): d is string => !!d)
+      )
+    : new Set<string>();
+  const porVer = videos.filter((v) => !vistos.has(v.id)).length;
+  const showOnboarding = !admin && videos.length > 0 && porVer > 0;
 
   // Una sola acción principal. Lo más urgente primero: la revisión que falta;
   // si está, apuntar el día; si también, mirar cómo va.
@@ -291,21 +302,16 @@ export default async function MiembrosPage() {
               {/* Acción principal */}
               <Link href={accion.href} className="btn-brand text-[17px] w-full !min-h-[50px]">{accion.label}</Link>
 
-              {/* Primeros pasos (desaparece al completarse) */}
-              {showChecklist && (
-                <Grupo label="Primeros pasos" foot={`${hechos} de ${pasos.length} hechos.`}>
-                  {pasos.map((s) => (
-                    <div key={s.label} className="flex items-center justify-between gap-3 min-h-[46px] px-4 py-2 text-[17px]">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className={`shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center ${s.done ? "bg-success" : "border-[1.5px] border-line-strong"}`}>
-                          {s.done && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                          )}
-                        </span>
-                        <span className={s.done ? "text-ink-subtle line-through" : "text-ink"}>{s.label}</span>
-                      </div>
-                      {!s.done && <Link href={s.href} className="text-brand shrink-0">Hacerlo</Link>}
-                    </div>
+              {/* Onboarding: desaparece cuando ha visto los tres */}
+              {showOnboarding && (
+                <Grupo label="Onboarding" foot={`${videos.length - porVer} de ${videos.length} vistos.`}>
+                  {videos.map((v) => (
+                    <Fila
+                      key={v.id}
+                      href="/miembros/onboarding"
+                      titulo={v.titulo}
+                      sub={vistos.has(v.id) ? "Visto" : v.descripcion}
+                    />
                   ))}
                 </Grupo>
               )}

@@ -37,8 +37,8 @@ const nextConfig = {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
-      "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com https://images.unsplash.com",
-      "media-src 'self' blob: https://*.supabase.co",
+      "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com https://i.vimeocdn.com https://images.unsplash.com",
+      "media-src 'self' blob: https://*.supabase.co https://*.vimeocdn.com",
       // `blob:` hace falta para poder LEER un archivo con
       // `fetch(URL.createObjectURL(f))`. Sin él, esa lectura la cortaba esta
       // misma política —en cualquier navegador y con cualquier archivo— y
@@ -47,7 +47,9 @@ const nextConfig = {
       // URL blob: solo la puede crear la propia página, y ya está permitido
       // en img-src, media-src, frame-src y worker-src.
       "connect-src 'self' blob: https://*.supabase.co",
-      "frame-src 'self' blob: https://*.supabase.co https://www.youtube-nocookie.com https://calendly.com https://*.calendly.com",
+      // Vimeo para los vídeos del onboarding: el reproductor va en player.vimeo.com
+      // y sus trozos de vídeo salen de *.vimeocdn.com.
+      "frame-src 'self' blob: https://*.supabase.co https://www.youtube-nocookie.com https://player.vimeo.com https://calendly.com https://*.calendly.com",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "upgrade-insecure-requests",
