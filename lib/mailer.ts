@@ -8,7 +8,7 @@
  */
 
 import { fetchWithTimeout } from "@/lib/http";
-import { TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
+import { TEXTO_DIA_LLAMADA, TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { enlaceSala } from "@/lib/ajustes";
 import { SITE_URL, MEMBER_AREA_URL } from "@/lib/config";
 
@@ -226,6 +226,132 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
     </div>
   </div>`;
   await send({ to, subject, html, text });
+}
+
+/**
+ * La bienvenida de verdad: cuando ya está todo firmado y entra a su área.
+ *
+ * El correo del alta es logística —«aquí tienes tu enlace»—. Este es el otro:
+ * llega cuando ha terminado de firmar, que es el momento en que deja de hacer
+ * papeleo y empieza el programa. Le dice qué tiene, por dónde empezar y que
+ * hay alguien al otro lado.
+ *
+ * `tienePlan` cambia una frase: prometerle un plan que su coach todavía no ha
+ * subido es la forma más rápida de que el primer día sea una decepción.
+ */
+export function bienvenidaFirmada(
+  opts: { nombre?: string | null; tienePlan: boolean; coach: string }
+): { subject: string; html: string; text: string } {
+  const nombre = (opts.nombre ?? "").trim().split(/\s+/)[0] || "";
+  const hola = nombre ? `Ya estás dentro, ${escapeHtml(nombre)}` : "Ya estás dentro";
+  const url = `${SITE_URL}/miembros`;
+  const coach = escapeHtml(opts.coach);
+
+  const plan = opts.tienePlan
+    ? "Tu plan ya te está esperando dentro."
+    : `${coach} ya está preparando tu plan. En cuanto lo suba te avisamos por aquí.`;
+
+  const subject = nombre ? `Ya estás dentro, ${nombre} 💚` : "Ya estás dentro 💚";
+
+  const text =
+    `${nombre ? `Ya estás dentro, ${nombre}.` : "Ya estás dentro."}\n\n` +
+    `Con la firma termina el papeleo y empieza el programa. ${opts.tienePlan
+      ? "Tu plan ya te está esperando dentro."
+      : `${opts.coach} ya está preparando tu plan; te avisamos en cuanto lo suba.`}\n\n` +
+    `LO QUE TIENES A PARTIR DE HOY\n` +
+    `- Tu alimentación, con las cantidades de cada comida. Se renueva cada mes.\n` +
+    `- Tu entrenamiento, para apuntar los pesos mientras entrenas y ver lo que subes.\n` +
+    `- FitAI: tus dudas del programa, resueltas al momento y a cualquier hora.\n` +
+    `- Revisión cada quince días, con la respuesta de ${opts.coach}.\n` +
+    `- Revisión de técnica: subes un vídeo y te lo corrige.\n` +
+    `- Videollamada de grupo los ${TEXTO_DIA_LLAMADA} a las ${TEXTO_HORA_LLAMADA}.\n\n` +
+    `POR DÓNDE EMPEZAR\n` +
+    `1. Entra y mira lo que te toca hoy.\n` +
+    `2. Apunta tu día en un minuto: agua, pasos y sueño.\n` +
+    `3. Cuando toque, sube tu primera revisión.\n\n` +
+    `Entra aquí: ${url}\n\n` +
+    `Nos vemos dentro. — ${opts.coach}`;
+
+  const fila = (n: string, titulo: string, texto: string) => `
+        <tr>
+          <td style="padding:0 14px 16px 0;vertical-align:top;width:26px;">
+            <span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#12242E;color:#1CA0E3;font-weight:800;font-size:13px;text-align:center;line-height:26px;">${n}</span>
+          </td>
+          <td style="padding:0 0 16px;vertical-align:top;">
+            <p style="margin:0;color:#ffffff;font-weight:700;font-size:15px;line-height:1.35;">${titulo}</p>
+            <p style="margin:3px 0 0;color:#8A8A8A;font-size:14px;line-height:1.5;">${texto}</p>
+          </td>
+        </tr>`;
+
+  const punto = (titulo: string, texto: string) => `
+      <tr>
+        <td style="padding:0 0 14px;">
+          <p style="margin:0;color:#ffffff;font-weight:700;font-size:15px;line-height:1.35;">${titulo}</p>
+          <p style="margin:3px 0 0;color:#8A8A8A;font-size:14px;line-height:1.5;">${texto}</p>
+        </td>
+      </tr>`;
+
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:520px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 32px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+
+      <p style="margin:0 0 10px;color:#1CA0E3;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
+      <h1 style="font-size:30px;font-weight:800;margin:0 0 18px;line-height:1.15;letter-spacing:-0.6px;">${hola} 💚</h1>
+
+      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 14px;font-size:16px;">
+        Con la firma termina el papeleo y empieza lo que has venido a hacer. ${plan}
+      </p>
+      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 30px;font-size:16px;">
+        A partir de hoy no vas por tu cuenta: hay un plan hecho para ti y alguien mirando cómo te va.
+      </p>
+
+      <div style="height:1px;background:#1E1E1E;margin:0 0 26px;"></div>
+
+      <p style="margin:0 0 16px;color:#ffffff;font-size:17px;font-weight:800;">Lo que tienes a partir de hoy</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 6px;">
+        ${punto("Tu alimentación", "Con las cantidades de cada comida, para no tener que pensar. Se renueva cada mes.")}
+        ${punto("Tu entrenamiento", "Apunta los pesos mientras entrenas y ve lo que vas subiendo en cada ejercicio.")}
+        ${punto("FitAI, a cualquier hora", "Tus dudas del programa resueltas al momento, con tu plan delante. Un domingo a las once de la noche también.")}
+        ${punto("Tu revisión cada quince días", `Fotos, medidas y cómo te ha ido. ${coach} te responde a ti, no a una plantilla.`)}
+        ${punto("Revisión de técnica", "Te grabas haciendo un ejercicio y te lo corrige.")}
+        ${punto("Videollamada de grupo", `Los ${TEXTO_DIA_LLAMADA} a las ${TEXTO_HORA_LLAMADA}, para lo que se habla mejor hablando.`)}
+      </table>
+
+      <div style="height:1px;background:#1E1E1E;margin:26px 0;"></div>
+
+      <p style="margin:0 0 18px;color:#ffffff;font-size:17px;font-weight:800;">Por dónde empezar</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${fila("1", "Entra y mira lo que te toca hoy", "Tus comidas del día están en la portada, con sus cantidades.")}
+        ${fila("2", "Apunta tu día en un minuto", "Agua, pasos y sueño. Es lo que hace que lo demás funcione.")}
+        ${fila("3", "Sube tu primera revisión", "Tres fotos y cómo te encuentras. De ahí sale todo lo que venga después.")}
+      </table>
+
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:16px 34px;border-radius:12px;font-size:16px;margin:12px 0 0;">
+        Entrar a mi área
+      </a>
+
+      <div style="background:#121212;border-left:3px solid #1CA0E3;border-radius:0 12px 12px 0;padding:18px 20px;margin:32px 0 0;">
+        <p style="margin:0;color:#D4D4D4;font-size:15px;line-height:1.65;">
+          Si algo no se entiende o no te cuadra, dilo. Prefiero que preguntes veinte veces a que lo dejes por no preguntar.
+        </p>
+        <p style="margin:12px 0 0;color:#ffffff;font-size:15px;font-weight:700;">— ${coach}</p>
+      </div>
+
+      <p style="color:#5E5E5E;font-size:13px;line-height:1.6;margin:28px 0 0;">
+        Tu contrato firmado y el anexo de salud los tienes guardados en tu área, en Perfil › Contratos.
+      </p>
+    </div>
+  </div>`;
+
+  return { subject, html, text };
+}
+
+export async function sendBienvenidaFirmada(
+  to: string,
+  opts: { nombre?: string | null; tienePlan: boolean; coach: string }
+): Promise<void> {
+  await send({ to, ...bienvenidaFirmada(opts) });
 }
 
 /** Avisa a la clienta de que su coach respondió a su check-in. */
