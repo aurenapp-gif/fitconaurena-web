@@ -44,18 +44,12 @@ export async function bienvenidaSiProcede(email: string): Promise<void> {
     if (!perfil[0]?.onboarding_completed_at) return;
     if (yaMandada.length > 0) return;
 
-    const [planes, coachFila] = await Promise.all([
-      sbSelect<{ id: string }>(
-        "plans", `select=id&member_email=eq.${encodeURIComponent(email)}&limit=1`
-      ).catch(() => [] as { id: string }[]),
-      sbSelect<{ display_name: string | null }>(
-        "profiles", `select=display_name&email=eq.${encodeURIComponent(adminEmails()[0] ?? "")}&limit=1`
-      ).catch(() => []),
-    ]);
+    const coachFila = await sbSelect<{ display_name: string | null }>(
+      "profiles", `select=display_name&email=eq.${encodeURIComponent(adminEmails()[0] ?? "")}&limit=1`
+    ).catch(() => []);
 
     await sendBienvenidaFirmada(email, {
       nombre: perfil[0]?.display_name ?? null,
-      tienePlan: planes.length > 0,
       coach: coachFila[0]?.display_name?.trim() || "tu coach",
     });
     await logActivity(email, "bienvenida");

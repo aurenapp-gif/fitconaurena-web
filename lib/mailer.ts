@@ -240,124 +240,73 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
  * subido es la forma más rápida de que el primer día sea una decepción.
  */
 export function bienvenidaFirmada(
-  opts: { nombre?: string | null; tienePlan: boolean; coach: string }
+  opts: { nombre?: string | null; coach: string }
 ): { subject: string; html: string; text: string } {
   const nombre = (opts.nombre ?? "").trim().split(/\s+/)[0] || "";
   const url = `${SITE_URL}/miembros`;
   const coach = escapeHtml(opts.coach);
 
-  // Aquí no se habla de contratos, ni de firmas, ni de papeleo. Ese trámite lo
-  // acaba de terminar hace diez segundos y no es lo que tiene que recordar de
-  // su primer día.
-  //
-  // Si su coach todavía no ha subido el plan, tampoco se le dice que la está
-  // esperando: prometerle algo que no está es la forma más rápida de que el
-  // primer día sea una decepción.
-  const primerPaso = opts.tienePlan
-    ? "Entra, mira lo que te toca hoy y apunta tu primer día. Cinco minutos."
-    : `${coach} está preparando tu plan ahora mismo —te avisamos por aquí en cuanto esté—. Mientras, entra y apunta tu primer día. Cinco minutos.`;
-  const primerPasoTexto = opts.tienePlan
-    ? "Entra, mira lo que te toca hoy y apunta tu primer día. Cinco minutos."
-    : `${opts.coach} está preparando tu plan ahora mismo; te avisamos por aquí en cuanto esté. Mientras, entra y apunta tu primer día. Cinco minutos.`;
-
+  // Esto es una bienvenida, no un manual ni un aviso. Nada de contratos, nada
+  // de condiciones, nada de lo que le va a costar. Hoy solo toca celebrar que
+  // ha empezado.
   const subject = nombre
     ? `Bienvenida al Programa FITCON, ${nombre} 💚`
     : "Bienvenida al Programa FITCON 💚";
 
   const text =
     `${nombre ? `Bienvenida, ${nombre}.` : "Bienvenida."}\n\n` +
-    `Estás a nada de empezar, y quiero que el primer día lo tengas claro: esto no va de perder unos kilos ` +
-    `y volver a lo de siempre. Va de tu futuro. De cómo te vas a sentir dentro de seis meses, dentro de un año, ` +
-    `y de los que vengan detrás.\n\n` +
-    `Lo difícil ya lo has hecho, que es decidir. Mucha gente se pasa años diciendo «el lunes empiezo». Tú no. ` +
-    `Tú ya estás aquí.\n\n` +
-    `Y a partir de hoy no vas sola. Vas a tener un plan hecho para ti, no copiado de nadie, y a alguien ` +
-    `mirando cómo te va y ajustándolo contigo sobre la marcha.\n\n` +
-    `No hace falta que sea perfecto. Hace falta que sea constante: esto no funciona por los días que te salen ` +
-    `bordados, funciona por los días regulares en los que apareces igual. Ahí es donde se gana.\n\n` +
-    `LO QUE TIENES A PARTIR DE HOY\n` +
-    `- Tu alimentación, con las cantidades de cada comida. Se renueva cada mes.\n` +
-    `- Tu entrenamiento, para apuntar los pesos mientras entrenas y ver todo lo que subes.\n` +
-    `- FitAI: tus dudas resueltas al momento, con tu plan delante, a la hora que sea.\n` +
-    `- Tu revisión cada quince días, con la respuesta de ${opts.coach}.\n` +
-    `- Revisión de técnica: te grabas y te lo corrige.\n` +
-    `- Videollamada de grupo los ${TEXTO_DIA_LLAMADA} a las ${TEXTO_HORA_LLAMADA}.\n\n` +
-    `POR DÓNDE EMPIEZAS\n${primerPasoTexto}\n\n` +
-    `Entra aquí: ${url}\n\n` +
-    `Estoy al otro lado. Si algo no lo ves claro, si un día te cuesta o si te pierdes, escríbeme. Para eso estoy.\n\n` +
-    `Y esto es solo el principio.\n\n` +
+    `Hoy empieza tu transformación.\n\n` +
+    `No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto. Hoy.\n\n` +
+    `Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes ` +
+    `de buenas intenciones: es tu futuro. Tu energía, tus fuerzas, y la manera en que te vas a mirar al ` +
+    `espejo dentro de unos meses.\n\n` +
+    `Y no lo vas a hacer sola. Yo voy contigo, paso a paso, desde hoy.\n\n` +
+    `Dentro te espera todo lo tuyo, preparado para ti. Entra y empieza.\n\n` +
+    `${url}\n\n` +
+    `Esto es solo el principio${nombre ? `, ${nombre}` : ""}.\n\n` +
     `Vamos a por ello. — ${opts.coach}`;
 
-  const punto = (titulo: string, texto: string) => `
-      <tr>
-        <td style="padding:0 0 13px;">
-          <p style="margin:0;color:#ffffff;font-weight:700;font-size:15px;line-height:1.35;">${titulo}</p>
-          <p style="margin:3px 0 0;color:#8A8A8A;font-size:14px;line-height:1.5;">${texto}</p>
-        </td>
-      </tr>`;
-
   const html = `
-  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:48px 24px;">
     <div style="max-width:520px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 32px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+      <p style="font-weight:900;font-size:20px;margin:0 0 36px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
 
-      <p style="margin:0 0 10px;color:#1CA0E3;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
-      <h1 style="font-size:32px;font-weight:800;margin:0 0 20px;line-height:1.12;letter-spacing:-0.7px;">
+      <p style="margin:0 0 12px;color:#1CA0E3;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
+      <h1 style="font-size:34px;font-weight:800;margin:0 0 10px;line-height:1.1;letter-spacing:-0.8px;">
         ${nombre ? `Bienvenida, ${escapeHtml(nombre)}` : "Bienvenida"} 💚
       </h1>
-
-      <p style="color:#D4D4D4;line-height:1.7;margin:0 0 18px;font-size:17px;">
-        Estás a nada de empezar, y quiero que el primer día lo tengas claro: esto no va de perder unos kilos y
-        volver a lo de siempre. <strong style="color:#ffffff;">Va de tu futuro.</strong> De cómo te vas a sentir
-        dentro de seis meses, dentro de un año, y de los que vengan detrás.
-      </p>
-      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 18px;font-size:16px;">
-        Lo difícil ya lo has hecho, que es decidir. Mucha gente se pasa años diciendo «el lunes empiezo».
-        Tú no. <strong style="color:#ffffff;">Tú ya estás aquí.</strong>
-      </p>
-      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 18px;font-size:16px;">
-        Y a partir de hoy no vas sola. Vas a tener un plan hecho para ti, no copiado de nadie, y a alguien
-        mirando cómo te va y ajustándolo contigo sobre la marcha.
-      </p>
-      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 30px;font-size:16px;">
-        No hace falta que sea perfecto. <strong style="color:#ffffff;">Hace falta que sea constante:</strong>
-        esto no funciona por los días que te salen bordados, funciona por los días regulares en los que apareces
-        igual. Ahí es donde se gana.
+      <p style="font-size:22px;font-weight:700;color:#1CA0E3;margin:0 0 28px;line-height:1.3;letter-spacing:-0.3px;">
+        Hoy empieza tu transformación.
       </p>
 
-      <div style="height:1px;background:#1E1E1E;margin:0 0 26px;"></div>
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
+        No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto.
+        <strong style="color:#ffffff;">Hoy.</strong>
+      </p>
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
+        Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes de
+        buenas intenciones: <strong style="color:#ffffff;">es tu futuro.</strong> Tu energía, tus fuerzas, y la
+        manera en que te vas a mirar al espejo dentro de unos meses.
+      </p>
+      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 34px;font-size:17px;">
+        Y no lo vas a hacer sola. <strong style="color:#ffffff;">Yo voy contigo</strong>, paso a paso, desde hoy.
+      </p>
 
-      <p style="margin:0 0 16px;color:#ffffff;font-size:17px;font-weight:800;">Lo que tienes a partir de hoy</p>
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 6px;">
-        ${punto("Tu alimentación", "Con las cantidades de cada comida, para no tener que pensar. Se renueva cada mes.")}
-        ${punto("Tu entrenamiento", "Apunta los pesos mientras entrenas y ve todo lo que vas subiendo.")}
-        ${punto("FitAI, a cualquier hora", "Tus dudas resueltas al momento, con tu plan delante. Un domingo a las once de la noche también.")}
-        ${punto("Tu revisión cada quince días", `Fotos, medidas y cómo te ha ido. ${coach} te responde a ti, no a una plantilla.`)}
-        ${punto("Revisión de técnica", "Te grabas haciendo un ejercicio y te lo corrige.")}
-        ${punto("Videollamada de grupo", `Los ${TEXTO_DIA_LLAMADA} a las ${TEXTO_HORA_LLAMADA}, para lo que se habla mejor hablando.`)}
-      </table>
+      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 22px;font-size:16px;">
+        Dentro te espera todo lo tuyo, preparado para ti.
+      </p>
 
-      <div style="height:1px;background:#1E1E1E;margin:26px 0;"></div>
-
-      <p style="margin:0 0 8px;color:#ffffff;font-size:17px;font-weight:800;">Por dónde empiezas</p>
-      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 24px;font-size:16px;">${primerPaso}</p>
-
-      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:17px 38px;border-radius:12px;font-size:17px;">
+      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:18px 42px;border-radius:12px;font-size:17px;">
         Entrar y empezar
       </a>
 
-      <div style="background:#121212;border-left:3px solid #1CA0E3;border-radius:0 12px 12px 0;padding:20px 22px;margin:34px 0 0;">
-        <p style="margin:0;color:#D4D4D4;font-size:16px;line-height:1.7;">
-          Estoy al otro lado. Si algo no lo ves claro, si un día te cuesta o si te pierdes, escríbeme. Para eso estoy.
-        </p>
-        <p style="margin:14px 0 0;color:#D4D4D4;font-size:16px;line-height:1.7;">
-          Y esto es solo el principio.
-        </p>
-        <p style="margin:14px 0 0;color:#ffffff;font-size:16px;font-weight:800;">Vamos a por ello. — ${coach}</p>
-      </div>
+      <div style="height:1px;background:#1E1E1E;margin:40px 0 28px;"></div>
 
-      <p style="color:#5E5E5E;font-size:13px;line-height:1.6;margin:28px 0 0;">
-        ¿El botón no funciona? Entra en fitconaurena.com/miembros con este mismo correo.
+      <p style="color:#ffffff;font-size:19px;font-weight:800;line-height:1.4;margin:0 0 10px;letter-spacing:-0.3px;">
+        Esto es solo el principio${nombre ? `, ${escapeHtml(nombre)}` : ""}.
+      </p>
+      <p style="color:#8A8A8A;font-size:16px;line-height:1.6;margin:0;">
+        Vamos a por ello. — <strong style="color:#D4D4D4;">${coach}</strong>
       </p>
     </div>
   </div>`;
@@ -367,7 +316,7 @@ export function bienvenidaFirmada(
 
 export async function sendBienvenidaFirmada(
   to: string,
-  opts: { nombre?: string | null; tienePlan: boolean; coach: string }
+  opts: { nombre?: string | null; coach: string }
 ): Promise<void> {
   await send({ to, ...bienvenidaFirmada(opts) });
 }
