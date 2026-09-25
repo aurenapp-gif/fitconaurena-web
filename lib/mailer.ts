@@ -266,50 +266,106 @@ export function bienvenidaFirmada(
     `Esto es solo el principio${nombre ? `, ${nombre}` : ""}.\n\n` +
     `Vamos a por ello. — ${opts.coach}`;
 
-  const html = `
-  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:48px 24px;">
-    <div style="max-width:520px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 36px;letter-spacing:-0.5px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+  /*
+   * POR QUÉ ESTE CORREO ES CLARO Y NO OSCURO.
+   *
+   * El fondo negro se veía mal en los dos modos, y no es cosa del diseño: en
+   * modo oscuro, Gmail le da la vuelta a los colores por su cuenta y un correo
+   * que ya era oscuro acaba con texto claro sobre fondo claro. Y si un cliente
+   * se come el fondo pero respeta el color de la letra —pasa—, el texto blanco
+   * desaparece sobre blanco.
+   *
+   * Con un correo claro eso no ocurre: el texto es oscuro, y si alguien lo
+   * invierte, queda claro sobre oscuro, que se sigue leyendo. Encima aquí se
+   * declaran los DOS modos a mano, para que quien respete `prefers-color-scheme`
+   * use estos colores y no los que se invente.
+   *
+   * El azul de marca (#1CA0E3) sobre blanco da 2,9:1 de contraste: vale para un
+   * logo, no para leer. Por eso el texto azul y el botón usan #0E6E9E, que da
+   * 5,2:1 y sigue siendo el mismo azul, más hondo.
+   */
+  const html = `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  @media (prefers-color-scheme: dark) {
+    .fondo   { background:#141310 !important; }
+    .tarjeta { background:#1E1D1A !important; }
+    .tinta   { color:#F3F0EA !important; }
+    .suave   { color:#B3ADA3 !important; }
+    .acento  { color:#5FB4EE !important; }
+    .raya    { background:#33302A !important; }
+    .boton   { background:#1CA0E3 !important; }
+  }
+</style>
+</head>
+<body class="fondo" style="margin:0;padding:0;background:#F4F2EE;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="fondo" style="background:#F4F2EE;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="tarjeta" style="max-width:520px;background:#FFFFFF;border-radius:18px;">
+          <tr>
+            <td style="padding:40px 32px;font-family:Inter,Helvetica,Arial,sans-serif;">
 
-      <p style="margin:0 0 12px;color:#1CA0E3;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
-      <h1 style="font-size:34px;font-weight:800;margin:0 0 10px;line-height:1.1;letter-spacing:-0.8px;">
-        ${nombre ? `Bienvenida, ${escapeHtml(nombre)}` : "Bienvenida"} 💚
-      </h1>
-      <p style="font-size:22px;font-weight:700;color:#1CA0E3;margin:0 0 28px;line-height:1.3;letter-spacing:-0.3px;">
-        Hoy empieza tu transformación.
-      </p>
+              <p class="tinta" style="font-weight:900;font-size:20px;margin:0 0 34px;letter-spacing:-0.5px;color:#1C1B19;">fit<span class="acento" style="color:#0E6E9E;">con</span>aurena</p>
 
-      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
-        No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto.
-        <strong style="color:#ffffff;">Hoy.</strong>
-      </p>
-      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 20px;font-size:17px;">
-        Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes de
-        buenas intenciones: <strong style="color:#ffffff;">es tu futuro.</strong> Tu energía, tus fuerzas, y la
-        manera en que te vas a mirar al espejo dentro de unos meses.
-      </p>
-      <p style="color:#D4D4D4;line-height:1.75;margin:0 0 34px;font-size:17px;">
-        Y no lo vas a hacer sola. <strong style="color:#ffffff;">Yo voy contigo</strong>, paso a paso, desde hoy.
-      </p>
+              <p class="acento" style="margin:0 0 12px;color:#0E6E9E;font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;">Programa FITCON</p>
+              <h1 class="tinta" style="font-size:32px;font-weight:800;margin:0 0 10px;line-height:1.12;letter-spacing:-0.7px;color:#1C1B19;">
+                ${nombre ? `Bienvenida, ${escapeHtml(nombre)}` : "Bienvenida"} 💚
+              </h1>
+              <p class="acento" style="font-size:21px;font-weight:700;color:#0E6E9E;margin:0 0 28px;line-height:1.3;letter-spacing:-0.3px;">
+                Hoy empieza tu transformación.
+              </p>
 
-      <p style="color:#B4B4B4;line-height:1.7;margin:0 0 22px;font-size:16px;">
-        Dentro te espera todo lo tuyo, preparado para ti.
-      </p>
+              <p class="tinta" style="color:#2A2825;line-height:1.75;margin:0 0 20px;font-size:17px;">
+                No el lunes que viene, ni cuando pase el verano, ni cuando llegue el momento perfecto.
+                <strong class="tinta" style="color:#1C1B19;">Hoy.</strong>
+              </p>
+              <p class="tinta" style="color:#2A2825;line-height:1.75;margin:0 0 20px;font-size:17px;">
+                Estás a punto de descubrir de lo que eres capaz, y te vas a sorprender. Porque esto no es un mes de
+                buenas intenciones: <strong class="tinta" style="color:#1C1B19;">es tu futuro.</strong> Tu energía, tus
+                fuerzas, y la manera en que te vas a mirar al espejo dentro de unos meses.
+              </p>
+              <p class="tinta" style="color:#2A2825;line-height:1.75;margin:0 0 32px;font-size:17px;">
+                Y no lo vas a hacer sola. <strong class="tinta" style="color:#1C1B19;">Yo voy contigo</strong>, paso a paso, desde hoy.
+              </p>
 
-      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:18px 42px;border-radius:12px;font-size:17px;">
-        Entrar y empezar
-      </a>
+              <p class="suave" style="color:#615C55;line-height:1.7;margin:0 0 22px;font-size:16px;">
+                Dentro te espera todo lo tuyo, preparado para ti.
+              </p>
 
-      <div style="height:1px;background:#1E1E1E;margin:40px 0 28px;"></div>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="boton" style="background:#0E6E9E;border-radius:12px;">
+                    <a href="${url}" style="display:inline-block;color:#FFFFFF;font-family:Inter,Helvetica,Arial,sans-serif;font-weight:700;text-decoration:none;padding:17px 40px;font-size:17px;">
+                      Entrar y empezar
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
-      <p style="color:#ffffff;font-size:19px;font-weight:800;line-height:1.4;margin:0 0 10px;letter-spacing:-0.3px;">
-        Esto es solo el principio${nombre ? `, ${escapeHtml(nombre)}` : ""}.
-      </p>
-      <p style="color:#8A8A8A;font-size:16px;line-height:1.6;margin:0;">
-        Vamos a por ello. — <strong style="color:#D4D4D4;">${coach}</strong>
-      </p>
-    </div>
-  </div>`;
+              <div class="raya" style="height:1px;background:#E7E2D9;margin:38px 0 26px;font-size:0;line-height:0;">&nbsp;</div>
+
+              <p class="tinta" style="color:#1C1B19;font-size:19px;font-weight:800;line-height:1.4;margin:0 0 10px;letter-spacing:-0.3px;">
+                Esto es solo el principio${nombre ? `, ${escapeHtml(nombre)}` : ""}.
+              </p>
+              <p class="suave" style="color:#615C55;font-size:16px;line-height:1.6;margin:0;">
+                Vamos a por ello. — <strong class="tinta" style="color:#1C1B19;">${coach}</strong>
+              </p>
+
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
   return { subject, html, text };
 }
