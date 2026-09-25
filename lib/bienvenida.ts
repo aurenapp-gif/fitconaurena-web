@@ -25,10 +25,19 @@ export async function bienvenidaSiProcede(email: string): Promise<void> {
         "contract_assignments",
         `select=id&member_email=eq.${encodeURIComponent(email)}&status=eq.pendiente&limit=1`
       ).catch(() => [] as { id: string }[]),
-      sbSelect<{ display_name: string | null; onboarding_completed_at: string | null }>(
+      // El nombre se pide en dos sitios al entrar: el de pila para saludarla y
+      // el completo para el contrato. Se miran los dos, porque un correo de
+      // bienvenida sin su nombre es medio correo.
+      sbSelect<{ display_name: string | null; full_name: string | null; onboarding_completed_at: string | null }>(
         "profiles",
-        `select=display_name,onboarding_completed_at&email=eq.${encodeURIComponent(email)}&limit=1`
-      ).catch(() => []),
+        `select=display_name,full_name,onboarding_completed_at&email=eq.${encodeURIComponent(email)}&limit=1`
+      ).catch(() =>
+        sbSelect<{ display_name: string | null; onboarding_completed_at: string | null }>(
+          "profiles",
+          `select=display_name,onboarding_completed_at&email=eq.${encodeURIComponent(email)}&limit=1`
+        ).then((r) => r.map((x) => ({ ...x, full_name: null })))
+         .catch(() => [])
+      ),
       // La marca de que ya se mandó. Si la tabla no existiera, se trata como
       // no mandada: el momento en que se dispara ya ocurre una sola vez.
       sbSelect<{ id: string }>(
@@ -49,7 +58,7 @@ export async function bienvenidaSiProcede(email: string): Promise<void> {
     ).catch(() => []);
 
     await sendBienvenidaFirmada(email, {
-      nombre: perfil[0]?.display_name ?? null,
+      nombre: perfil[0]?.display_name?.trim() || perfil[0]?.full_name?.trim() || null,
       coach: coachFila[0]?.display_name?.trim() || "tu coach",
     });
     await logActivity(email, "bienvenida");
