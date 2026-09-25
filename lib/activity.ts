@@ -9,6 +9,7 @@ export const ACTIONS = {
   contrato_abierto: "Ha abierto el contrato",
   herramienta_abierta: "Ha usado una herramienta",
   llamada_abierta: "Ha visto su llamada estratégica",
+  onboarding_visto: "Ha visto un vídeo del onboarding",
   bienvenida: "Se le ha dado la bienvenida",
 } as const;
 
