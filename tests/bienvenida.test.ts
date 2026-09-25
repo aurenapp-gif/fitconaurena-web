@@ -12,29 +12,30 @@ import { isAction } from "../lib/activity";
 
 test("la saluda por su nombre de pila, no por el completo", () => {
   const r = bienvenidaFirmada({ nombre: "Marta Ruiz Gómez", tienePlan: true, coach: "Damián" });
-  assert.match(r.subject, /Ya estás dentro, Marta/);
+  assert.match(r.subject, /Bienvenida al Programa FITCON, Marta/);
   assert.ok(!r.subject.includes("Ruiz"), "por el apellido no la llama nadie");
 });
 
 test("sin nombre no queda un hueco raro", () => {
   const r = bienvenidaFirmada({ nombre: null, tienePlan: true, coach: "Damián" });
-  assert.match(r.subject, /^Ya estás dentro/);
+  assert.match(r.subject, /^Bienvenida al Programa FITCON/);
   assert.ok(!r.html.includes("undefined") && !r.html.includes("null"));
 });
 
 test("no le promete un plan que aún no existe", () => {
   const con = bienvenidaFirmada({ nombre: "Marta", tienePlan: true, coach: "Damián" });
-  assert.match(con.text, /ya te está esperando/);
+  assert.match(con.text, /mira lo que te toca hoy/);
+  assert.ok(!con.text.includes("en cuanto"), "si ya está el plan, no se habla de esperar");
 
   const sin = bienvenidaFirmada({ nombre: "Marta", tienePlan: false, coach: "Damián" });
-  assert.match(sin.text, /está preparando tu plan/);
-  assert.ok(!sin.text.includes("ya te está esperando"), "no se le dice que está si no está");
+  assert.match(sin.text, /en cuanto Damián lo suba/);
+  assert.ok(!sin.text.includes("mira lo que te toca hoy"), "no se le manda mirar un plan que no está");
 });
 
 test("va firmado por su coach, con su nombre", () => {
   const r = bienvenidaFirmada({ nombre: "Marta", tienePlan: true, coach: "Damián" });
   assert.match(r.html, /— Damián/);
-  assert.match(r.text, /Nos vemos dentro\. — Damián/);
+  assert.match(r.text, /Vamos\. — Damián/);
 });
 
 test("un nombre con HTML no rompe el correo", () => {
