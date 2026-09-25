@@ -28,14 +28,14 @@ test("no le promete un plan que aún no existe", () => {
   assert.ok(!con.text.includes("en cuanto"), "si ya está el plan, no se habla de esperar");
 
   const sin = bienvenidaFirmada({ nombre: "Marta", tienePlan: false, coach: "Damián" });
-  assert.match(sin.text, /en cuanto Damián lo suba/);
+  assert.match(sin.text, /está preparando tu plan ahora mismo/);
   assert.ok(!sin.text.includes("mira lo que te toca hoy"), "no se le manda mirar un plan que no está");
 });
 
 test("va firmado por su coach, con su nombre", () => {
   const r = bienvenidaFirmada({ nombre: "Marta", tienePlan: true, coach: "Damián" });
   assert.match(r.html, /— Damián/);
-  assert.match(r.text, /Vamos\. — Damián/);
+  assert.match(r.text, /Vamos a por ello\. — Damián/);
 });
 
 test("un nombre con HTML no rompe el correo", () => {
@@ -47,4 +47,14 @@ test("la marca de «ya se le dio la bienvenida» no la puede poner el navegador"
   assert.equal(isAction("bienvenida"), false, "si no, se podría dejar a una clienta sin su correo");
   assert.equal(isAction("acceso"), true);
   assert.equal(isAction("plan_abierto"), true);
+});
+
+test("no le habla de contratos ni de papeleo", () => {
+  for (const tienePlan of [true, false]) {
+    const r = bienvenidaFirmada({ nombre: "Marta", tienePlan, coach: "Damián" });
+    for (const palabra of [/contrato/i, /firmad/i, /papeleo/i, /anexo/i, /trámite/i]) {
+      assert.ok(!palabra.test(r.html), `el correo no debe decir ${palabra}`);
+      assert.ok(!palabra.test(r.text), `el texto plano tampoco: ${palabra}`);
+    }
+  }
 });

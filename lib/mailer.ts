@@ -246,15 +246,19 @@ export function bienvenidaFirmada(
   const url = `${SITE_URL}/miembros`;
   const coach = escapeHtml(opts.coach);
 
-  // Si su coach todavía no ha subido el plan, no se le dice que la está
+  // Aquí no se habla de contratos, ni de firmas, ni de papeleo. Ese trámite lo
+  // acaba de terminar hace diez segundos y no es lo que tiene que recordar de
+  // su primer día.
+  //
+  // Si su coach todavía no ha subido el plan, tampoco se le dice que la está
   // esperando: prometerle algo que no está es la forma más rápida de que el
   // primer día sea una decepción.
   const primerPaso = opts.tienePlan
     ? "Entra, mira lo que te toca hoy y apunta tu primer día. Cinco minutos."
-    : `Tu plan ya te está esperando en cuanto ${coach} lo suba —te avisamos por aquí—. Mientras, entra y apunta tu primer día. Cinco minutos.`;
+    : `${coach} está preparando tu plan ahora mismo —te avisamos por aquí en cuanto esté—. Mientras, entra y apunta tu primer día. Cinco minutos.`;
   const primerPasoTexto = opts.tienePlan
     ? "Entra, mira lo que te toca hoy y apunta tu primer día. Cinco minutos."
-    : `Tu plan ya te está esperando en cuanto ${opts.coach} lo suba; te avisamos por aquí. Mientras, entra y apunta tu primer día. Cinco minutos.`;
+    : `${opts.coach} está preparando tu plan ahora mismo; te avisamos por aquí en cuanto esté. Mientras, entra y apunta tu primer día. Cinco minutos.`;
 
   const subject = nombre
     ? `Bienvenida al Programa FITCON, ${nombre} 💚`
@@ -262,13 +266,15 @@ export function bienvenidaFirmada(
 
   const text =
     `${nombre ? `Bienvenida, ${nombre}.` : "Bienvenida."}\n\n` +
-    `Ya está todo firmado. A partir de aquí no hay más papeleo: solo tú y lo que has venido a conseguir.\n\n` +
-    `Y quiero que sepas una cosa: lo difícil no era firmar. Lo difícil era decidir, y eso ya lo has hecho. ` +
-    `Mucha gente se pasa años diciendo «el lunes empiezo». Tú has empezado hoy.\n\n` +
-    `No te voy a prometer milagros en seis semanas. Te prometo algo mejor: que no vuelves a improvisar. ` +
-    `Cada comida y cada entreno van a estar pensados para ti, y cada quince días alguien mira cómo te ha ido y te dice qué cambiar.\n\n` +
-    `Lo único que necesito de ti es que aparezcas. No hace falta que sea perfecto, hace falta que sea constante: ` +
-    `esto no funciona por los días que te salen bordados, funciona por los días regulares en los que apareces igual.\n\n` +
+    `Estás a nada de empezar, y quiero que el primer día lo tengas claro: esto no va de perder unos kilos ` +
+    `y volver a lo de siempre. Va de tu futuro. De cómo te vas a sentir dentro de seis meses, dentro de un año, ` +
+    `y de los que vengan detrás.\n\n` +
+    `Lo difícil ya lo has hecho, que es decidir. Mucha gente se pasa años diciendo «el lunes empiezo». Tú no. ` +
+    `Tú ya estás aquí.\n\n` +
+    `Y a partir de hoy no vas sola. Vas a tener un plan hecho para ti, no copiado de nadie, y a alguien ` +
+    `mirando cómo te va y ajustándolo contigo sobre la marcha.\n\n` +
+    `No hace falta que sea perfecto. Hace falta que sea constante: esto no funciona por los días que te salen ` +
+    `bordados, funciona por los días regulares en los que apareces igual. Ahí es donde se gana.\n\n` +
     `LO QUE TIENES A PARTIR DE HOY\n` +
     `- Tu alimentación, con las cantidades de cada comida. Se renueva cada mes.\n` +
     `- Tu entrenamiento, para apuntar los pesos mientras entrenas y ver todo lo que subes.\n` +
@@ -279,7 +285,8 @@ export function bienvenidaFirmada(
     `POR DÓNDE EMPIEZAS\n${primerPasoTexto}\n\n` +
     `Entra aquí: ${url}\n\n` +
     `Estoy al otro lado. Si algo no lo ves claro, si un día te cuesta o si te pierdes, escríbeme. Para eso estoy.\n\n` +
-    `Vamos. — ${opts.coach}`;
+    `Y esto es solo el principio.\n\n` +
+    `Vamos a por ello. — ${opts.coach}`;
 
   const punto = (titulo: string, texto: string) => `
       <tr>
@@ -300,20 +307,22 @@ export function bienvenidaFirmada(
       </h1>
 
       <p style="color:#D4D4D4;line-height:1.7;margin:0 0 18px;font-size:17px;">
-        Ya está todo firmado. A partir de aquí no hay más papeleo: <strong style="color:#ffffff;">solo tú y lo que has venido a conseguir.</strong>
+        Estás a nada de empezar, y quiero que el primer día lo tengas claro: esto no va de perder unos kilos y
+        volver a lo de siempre. <strong style="color:#ffffff;">Va de tu futuro.</strong> De cómo te vas a sentir
+        dentro de seis meses, dentro de un año, y de los que vengan detrás.
       </p>
       <p style="color:#B4B4B4;line-height:1.7;margin:0 0 18px;font-size:16px;">
-        Y quiero que sepas una cosa: lo difícil no era firmar. Lo difícil era decidir, y eso ya lo has hecho.
-        Mucha gente se pasa años diciendo «el lunes empiezo». Tú has empezado hoy.
+        Lo difícil ya lo has hecho, que es decidir. Mucha gente se pasa años diciendo «el lunes empiezo».
+        Tú no. <strong style="color:#ffffff;">Tú ya estás aquí.</strong>
       </p>
       <p style="color:#B4B4B4;line-height:1.7;margin:0 0 18px;font-size:16px;">
-        No te voy a prometer milagros en seis semanas. Te prometo algo mejor:
-        <strong style="color:#ffffff;">que no vuelves a improvisar.</strong> Cada comida y cada entreno van a estar
-        pensados para ti, y cada quince días alguien mira cómo te ha ido y te dice qué cambiar.
+        Y a partir de hoy no vas sola. Vas a tener un plan hecho para ti, no copiado de nadie, y a alguien
+        mirando cómo te va y ajustándolo contigo sobre la marcha.
       </p>
       <p style="color:#B4B4B4;line-height:1.7;margin:0 0 30px;font-size:16px;">
-        Lo único que necesito de ti es que aparezcas. No hace falta que sea perfecto, hace falta que sea constante:
-        esto no funciona por los días que te salen bordados, funciona por los días regulares en los que apareces igual.
+        No hace falta que sea perfecto. <strong style="color:#ffffff;">Hace falta que sea constante:</strong>
+        esto no funciona por los días que te salen bordados, funciona por los días regulares en los que apareces
+        igual. Ahí es donde se gana.
       </p>
 
       <div style="height:1px;background:#1E1E1E;margin:0 0 26px;"></div>
@@ -341,11 +350,14 @@ export function bienvenidaFirmada(
         <p style="margin:0;color:#D4D4D4;font-size:16px;line-height:1.7;">
           Estoy al otro lado. Si algo no lo ves claro, si un día te cuesta o si te pierdes, escríbeme. Para eso estoy.
         </p>
-        <p style="margin:14px 0 0;color:#ffffff;font-size:16px;font-weight:800;">Vamos. — ${coach}</p>
+        <p style="margin:14px 0 0;color:#D4D4D4;font-size:16px;line-height:1.7;">
+          Y esto es solo el principio.
+        </p>
+        <p style="margin:14px 0 0;color:#ffffff;font-size:16px;font-weight:800;">Vamos a por ello. — ${coach}</p>
       </div>
 
       <p style="color:#5E5E5E;font-size:13px;line-height:1.6;margin:28px 0 0;">
-        Tu contrato firmado y el anexo de salud los tienes guardados en tu área, en Perfil › Contratos.
+        ¿El botón no funciona? Entra en fitconaurena.com/miembros con este mismo correo.
       </p>
     </div>
   </div>`;
