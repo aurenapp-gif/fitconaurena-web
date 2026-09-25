@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "node:crypto";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
-import { isMember, createMagicToken } from "@/lib/members";
+import { createMagicToken } from "@/lib/members";
+import { puedeRecibirCodigo } from "@/lib/acceso";
 import { sendMagicLink } from "@/lib/mailer";
 import { rateLimit } from "@/lib/ratelimit";
 import { sbUpsert } from "@/lib/supabase";
@@ -28,10 +29,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Introduce un email válido." }, { status: 400 });
   }
 
-  // Solo enviamos el enlace si es miembro. Respondemos igual en ambos casos
-  // para no revelar quién es miembro.
+  // Solo se manda a quien puede entrar. Se responde igual en los dos casos
+  // para no revelar quién es clienta y quién no.
   try {
-    if (await isMember(email)) {
+    if (await puedeRecibirCodigo(email)) {
       const token = createMagicToken(email);
       const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
       // `randomInt` y no `Math.random()`: el generador de Math.random es
