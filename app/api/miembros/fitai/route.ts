@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { sbInsert, sbSelect } from "@/lib/supabase";
 import { contexto, sistemaEstable, pareceDerivada, LIMITE_HORA, MAX_HISTORIAL, MAX_PREGUNTA } from "@/lib/fitai";
 import { datosDe } from "@/lib/clienta";
+import { AVISO_SIN_IA, MODELO_CHARLA, esSinCredito } from "@/lib/ia";
 import { leerPlan } from "@/lib/planes";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
@@ -18,7 +19,7 @@ import { MEDIDAS } from "@/lib/progreso";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODELO = "claude-opus-5";
+
 
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
@@ -62,15 +63,12 @@ export async function POST(req: NextRequest) {
 
   let stream;
   try {
-    stream = client.beta.messages.stream({
-      model: MODELO,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      max_tokens: 8000,
-      // Pregunta corta, respuesta corta: no hace falta que se lo piense mucho.
-      // Con el pensamiento apagado del todo, Opus 5 a veces cuela etiquetas
-      // internas en la respuesta, así que se baja el esfuerzo en su lugar.
-      output_config: { effort: "low" },
+    stream = client.messages.stream({
+      model: MODELO_CHARLA,
+      // Una respuesta de FitAI son tres o cuatro frases. Con mil tokens sobra
+      // de largo, y así un fallo raro no puede desembocar en una parrafada
+      // pagada a peso.
+      max_tokens: 1000,
       system: [
         // Lo que no cambia va primero y cacheado: se paga una vez y las demás
         // preguntas salen mucho más baratas.
@@ -83,6 +81,10 @@ export async function POST(req: NextRequest) {
       messages: mensajes,
     });
   } catch (err) {
+    if (esSinCredito(err)) {
+      console.error("[fitai] SIN CRÉDITO en Anthropic: recargar en console.anthropic.com");
+      return NextResponse.json({ error: AVISO_SIN_IA }, { status: 503 });
+    }
     console.error("[fitai] no se pudo empezar", err);
     return NextResponse.json({ error: "No se ha podido responder ahora mismo. Inténtalo en un momento." }, { status: 502 });
   }
@@ -107,6 +109,14 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(aviso));
         }
       } catch (err) {
+        // Sin saldo no es un corte: es que no hay servicio. Decirle «vuelve a
+        // preguntármelo» la manda a intentarlo mil veces para nada.
+        if (esSinCredito(err)) {
+          console.error("[fitai] SIN CRÉDITO en Anthropic: recargar en console.anthropic.com");
+          completa = AVISO_SIN_IA;
+          controller.enqueue(encoder.encode(AVISO_SIN_IA));
+          return;
+        }
         console.error("[fitai] error a mitad", err);
         const aviso = "\n\nSe me ha cortado la respuesta. Vuelve a preguntármelo, por favor.";
         controller.enqueue(encoder.encode(aviso));
