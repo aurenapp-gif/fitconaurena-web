@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
  * que es quien la ha comprobado en el servidor.
  */
 
-type Icono = "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "salir";
+type Icono = "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "contabilidad" | "salir";
 type Item = { href: string; label: string; icon: Icono; coach?: boolean };
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -41,6 +41,7 @@ const LINEA: Record<Icono, JSX.Element> = {
   clientas: <><circle cx="9" cy="8" r="3.4" /><circle cx="17" cy="9" r="2.4" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M15 20a5 5 0 0 1 6.5-4.8" /></>,
   panel: <><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.8" /><rect x="13" y="3.5" width="7.5" height="5" rx="1.8" /><rect x="13" y="10.5" width="7.5" height="10" rx="1.8" /><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.8" /></>,
   leads: <path d="M4 5h16l-6 8v6l-4-2v-4z" />,
+  contabilidad: <><rect x="4.5" y="3" width="15" height="18" rx="2.2" /><path d="M8.5 7.5h7M8.5 11.5h2M13 11.5h2.5M8.5 15h2M13 15h2.5M8.5 18h7" /></>,
   salir: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" /></>,
 };
 
@@ -86,6 +87,7 @@ const COACH: Item[] = [
   { href: "/miembros/admin", label: "Panel", icon: "panel", coach: true },
   { href: "/miembros/agenda", label: "Agenda", icon: "agenda", coach: true },
   { href: "/miembros/contratos", label: "Contratos", icon: "contratos", coach: true },
+  { href: "/miembros/contabilidad", label: "Contabilidad", icon: "contabilidad", coach: true },
   { href: "/miembros/leads", label: "Solicitudes", icon: "leads", coach: true },
 ];
 
