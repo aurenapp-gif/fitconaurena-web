@@ -8,11 +8,11 @@ import { contexto } from "@/lib/fitai";
 import { datosDe } from "@/lib/clienta";
 import { buscaHerramienta, comun, resumenRespuestas, respuestasValidas, textoRespuestas, LIMITE_HORA, MAX_NOTA } from "@/lib/herramientas";
 import { validateUpload } from "@/lib/upload";
+import { AVISO_SIN_IA, MODELO_FOTO, esSinCredito } from "@/lib/ia";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODELO = "claude-opus-5";
 /** Las fotos llegan ya reducidas desde el navegador; esto es la red de abajo. */
 const MAX_BYTES = 6 * 1024 * 1024;
 
@@ -70,11 +70,12 @@ export async function POST(req: NextRequest) {
 
   let stream;
   try {
-    stream = client.beta.messages.stream({
-      model: MODELO,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      max_tokens: 8000,
+    stream = client.messages.stream({
+      model: MODELO_FOTO,
+      // Dos opciones de una carta o tres de una nevera caben de sobra. El tope
+      // de antes era ocho veces esto y solo servía para que un fallo raro
+      // saliera caro.
+      max_tokens: 1500,
       output_config: { effort: "low" },
       system: [
         // Lo estable primero y cacheado; lo de ella después.
@@ -90,6 +91,10 @@ export async function POST(req: NextRequest) {
       }],
     });
   } catch (err) {
+    if (esSinCredito(err)) {
+      console.error("[herramientas] SIN CRÉDITO en Anthropic: recargar en console.anthropic.com");
+      return NextResponse.json({ error: AVISO_SIN_IA }, { status: 503 });
+    }
     console.error("[herramientas] no se pudo empezar", err);
     return NextResponse.json({ error: "No se ha podido mirar la foto ahora mismo. Inténtalo en un momento." }, { status: 502 });
   }
@@ -112,8 +117,14 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(aviso));
         }
       } catch (err) {
-        console.error("[herramientas] error a mitad", err);
-        controller.enqueue(encoder.encode("\n\nSe me ha cortado. Vuelve a mandarme la foto, por favor."));
+        if (esSinCredito(err)) {
+          console.error("[herramientas] SIN CRÉDITO en Anthropic: recargar en console.anthropic.com");
+          completa = AVISO_SIN_IA;
+          controller.enqueue(encoder.encode(AVISO_SIN_IA));
+        } else {
+          console.error("[herramientas] error a mitad", err);
+          controller.enqueue(encoder.encode("\n\nSe me ha cortado. Vuelve a mandarme la foto, por favor."));
+        }
       } finally {
         if (!completa.trim()) {
           const aviso = "No he sacado nada en claro de esa foto. Prueba con otra donde se vea mejor.";
