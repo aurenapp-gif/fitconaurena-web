@@ -1,12 +1,12 @@
 -- Votación en los comunicados: la coach pregunta y las clientas eligen.
 --
--- Sirve para decisiones de grupo —«¿cambiamos la llamada grupal al jueves?»—
+-- Sirve para decisiones de grupo —«¿os viene mejor la llamada media hora antes?»—
 -- sin sacarlas de la plataforma ni abrir un grupo de WhatsApp para cada cosa.
 --
 -- Ejecuta en Supabase: SQL Editor → New query → Run.
 -- Se puede ejecutar de nuevo sin riesgo: no duplica ni borra nada.
 
--- Opciones de la votación, como lista de textos: ["Sí", "No"], ["Jueves", "Viernes"]…
+-- Opciones de la votación, como lista de textos: ["Sí", "No"], ["19:30", "20:00"]…
 -- NULL = comunicado normal, sin votación. Es lo que distingue uno de otro.
 alter table public.announcements add column if not exists poll_options jsonb;
 

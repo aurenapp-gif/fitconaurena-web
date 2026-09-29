@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OPCIONES_POR_DEFECTO, MAX_OPCIONES, MAX_LARGO_OPCION, sanearOpciones } from "@/lib/votaciones";
+import { TEXTO_DIA_LLAMADA } from "@/lib/llamada-grupal";
 
 /** Publicación de un comunicado (solo la coach). Al publicar se avisa por email
  * y notificación a todas las clientas, así que se confirma antes de enviar. */
@@ -69,7 +70,8 @@ export default function AnnouncementForm() {
           <span className="text-sm text-ink">🗳️ Que puedan votar</span>
         </label>
         <p className="text-xs text-ink-subtle mt-1 ml-7">
-          Para preguntarles algo: «¿cambiamos la llamada grupal al jueves?». Cada clienta vota una vez y puede cambiar su voto.
+          Para preguntarles algo: «¿os viene mejor la llamada de los {TEXTO_DIA_LLAMADA} media hora antes?».
+          Cada clienta vota una vez y puede cambiar su voto.
         </p>
 
         {votar && (
