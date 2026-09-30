@@ -17,7 +17,7 @@ import { litros, pasos, pauta, type Supplement } from "@/lib/suplementos";
 import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento, type Renovacion } from "@/lib/renovaciones";
 import { rachaDias, semanaDe } from "@/lib/habitos";
 import { nombresDe } from "@/lib/entreno";
-import type { Questionnaire } from "@/lib/profile";
+import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
@@ -223,6 +223,10 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
     </div>
   );
 
+  // Si no lo ha entregado, su perfil se abre por esta pestaña: es lo que su
+  // coach está esperando, y buscarlo entre cinco pestañas no es evidente.
+  const faltaCuestionario = !admin && cuestionarioPendiente(profile);
+
   const profileForm = (
     <ProfileForm
       initialName={profile?.display_name ?? ""}
@@ -244,11 +248,11 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
             profileForm
           ) : (
             <PerfilTabs
-              initial={searchParams?.tab}
+              initial={searchParams?.tab ?? (faltaCuestionario ? "cuestionario" : undefined)}
               tabs={[
                 { id: "planes", label: "Planes", node: planesTab },
                 { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} aguaObjetivo={agua} pasosObjetivo={pasosObj} /> },
-                { id: "cuestionario", label: "Datos", node: (
+                { id: "cuestionario", label: "Cuestionario", aviso: faltaCuestionario, node: (
                   <div className="flex flex-col gap-5">
                     {profileForm}
                     <Grupo label="Ajustes">

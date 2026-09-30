@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
-type Tab = { id: string; label: string; node: React.ReactNode };
+type Tab = { id: string; label: string; node: React.ReactNode; aviso?: boolean };
 
 /**
- * Secciones del perfil como control segmentado (Planes · Hábitos · Datos…).
+ * Secciones del perfil como control segmentado (Planes · Hábitos · Cuestionario…).
  *
  * Recibe el contenido ya renderizado de cada pestaña. La activa se refleja en
  * la URL (`?tab=habitos`) sin recargar, para que un enlace desde el inicio
@@ -48,6 +48,9 @@ export default function PerfilTabs({ tabs, initial }: { tabs: Tab[]; initial?: s
               }`}
             >
               {t.label}
+              {t.aviso && (
+                <span aria-label="pendiente" className="ml-1 inline-block w-[7px] h-[7px] rounded-full bg-warn align-middle" />
+              )}
             </button>
           );
         })}

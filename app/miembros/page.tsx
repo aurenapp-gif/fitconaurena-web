@@ -5,7 +5,7 @@ import CallCountdown from "@/components/CallCountdown";
 import { Barra, Fila, FilaAccion, Grupo, NotaCoach } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { type Questionnaire } from "@/lib/profile";
+import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { onboardingDisponible } from "@/lib/onboarding";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
@@ -28,6 +28,7 @@ type Profile = {
   display_name: string | null;
   photo_path: string | null;
   questionnaire: Questionnaire | null;
+  questionnaire_completed_at: string | null;
   steps_target?: number | null;
   water_target_l?: number | null;
 };
@@ -69,7 +70,7 @@ export default async function MiembrosPage() {
   // Todo lo de la clienta en una sola ida y vuelta. Cada consulta falla por su
   // cuenta: un fallo en una no deja la pantalla en blanco.
   const [profile, planes, revision, habitos, pendingDocs, coach, comidasHechas] = await Promise.all([
-    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,steps_target,water_target_l&email=eq.${e}`)
+    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,questionnaire_completed_at,steps_target,water_target_l&email=eq.${e}`)
       .then((r) => r[0] ?? null)
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
@@ -169,6 +170,11 @@ export default async function MiembrosPage() {
   // por qué, que es lo que de verdad no sabe el primer día.
   //
   // Desaparece cuando los ha visto los tres, igual que desaparecía la lista.
+  // El cuestionario es lo primero que necesita su coach para prepararle el
+  // plan, así que si falta se avisa en la portada: dentro del perfil vive en
+  // una pestaña, y una pestaña no se ve si no se busca.
+  const faltaCuestionario = !admin && cuestionarioPendiente(profile);
+
   const videos = onboardingDisponible();
   const vistos = videos.length
     ? new Set(
@@ -247,6 +253,17 @@ export default async function MiembrosPage() {
                 <p className="text-[13px] text-warn/90">Solo te llevará un par de minutos.</p>
               </div>
               <Link href="/miembros/contrato" className="btn-brand text-sm px-4 !min-h-[40px] shrink-0">Rellenar y firmar</Link>
+            </div>
+          )}
+
+          {/* Cuestionario sin entregar: sin él su coach no puede empezar. */}
+          {faltaCuestionario && (
+            <div className="rounded-[14px] bg-warn-soft px-4 py-3.5 mb-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold text-warn">Te falta rellenar tu cuestionario</p>
+                <p className="text-[13px] text-warn/90">Es lo que tu coach necesita para preparar tu plan.</p>
+              </div>
+              <Link href="/miembros/perfil?tab=cuestionario" className="btn-brand text-sm px-4 !min-h-[40px] shrink-0">Rellenarlo</Link>
             </div>
           )}
 
