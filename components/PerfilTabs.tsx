@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Tab = { id: string; label: string; node: React.ReactNode; aviso?: boolean };
 
@@ -14,6 +14,15 @@ type Tab = { id: string; label: string; node: React.ReactNode; aviso?: boolean }
  */
 export default function PerfilTabs({ tabs, initial }: { tabs: Tab[]; initial?: string }) {
   const [active, setActive] = useState(tabs.some((t) => t.id === initial) ? initial! : tabs[0]?.id);
+  const barra = useRef<HTMLDivElement>(null);
+
+  // Con cinco pestañas no caben todas en un móvil estrecho: la fila se
+  // desplaza. Si la que está abierta es una del medio, se trae a la vista al
+  // entrar; si no, se abriría una pestaña que no se ve.
+  useEffect(() => {
+    const el = barra.current?.querySelector('[aria-selected="true"]');
+    el?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [active]);
 
   function elegir(id: string) {
     setActive(id);
@@ -27,9 +36,10 @@ export default function PerfilTabs({ tabs, initial }: { tabs: Tab[]; initial?: s
   return (
     <div>
       <div
+        ref={barra}
         role="tablist"
         aria-label="Secciones del perfil"
-        className="flex gap-1 p-1 rounded-xl bg-line mb-4 overflow-x-auto"
+        className="flex gap-0.5 p-1 rounded-xl bg-line mb-4 overflow-x-auto"
         style={{ scrollbarWidth: "none" }}
       >
         {tabs.map((t) => {
@@ -43,7 +53,7 @@ export default function PerfilTabs({ tabs, initial }: { tabs: Tab[]; initial?: s
               aria-selected={on}
               aria-controls={`panel-${t.id}`}
               onClick={() => elegir(t.id)}
-              className={`flex-1 min-h-[36px] px-2 sm:px-2.5 rounded-[9px] text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-colors ${
+              className={`flex-1 min-h-[36px] px-1.5 sm:px-2.5 rounded-[9px] text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-colors ${
                 on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"
               }`}
             >
