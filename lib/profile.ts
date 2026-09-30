@@ -58,6 +58,26 @@ export function questionnaireComplete(q: Questionnaire): boolean {
   });
 }
 
+/**
+ * ¿Le falta todavía el cuestionario?
+ *
+ * Dos formas de tenerlo hecho, y las dos valen: haber pulsado «Enviar
+ * cuestionario» (`questionnaire_completed_at`) o tener rellenos los campos
+ * obligatorios. La segunda es la de las clientas de antes, que respondieron
+ * cuando no existía el botón de enviar: si no contara, se les avisaría de algo
+ * que ya hicieron.
+ *
+ * Sin ficha (la consulta falló) se devuelve `false`: mejor no avisar que
+ * avisar en falso a quien ya lo entregó.
+ */
+export function cuestionarioPendiente(
+  p: { questionnaire?: Questionnaire | null; questionnaire_completed_at?: string | null } | null | undefined
+): boolean {
+  if (!p) return false;
+  if ((p.questionnaire_completed_at ?? "").trim() !== "") return false;
+  return !questionnaireComplete(p.questionnaire ?? {});
+}
+
 /** Fecha (YYYY-MM-DD) un mes después de `from` (por defecto, hoy). */
 export function plusOneMonthISO(from: Date = new Date()): string {
   const d = new Date(from);
