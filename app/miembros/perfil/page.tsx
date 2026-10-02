@@ -15,7 +15,7 @@ import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { callDay, DEFAULT_TITLE, type MemberCall } from "@/lib/llamadas";
 import { litros, pasos, pauta, type Supplement } from "@/lib/suplementos";
 import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrenamiento, type Renovacion } from "@/lib/renovaciones";
-import { rachaDias, semanaDe } from "@/lib/habitos";
+import { rachaDias, semanaDe, diasApuntables } from "@/lib/habitos";
 import { nombresDe } from "@/lib/entreno";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
@@ -186,6 +186,11 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   const loggedDays = new Set(habitRows.map((r) => r.day));
   const todayRow = habitRows.find((r) => r.day === hoy);
   const habitToday = { water: todayRow?.water ?? null, steps: todayRow?.steps ?? null, sleep: todayRow?.sleep ?? null, cycle_day: todayRow?.cycle_day ?? null, energy: todayRow?.energy ?? null };
+  // Lo que ya tiene apuntado cada día de la última semana, para que al tocar
+  // un día anterior salga lo suyo y no lo de hoy.
+  const valoresPorDia = Object.fromEntries(
+    habitRows.map((r) => [r.day, { water: r.water ?? null, steps: r.steps ?? null, sleep: r.sleep ?? null, cycle_day: r.cycle_day ?? null, energy: r.energy ?? null }])
+  );
   const habitStreak = rachaDias(loggedDays, hoy);
   const semana = semanaDe(hoy, loggedDays);
 
@@ -251,7 +256,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
               initial={searchParams?.tab ?? (faltaCuestionario ? "cuestionario" : undefined)}
               tabs={[
                 { id: "planes", label: "Planes", node: planesTab },
-                { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} aguaObjetivo={agua} pasosObjetivo={pasosObj} /> },
+                { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} dias={diasApuntables(hoy, loggedDays)} valores={valoresPorDia} aguaObjetivo={agua} pasosObjetivo={pasosObj} /> },
                 { id: "cuestionario", label: "Cuestionario", aviso: faltaCuestionario, node: (
                   <div className="flex flex-col gap-5">
                     {profileForm}

@@ -59,3 +59,47 @@ export function parseDiaCiclo(v: unknown): number | null {
   const n = Math.round(Number(v));
   return Number.isFinite(n) && n >= 1 && n <= 45 ? n : null;
 }
+
+/** Cuántos días atrás se puede apuntar. Una semana: lo que se recuerda de verdad. */
+export const DIAS_ATRAS = 6;
+
+export type DiaApuntable = {
+  fecha: string;
+  /** «Hoy», «Ayer», «Sábado». */
+  etiqueta: string;
+  /** Ya tiene algo apuntado. */
+  done: boolean;
+};
+
+const DIAS_LARGOS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+/**
+ * Los días que puede rellenar: hoy y los seis anteriores, del más antiguo al
+ * más reciente.
+ *
+ * Se cuenta hacia atrás desde hoy y no por semana natural a propósito: un
+ * lunes, lo que se le ha pasado es el domingo, y con la semana natural ese día
+ * ya no se podría tocar.
+ */
+export function diasApuntables(hoy: string, registrados: Set<string>, atras = DIAS_ATRAS): DiaApuntable[] {
+  const base = new Date(`${hoy}T00:00:00Z`);
+  const out: DiaApuntable[] = [];
+  for (let i = atras; i >= 0; i--) {
+    const x = new Date(base);
+    x.setUTCDate(base.getUTCDate() - i);
+    const fecha = x.toISOString().slice(0, 10);
+    const etiqueta = i === 0 ? "Hoy" : i === 1 ? "Ayer" : DIAS_LARGOS[x.getUTCDay()];
+    out.push({ fecha, etiqueta, done: registrados.has(fecha) });
+  }
+  return out;
+}
+
+/** ¿Se puede apuntar ese día? Ni en el futuro ni más allá de la semana. */
+export function sePuedeApuntar(dia: string, hoy: string, atras = DIAS_ATRAS): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return false;
+  const d = Date.parse(`${dia}T00:00:00Z`);
+  const h = Date.parse(`${hoy}T00:00:00Z`);
+  if (!Number.isFinite(d) || !Number.isFinite(h)) return false;
+  const diferencia = Math.round((h - d) / 86400000);
+  return diferencia >= 0 && diferencia <= atras;
+}

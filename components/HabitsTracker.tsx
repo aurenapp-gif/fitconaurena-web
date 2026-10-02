@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { litros, pasos as fmtPasos, miles } from "@/lib/suplementos";
-import { ENERGIA, litrosDeVasos, textoLitros, type DiaSemana } from "@/lib/habitos";
+import { ENERGIA, litrosDeVasos, textoLitros, type DiaApuntable, type DiaSemana } from "@/lib/habitos";
 import { Barra, Grupo } from "@/components/Grupo";
 import { aPunto, filtraDecimal, filtraEntero } from "@/lib/numeros";
 
@@ -21,18 +21,26 @@ export default function HabitsTracker({
   initial,
   streak,
   semana,
+  dias,
+  valores,
   aguaObjetivo,
   pasosObjetivo,
 }: {
   initial: Today;
   streak: number;
   semana: DiaSemana[];
+  /** Hoy y los seis días anteriores, por si se le pasó alguno. */
+  dias?: DiaApuntable[];
+  /** Lo que ya tiene apuntado cada uno de esos días. */
+  valores?: Record<string, Today>;
   /** Litros al día que le ha puesto su coach, si le ha puesto alguno. */
   aguaObjetivo?: number | null;
   /** Pasos al día que le ha puesto su coach, si le ha puesto alguno. */
   pasosObjetivo?: number | null;
 }) {
   const router = useRouter();
+  const hoyFecha = dias && dias.length > 0 ? dias[dias.length - 1].fecha : "";
+  const [dia, setDia] = useState<string>(hoyFecha);
   const [water, setWater] = useState<number>(initial.water ?? 0); // en vasos
   const [steps, setSteps] = useState<string>(initial.steps != null ? String(initial.steps) : "");
   const [sleep, setSleep] = useState<string>(initial.sleep != null ? String(initial.sleep) : "");
@@ -40,6 +48,23 @@ export default function HabitsTracker({
   const [energia, setEnergia] = useState<number | null>(initial.energy ?? null);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errMsg, setErrMsg] = useState("");
+
+  /** Cambiar de día trae lo que ya tenía apuntado ese día, no lo de hoy. */
+  function elegirDia(fecha: string) {
+    if (fecha === dia) return;
+    const v = valores?.[fecha] ?? { water: null, steps: null, sleep: null, cycle_day: null, energy: null };
+    setDia(fecha);
+    setWater(v.water ?? 0);
+    setSteps(v.steps != null ? String(v.steps) : "");
+    setSleep(v.sleep != null ? String(v.sleep) : "");
+    setCiclo(v.cycle_day != null ? String(v.cycle_day) : "");
+    setEnergia(v.energy ?? null);
+    setStatus("idle");
+    setErrMsg("");
+  }
+
+  const esHoy = dia === "" || dia === hoyFecha;
+  const etiquetaDia = dias?.find((d) => d.fecha === dia)?.etiqueta ?? "Hoy";
 
   async function save() {
     if (status === "saving") return;
@@ -55,6 +80,7 @@ export default function HabitsTracker({
           sleep: sleep === "" ? null : Number(aPunto(sleep)),
           cycle_day: ciclo === "" ? null : Number(ciclo),
           energy: energia,
+          ...(esHoy ? {} : { day: dia }),
         }),
       });
       if (!res.ok) {
@@ -106,6 +132,46 @@ export default function HabitsTracker({
           ))}
         </div>
       </Grupo>
+
+      {/* Qué día se está apuntando. Casi siempre hoy; esto está para el día
+          que se le pasó, que si no se queda sin apuntar para siempre. */}
+      {dias && dias.length > 1 && (
+        <Grupo
+          label="Qué día apuntas"
+          foot={esHoy
+            ? "Si se te pasó un día, tócalo y rellénalo. Puedes volver hasta una semana atrás."
+            : `Estás apuntando ${etiquetaDia.toLowerCase()}. Lo que guardes va a ese día, no a hoy.`}
+        >
+          <div className="flex gap-1.5 px-4 py-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            {dias.map((d) => {
+              const activo = d.fecha === dia;
+              return (
+                <button
+                  key={d.fecha}
+                  type="button"
+                  onClick={() => elegirDia(d.fecha)}
+                  aria-pressed={activo}
+                  className={`shrink-0 min-h-[40px] px-3 rounded-full text-[14px] font-semibold border transition-colors ${
+                    activo ? "bg-brand text-white border-brand" : "border-line text-ink-muted"
+                  }`}
+                >
+                  {d.etiqueta}
+                  {d.done && <span className={activo ? "text-white/70" : "text-brand"}> ✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </Grupo>
+      )}
+
+      {!esHoy && (
+        <div className="rounded-[14px] bg-warn-soft px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-[15px] font-semibold text-warn">Rellenando {etiquetaDia.toLowerCase()}</p>
+          <button type="button" onClick={() => elegirDia(hoyFecha)} className="text-[14px] text-warn underline min-h-[40px]">
+            Volver a hoy
+          </button>
+        </div>
+      )}
 
       {/* «Cada paso» se leía como los pasos del día, que están en el grupo de
           justo debajo. Aquí un paso era una pulsación del botón. */}
@@ -162,7 +228,7 @@ export default function HabitsTracker({
       </Grupo>
 
       <button type="button" onClick={save} disabled={status === "saving"} className="btn-brand text-[17px] w-full !min-h-[50px] disabled:opacity-60">
-        {status === "saving" ? "Guardando…" : status === "saved" ? "Guardado" : "Guardar mi día"}
+        {status === "saving" ? "Guardando…" : status === "saved" ? "Guardado" : esHoy ? "Guardar mi día" : `Guardar ${etiquetaDia.toLowerCase()}`}
       </button>
       {status === "error" && <p role="alert" className="text-sm text-danger text-center -mt-2">{errMsg || "No se pudo guardar."}</p>}
     </div>

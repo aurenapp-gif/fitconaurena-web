@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbUpsert } from "@/lib/supabase";
-import { parseDiaCiclo } from "@/lib/habitos";
+import { parseDiaCiclo, sePuedeApuntar, DIAS_ATRAS } from "@/lib/habitos";
 
 export const runtime = "nodejs";
 
@@ -10,8 +10,14 @@ function todayMadrid(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
 }
 
-// Guarda (upsert) el registro de hábitos de HOY de la clienta. Idempotente por
-// la clave (member_email, day): volver a guardar el mismo día actualiza la fila.
+// Guarda (upsert) el registro de hábitos de un día de la clienta. Idempotente
+// por la clave (member_email, day): volver a guardar el mismo día actualiza la
+// fila.
+//
+// Sin `day` se guarda hoy, que es lo normal. Con `day` se rellena un día que se
+// le pasó, hasta una semana atrás: más allá ya no se acuerda nadie de cuánto
+// durmió, y dejar rellenar meses convertiría la constancia en un número que no
+// significa nada. El futuro no se puede apuntar.
 //
 // El agua llega en VASOS (enteros): en pantalla se enseña en litros, pero un
 // paso del contador es un vaso, así que no hay decimales que guardar.
@@ -20,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  let body: { water?: unknown; steps?: unknown; sleep?: unknown; cycle_day?: unknown; energy?: unknown };
+  let body: { water?: unknown; steps?: unknown; sleep?: unknown; cycle_day?: unknown; energy?: unknown; day?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -34,9 +40,18 @@ export async function POST(req: NextRequest) {
   };
   const energia = num(body.energy, 5);
 
+  const hoy = todayMadrid();
+  const dia = typeof body.day === "string" && body.day ? body.day : hoy;
+  if (!sePuedeApuntar(dia, hoy)) {
+    return NextResponse.json(
+      { error: `Solo puedes apuntar desde hace ${DIAS_ATRAS} días hasta hoy.` },
+      { status: 400 }
+    );
+  }
+
   const fila = {
     member_email: email,
-    day: todayMadrid(),
+    day: dia,
     water: num(body.water, 40),
     steps: num(body.steps, 100000),
     sleep: num(body.sleep, 24),
