@@ -18,6 +18,7 @@ import {
   type Fuente,
 } from "./evidencia";
 import { NOMBRE_GRUPO, seriesPorGrupo, type Grupo } from "./musculos";
+import { KCAL_SUELO, PROTEINA_G_KG, gastoImplicito, metabolismoBasal, proteinaPorKg } from "./nutricion";
 
 export type Prioridad = "alta" | "media" | "baja" | "info";
 
@@ -46,8 +47,15 @@ export type Habito = {
 };
 export type Serie = { ejercicio: string; peso?: number | string | null; reps?: number | string | null; created_at: string };
 
+/** La pauta del plan de alimentación vigente. */
+export type PautaNutricion = { kcal: number | null; proteina: number | null; tienePlan: boolean };
+
 export type DatosClienta = {
   objetivo: string | null;
+  /** Para el metabolismo basal. Sin esto no hay cuentas de comida. */
+  alturaCm?: number | null;
+  edad?: number | null;
+  nutricion?: PautaNutricion | null;
   /** De la más antigua a la más reciente. */
   revisiones: Revision[];
   habitos: Habito[];
@@ -346,6 +354,84 @@ export function analizar(d: DatosClienta): Hallazgo[] {
       dato: "Sin series apuntadas en 28 días.",
       quehacer: "Sin esto no se puede ver si progresa ni cuántas series hace por grupo. Es lo que más información daría.",
     });
+  }
+
+  // ---- Alimentación --------------------------------------------------------
+  //
+  // Todo esto necesita la pauta del plan (kcal y proteína). Sin ella no se
+  // opina de comida: se pide el dato, que es lo único honesto.
+  const pesoActual = (() => {
+    for (let i = revisiones.length - 1; i >= 0; i--) {
+      const kg = num(revisiones[i].weight);
+      if (kg !== null && kg > 0) return kg;
+    }
+    return null;
+  })();
+  const basal = metabolismoBasal(pesoActual, d.alturaCm ?? null, d.edad ?? null);
+  const pauta = d.nutricion ?? null;
+
+  if (pauta?.tienePlan && !pauta.kcal && !pauta.proteina) {
+    h.push({
+      id: "sin-pauta",
+      prioridad: "info",
+      titulo: "No sé qué le has pautado de comer",
+      dato: "Su plan de alimentación no tiene apuntadas las calorías ni la proteína.",
+      quehacer: "Apúntalas en su ficha, debajo del plan. Con eso se puede saber si el problema es la pauta o lo que se come de verdad.",
+    });
+  }
+
+  if (pauta?.proteina && pesoActual) {
+    const gkg = proteinaPorKg(pauta.proteina, pesoActual);
+    if (gkg !== null && gkg < PROTEINA_G_KG.minimo) {
+      const faltan = Math.round((PROTEINA_G_KG.bueno - gkg) * pesoActual);
+      h.push({
+        id: "proteina-baja",
+        prioridad: "alta",
+        titulo: "Se queda corta de proteína",
+        dato: `${un(gkg, 2)} g por kilo (${pauta.proteina} g para ${un(pesoActual)} kg). En déficit hacen falta ${PROTEINA_G_KG.minimo}.`,
+        quehacer: `Subir unos ${faltan} g al día hasta ${Math.round(PROTEINA_G_KG.bueno * pesoActual)} g. Es lo que decide cuánto de lo que pierde es grasa y cuánto es músculo.`,
+        fuente: FUENTES.proteina,
+      });
+    }
+  }
+
+  if (pauta?.kcal && basal) {
+    if (pauta.kcal < basal || pauta.kcal < KCAL_SUELO) {
+      h.push({
+        id: "kcal-bajo-basal",
+        prioridad: "alta",
+        titulo: "La pauta está por debajo de lo que gasta en reposo",
+        dato: `${pauta.kcal.toLocaleString("es-ES")} kcal pautadas y su metabolismo basal estimado son ${basal.toLocaleString("es-ES")} kcal.`,
+        quehacer: "Subir la pauta. Por debajo del basal no se acelera nada: se pierde más músculo, se hunde el rendimiento y en mujeres aparecen alteraciones del ciclo.",
+        fuente: FUENTES.energia,
+      });
+    }
+  }
+
+  // La cuenta que separa el metabolismo de la adherencia.
+  if (pauta?.kcal && basal && ritmo) {
+    const gasto = gastoImplicito(pauta.kcal, ritmo.kg, Math.round(ritmo.semanas * 7));
+    if (gasto !== null) {
+      if (gasto < basal * 1.1) {
+        h.push({
+          id: "come-mas-de-lo-que-cree",
+          prioridad: "alta",
+          titulo: "Los números solo cuadran si come más de lo pautado",
+          dato: `Con ${pauta.kcal.toLocaleString("es-ES")} kcal y ${un(ritmo.kg)} kg en ${un(ritmo.semanas)} semanas, su gasto tendría que ser ${gasto.toLocaleString("es-ES")} kcal/día. Su basal estimado es ${basal.toLocaleString("es-ES")}.`,
+          quehacer: "Nadie gasta menos que su metabolismo basal entrenando y andando, así que la pauta no se está cumpliendo. Antes de bajarle calorías, repasa con ella fines de semana, aceite, bebidas y picoteo. Bajar la pauta de quien no la cumple solo agranda el hueco.",
+          fuente: FUENTES.subregistro,
+        });
+      } else if (gasto > basal * 1.2 && gasto < basal * 2.2) {
+        h.push({
+          id: "pauta-calibrada",
+          prioridad: "info",
+          titulo: "La pauta cuadra con lo que está pasando",
+          dato: `Su gasto estimado es ${gasto.toLocaleString("es-ES")} kcal/día (${un(gasto / basal, 2)} veces su basal), coherente con las ${pauta.kcal.toLocaleString("es-ES")} pautadas.`,
+          quehacer: "El plan está bien calibrado. Si hay que cambiar algo, que no sean las calorías.",
+          fuente: FUENTES.subregistro,
+        });
+      }
+    }
   }
 
   // ---- Cintura: ruido y medidas imposibles ---------------------------------

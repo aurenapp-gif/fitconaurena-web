@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import PlanUpload from "@/components/PlanUpload";
 import PlanDelete from "@/components/PlanDelete";
+import MacrosPlan from "@/components/MacrosPlan";
 import PlanTypeSwitch from "@/components/PlanTypeSwitch";
 import RenewalSetter from "@/components/RenewalSetter";
 import ServiceEndSetter from "@/components/ServiceEndSetter";
@@ -26,6 +27,7 @@ import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
 import { faseEnCurso, SETUP_SQL as ESTRATEGIA_SQL, type Fase } from "@/lib/estrategia";
+import { detectarMacros } from "@/lib/nutricion";
 import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe } from "@/lib/renovaciones";
 import { claveEjercicio, textoPeso, textoUltimaVez, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio } from "@/lib/entreno";
@@ -43,7 +45,7 @@ type Prof = {
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
   strategy_phase?: number | null;
 };
-type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null };
+type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null; kcal?: number | null; protein_g?: number | null; contenido?: string | null };
 type CheckIn = { weight: number | null; created_at: string; exercises?: unknown };
 type Activity = { action: string; detail: string | null; created_at: string };
 
@@ -501,6 +503,16 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
                       </span>
                     </div>
+                    {p.type === "nutricion" && (
+                      <div className="border-t border-line mt-1.5 pt-1.5">
+                        <MacrosPlan
+                          planId={p.id}
+                          kcal={p.kcal ?? null}
+                          proteina={p.protein_g ?? null}
+                          detectado={detectarMacros(p.contenido)}
+                        />
+                      </div>
+                    )}
                     {p.note && <p className="text-xs text-ink-muted mt-1.5 whitespace-pre-wrap border-t border-line pt-1.5">💬 {p.note}</p>}
                     {nombresDe(p.exercises).length > 0 && <p className="text-xs text-ink-muted mt-1.5 border-t border-line pt-1.5">Ejercicios: {nombresDe(p.exercises).join(" · ")}</p>}
                   </div>

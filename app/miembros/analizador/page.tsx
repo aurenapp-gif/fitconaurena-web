@@ -11,6 +11,7 @@ import { sbSelect } from "@/lib/supabase";
 import { hoyMadrid } from "@/lib/renovaciones";
 import { analizar, resumenCorto, type Habito, type Revision, type Serie } from "@/lib/analisis";
 import { objetivoDe } from "@/lib/progreso";
+import { edadDe } from "@/lib/profile";
 
 export const metadata: Metadata = { title: "Analizador", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -45,7 +46,7 @@ export default async function AnalizadorPage({ searchParams }: { searchParams?: 
   if (hay) {
     const e = encodeURIComponent(elegida);
     const desde = new Date(Date.now() - 70 * 86400000).toISOString();
-    const [perfil, revisiones, habitos, series] = await Promise.all([
+    const [perfil, revisiones, habitos, series, planNutri] = await Promise.all([
       sbSelect<{ questionnaire: Record<string, string> | null; steps_target: number | null; display_name: string | null }>(
         "profiles", `select=questionnaire,steps_target,display_name&email=eq.${e}`
       ).then((r) => r[0] ?? null).catch(() => null),
@@ -55,6 +56,17 @@ export default async function AnalizadorPage({ searchParams }: { searchParams?: 
         .catch(() => [] as Habito[]),
       sbSelect<Serie>("workout_sets", `select=ejercicio,peso,reps,created_at&member_email=eq.${e}&created_at=gte.${desde}&order=created_at.desc&limit=1000`)
         .catch(() => [] as Serie[]),
+      // Su plan de alimentación vigente, con lo que le pauta de comer. Si aún
+      // no existen esas columnas (falta supabase/nutricion.sql) se pide sin
+      // ellas, para que el resto del analizador siga funcionando.
+      sbSelect<{ kcal: number | null; protein_g: number | null }>(
+        "plans", `select=kcal,protein_g&member_email=eq.${e}&type=eq.nutricion&order=created_at.desc&limit=1`
+      ).then((r) => ({ fila: r[0] ?? null, hayPlan: r.length > 0 }))
+        .catch(() =>
+          sbSelect<{ id: string }>("plans", `select=id&member_email=eq.${e}&type=eq.nutricion&limit=1`)
+            .then((r) => ({ fila: null, hayPlan: r.length > 0 }))
+            .catch(() => ({ fila: null, hayPlan: false }))
+        ),
     ]);
     nombre = perfil?.display_name?.trim() || clientas.find((c) => c.email === elegida)?.nombre || elegida;
     hallazgos = analizar({
@@ -62,6 +74,13 @@ export default async function AnalizadorPage({ searchParams }: { searchParams?: 
       revisiones,
       habitos,
       series,
+      alturaCm: Number(perfil?.questionnaire?.altura) || null,
+      edad: edadDe(perfil?.questionnaire?.fecha_nacimiento),
+      nutricion: {
+        kcal: planNutri.fila?.kcal ?? null,
+        proteina: planNutri.fila?.protein_g ?? null,
+        tienePlan: planNutri.hayPlan,
+      },
       pasosObjetivo: perfil?.steps_target ?? null,
       hoy: hoyMadrid(),
     });
