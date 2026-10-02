@@ -4,8 +4,9 @@
 --
 --  Es seguro ejecutarlo varias veces: no duplica ni borra nada.
 --  Activa: comunicados, llamadas grupales, comentarios en los
---  planes, medidas nuevas de check-in, pantalla de bienvenida y
---  registro de uso del servicio.
+--  planes, medidas nuevas de check-in, pantalla de bienvenida,
+--  registro de uso del servicio, las comidas del día, la
+--  contabilidad, el mapa de fases y la pauta de cada plan.
 -- ============================================================
 
 -- 1) COMUNICADOS Y LLAMADAS GRUPALES ------------------------
@@ -80,3 +81,92 @@ begin
     raise notice 'RLS activado en %', t.relname;
   end loop;
 end $$;
+
+-- 6) LAS COMIDAS QUE VA MARCANDO EN EL DÍA ------------------
+create table if not exists public.meal_logs (
+  id           uuid primary key default gen_random_uuid(),
+  member_email text not null,
+  -- El día en horario de Madrid, YYYY-MM-DD.
+  day          date not null,
+  -- El nombre de la comida normalizado. Se guarda por nombre y no por
+  -- posición: si el plan nuevo viene en otro orden, lo que marcó sigue
+  -- siendo lo que marcó.
+  comida       text not null,
+  created_at   timestamptz not null default now(),
+  -- Marcar dos veces la misma comida no crea dos filas.
+  unique (member_email, day, comida)
+);
+
+create index if not exists meal_logs_member_idx
+  on public.meal_logs (member_email, day desc);
+
+alter table public.meal_logs enable row level security;
+
+-- 7) CONTABILIDAD: VENTAS Y COBROS --------------------------
+--
+-- El dinero va en CÉNTIMOS y entero, nunca en decimales: 2.500,50 € son
+-- 250050. Los decimales de coma flotante pierden céntimos al sumar, y en
+-- dinero eso no se perdona.
+create table if not exists public.ventas (
+  id           uuid primary key default gen_random_uuid(),
+  member_email text not null,
+  concepto     text,
+  importe_cent bigint not null,
+  fecha        date not null,
+  metodo       text,
+  nota         text,
+  created_at   timestamptz not null default now()
+);
+
+create table if not exists public.cobros (
+  id           uuid primary key default gen_random_uuid(),
+  member_email text not null,
+  -- Si se borra la venta, el cobro se queda: el dinero entró, y eso no se
+  -- puede borrar por arrastre.
+  venta_id     uuid references public.ventas (id) on delete set null,
+  importe_cent bigint not null,
+  fecha        date not null,
+  metodo       text,
+  nota         text,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists ventas_fecha_idx  on public.ventas (fecha desc);
+create index if not exists ventas_member_idx on public.ventas (member_email);
+create index if not exists cobros_fecha_idx  on public.cobros (fecha desc);
+create index if not exists cobros_member_idx on public.cobros (member_email);
+
+alter table public.ventas enable row level security;
+alter table public.cobros enable row level security;
+
+-- 8) EL MAPA DE FASES DE LA ESTRATEGIA ----------------------
+create table if not exists public.strategy_phases (
+  id           uuid primary key default gen_random_uuid(),
+  member_email text not null,
+  -- Orden dentro del mapa, empezando en 1. Es lo que da el «3 de 6».
+  posicion     int not null,
+  titulo       text not null,
+  -- Qué se hace en esta fase. Lo lee la clienta.
+  detalle      text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (member_email, posicion)
+);
+
+create index if not exists strategy_phases_member_idx
+  on public.strategy_phases (member_email, posicion);
+
+-- En qué fase está AHORA. Se guarda la POSICIÓN, no el id de la fila: si se
+-- borra una fase y se renumeran, la clienta sigue en el punto del recorrido
+-- donde estaba. null = la coach aún no la ha marcado, y entonces no ve nada.
+alter table public.profiles add column if not exists strategy_phase int;
+
+alter table public.strategy_phases enable row level security;
+
+-- 9) LA PAUTA DE CADA PLAN DE ALIMENTACIÓN ------------------
+--
+-- Sin esto el analizador no puede decir nada preciso de la comida: ve que el
+-- peso no se mueve, pero no si es porque la pauta se queda corta de proteína
+-- o porque no se está comiendo lo que pone el plan.
+alter table public.plans add column if not exists kcal      int;
+alter table public.plans add column if not exists protein_g int;
