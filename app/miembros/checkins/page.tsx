@@ -15,11 +15,13 @@ import { requireMember } from "@/lib/guard";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
 import { diaDe, fechaCorta } from "@/lib/renovaciones";
+import { comparacionDeFotos } from "@/lib/comparativa-fotos";
 import { comparar, objetivoDe } from "@/lib/progreso";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio, type Progreso } from "@/lib/entreno";
 import { claveEjercicio, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { avancePorEjercicio, textoAvance } from "@/lib/progreso-entreno";
 import Comparador, { type FotoRevision } from "@/components/Comparador";
+import FotosAntesYAhora, { type ParFirmado } from "@/components/FotosAntesYAhora";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Revisiones", robots: { index: false, follow: false } };
@@ -289,6 +291,24 @@ export default async function CheckinsPage({
     ? cronologicas.filter((r) => hayNumero(r.weight)).map((r) => ({ date: fmt(r.created_at), weight: Number(r.weight) }))
     : [];
 
+  // «Antes y ahora» de la clienta elegida: la primera foto de cada ángulo
+  // frente a la última. Cada ángulo busca las suyas por separado, que no todas
+  // empezaron a hacerse las tres el primer día.
+  const comparacion = filtrada ? comparacionDeFotos(cronologicas) : { pares: [], soloUna: [], sinNinguna: [] };
+  const paresFirmados: ParFirmado[] = await Promise.all(
+    comparacion.pares.map(async (par) => {
+      const [pThumb, pFull, uThumb, uFull] = await Promise.all([
+        signThumb(par.primera.path, 700), sign(par.primera.path),
+        signThumb(par.ultima.path, 700), sign(par.ultima.path),
+      ]);
+      return {
+        id: par.id, nombre: par.nombre, dias: par.dias, peso: par.peso, cintura: par.cintura,
+        primera: { fecha: par.primera.fecha, thumb: pThumb || pFull, full: pFull, peso: par.primera.peso },
+        ultima: { fecha: par.ultima.fecha, thumb: uThumb || uFull, full: uFull, peso: par.ultima.peso },
+      };
+    })
+  );
+
   // Resumen de progreso (solo clienta). rows viene en orden ascendente.
   const mine = admin ? [] : rows;
   const validWeights = mine.filter((r) => hayNumero(r.weight)).map((r) => Number(r.weight));
@@ -479,6 +499,14 @@ export default async function CheckinsPage({
                     Quitar filtro
                   </Link>
                 </div>
+              </div>
+
+              {/* Las fotos primero: es lo que de verdad enseña el cambio. */}
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">
+                  Antes y ahora · su primera foto frente a la última
+                </p>
+                <FotosAntesYAhora pares={paresFirmados} soloUna={comparacion.soloUna} sinNinguna={comparacion.sinNinguna} />
               </div>
 
               {puntosClienta.length >= 2 && (
