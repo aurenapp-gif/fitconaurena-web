@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySession, isAdmin, adminEmails } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, isAdmin, adminEmails, getMembers } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect } from "@/lib/supabase";
 import { faseEnCurso, type Fase } from "@/lib/estrategia";
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const desde30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const coachEmail = adminEmails()[0];
 
-  const [perfil, fases, revisiones, habitos, coachPerfil] = await Promise.all([
+  const [perfil, fases, revisiones, habitos, coachPerfil, miembros] = await Promise.all([
     sbSelect<{ display_name: string | null; strategy_phase: number | null }>(
       "profiles", `select=display_name,strategy_phase&email=eq.${e}`
     ).then((r) => r[0] ?? null).catch(() => null),
@@ -70,9 +70,16 @@ export async function POST(req: NextRequest) {
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
       : Promise.resolve(null),
+    // El nombre puede no estar en su ficha: muchas se dieron de alta antes de
+    // que existiera ese campo y el nombre vive en MailerLite. Un PDF que la
+    // llama por su correo no se le manda a nadie.
+    getMembers().catch(() => [] as { email: string; name: string }[]),
   ]);
 
-  const nombre = perfil?.display_name?.trim() || email.split("@")[0];
+  const nombre =
+    perfil?.display_name?.trim() ||
+    miembros.find((m) => m.email === email)?.name?.trim() ||
+    email.split("@")[0];
   const actual = faseEnCurso(fases, perfil?.strategy_phase);
   const esta = actual ? fases.find((f) => f.posicion === actual) : null;
 
