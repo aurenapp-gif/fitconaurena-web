@@ -192,7 +192,7 @@ export default function HabitsTracker({
 
       <Grupo label="Pasos" foot={pasosObjetivo != null ? `Objetivo: ${fmtPasos(pasosObjetivo)} al día.` : "Los que marque tu móvil o tu reloj."}>
         <label className={fila}>
-          <span>Hoy</span>
+          <span>{etiquetaDia}</span>
           <div className="flex items-center gap-3">
             {pasosObjetivo != null && pastilla(pasosOk, `de ${miles(pasosObjetivo)}`)}
             <input type="text" inputMode="numeric" value={steps} onChange={(e) => setSteps(filtraEntero(e.target.value))} placeholder={pasosObjetivo != null ? miles(pasosObjetivo) : "8000"} aria-label="Pasos de hoy" className={campo} />
@@ -211,8 +211,8 @@ export default function HabitsTracker({
           <input type="text" inputMode="numeric" value={ciclo} onChange={(e) => setCiclo(filtraEntero(e.target.value))} placeholder="—" aria-label="Día del ciclo" className={campo} />
         </label>
         <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-2"><span className="text-[17px] text-ink">Energía de hoy</span></div>
-          <div className="flex gap-1 p-0.5 rounded-lg bg-surface-2" role="radiogroup" aria-label="Energía de hoy">
+          <div className="flex items-center justify-between mb-2"><span className="text-[17px] text-ink">Energía {esHoy ? "de hoy" : `del ${etiquetaDia.toLowerCase()}`}</span></div>
+          <div className="flex gap-1 p-0.5 rounded-lg bg-surface-2" role="radiogroup" aria-label={esHoy ? "Energía de hoy" : `Energía del ${etiquetaDia.toLowerCase()}`}>
             {ENERGIA.map((t, i) => {
               const v = i + 1;
               const on = energia === v;
