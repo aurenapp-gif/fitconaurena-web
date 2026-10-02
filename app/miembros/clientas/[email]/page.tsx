@@ -16,6 +16,7 @@ import CallDelete from "@/components/CallDelete";
 import SetupSql from "@/components/SetupSql";
 import SupplementPlan from "@/components/SupplementPlan";
 import Renovaciones from "@/components/Renovaciones";
+import MapaEstrategia from "@/components/MapaEstrategia";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from "@/lib/llamadas";
 import { type Supplement } from "@/lib/suplementos";
@@ -24,6 +25,7 @@ import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
+import { faseEnCurso, SETUP_SQL as ESTRATEGIA_SQL, type Fase } from "@/lib/estrategia";
 import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe } from "@/lib/renovaciones";
 import { claveEjercicio, textoPeso, textoUltimaVez, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio } from "@/lib/entreno";
@@ -39,6 +41,7 @@ type Prof = {
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
+  strategy_phase?: number | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null };
 type CheckIn = { weight: number | null; created_at: string; exercises?: unknown };
@@ -130,6 +133,29 @@ export default async function ClientaPage({ params }: { params: { email: string 
     sbSelect<{ created_at: string }>("technique_reviews", `select=created_at&member_email=eq.${encodeURIComponent(member)}`)
       .catch(() => [] as { created_at: string }[]),
   ]);
+
+  // El mapa de fases: el suyo, y de qué otras clientas hay mapa para poder
+  // copiarlo en vez de escribirlo veinticinco veces.
+  let fases: Fase[] = [];
+  let otrasConMapa: { email: string; nombre: string }[] = [];
+  let estrategiaNeedSetup = false;
+  try {
+    const [mias, todas, nombres] = await Promise.all([
+      sbSelect<Fase>("strategy_phases", `select=id,posicion,titulo,detalle&member_email=eq.${encodeURIComponent(member)}&order=posicion.asc`),
+      sbSelect<{ member_email: string }>("strategy_phases", "select=member_email"),
+      sbSelect<{ email: string; display_name: string | null }>("profiles", "select=email,display_name").catch(() => []),
+    ]);
+    fases = mias;
+    const nombreDe = new Map(nombres.map((n) => [n.email, n.display_name || n.email]));
+    otrasConMapa = Array.from(new Set(todas.map((t) => t.member_email)))
+      .filter((e) => e !== member && !isAdmin(e))
+      .map((e) => ({ email: e, nombre: nombreDe.get(e) ?? e }))
+      .sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+  } catch (e) {
+    if (isMissingTable(e)) estrategiaNeedSetup = true;
+    else console.error("[clienta] estrategia", e);
+  }
+  const faseActual = faseEnCurso(fases, profile?.strategy_phase);
 
   // Llamadas estratégicas de esta clienta. Si la tabla aún no existe se avisa
   // con el SQL a mano, en vez de dejar la ficha a medias sin explicar por qué.
@@ -341,6 +367,29 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 : `Esta clienta es anterior al cambio, por eso no tiene fecha. Las altas nuevas la reciben solas: ${SERVICE_MONTHS} meses desde el día del alta.`}
             </p>
             <ServiceEndSetter member={member} current={profile?.service_ends_at ?? undefined} />
+          </div>
+
+          {/* El mapa de la estrategia: por dónde va de su recorrido. */}
+          <div className="card-dark p-6 !transform-none mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+              <h2 className="font-bold text-ink">Mapa de la estrategia</h2>
+              {faseActual !== null && fases.length > 0 && (
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-brand text-white">
+                  Fase {faseActual} de {fases.length}
+                </span>
+              )}
+            </div>
+            {estrategiaNeedSetup ? (
+              <SetupSql title="Falta un paso para poder usar el mapa de fases" sql={ESTRATEGIA_SQL} />
+            ) : (
+              <>
+                <p className="text-xs text-ink-subtle mb-4">
+                  Las fases las escribes tú. Ella las ve en su inicio en cuanto marques por cuál va;
+                  mientras no lo marques, no ve nada.
+                </p>
+                <MapaEstrategia email={member} inicial={fases} actualInicial={faseActual} otras={otrasConMapa} />
+              </>
+            )}
           </div>
 
           {/* Progreso de peso */}

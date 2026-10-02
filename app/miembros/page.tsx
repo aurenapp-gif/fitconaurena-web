@@ -6,7 +6,9 @@ import { Barra, Fila, FilaAccion, Grupo, NotaCoach } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
+import { progresoDeFases, type Fase } from "@/lib/estrategia";
 import { onboardingDisponible } from "@/lib/onboarding";
+import FaseDeLaClienta from "@/components/FaseDeLaClienta";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
@@ -29,6 +31,7 @@ type Profile = {
   photo_path: string | null;
   questionnaire: Questionnaire | null;
   questionnaire_completed_at: string | null;
+  strategy_phase?: number | null;
   steps_target?: number | null;
   water_target_l?: number | null;
 };
@@ -69,8 +72,8 @@ export default async function MiembrosPage() {
 
   // Todo lo de la clienta en una sola ida y vuelta. Cada consulta falla por su
   // cuenta: un fallo en una no deja la pantalla en blanco.
-  const [profile, planes, revision, habitos, pendingDocs, coach, comidasHechas] = await Promise.all([
-    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,questionnaire_completed_at,steps_target,water_target_l&email=eq.${e}`)
+  const [profile, planes, revision, habitos, pendingDocs, coach, fases, comidasHechas] = await Promise.all([
+    sbSelect<Profile>("profiles", `select=display_name,photo_path,questionnaire,questionnaire_completed_at,steps_target,water_target_l,strategy_phase&email=eq.${e}`)
       .then((r) => r[0] ?? null)
       .catch((err) => { console.error("[inicio] profile", err); return null; }),
     admin
@@ -98,6 +101,12 @@ export default async function MiembrosPage() {
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
       : Promise.resolve(null),
+    // Su mapa de fases. Si la tabla aún no existe (falta supabase/estrategia.sql)
+    // se queda vacío y no se enseña nada: es cosa de la coach, no suya.
+    admin
+      ? Promise.resolve([] as Fase[])
+      : sbSelect<Fase>("strategy_phases", `select=posicion,titulo,detalle&member_email=eq.${e}&order=posicion.asc`)
+          .catch(() => [] as Fase[]),
     // Lo que ya ha marcado hoy. Si la tabla todavía no existe (falta ejecutar
     // supabase/dia.sql) se devuelve null, y el día se enseña SIN los tics: un
     // botón que falla al tocarlo es peor que no tenerlo.
@@ -174,6 +183,10 @@ export default async function MiembrosPage() {
   // plan, así que si falta se avisa en la portada: dentro del perfil vive en
   // una pestaña, y una pestaña no se ve si no se busca.
   const faltaCuestionario = !admin && cuestionarioPendiente(profile);
+
+  // Su recorrido. `null` mientras la coach no haya escrito las fases o no haya
+  // marcado por cuál va: media estrategia a medio escribir no ayuda a nadie.
+  const recorrido = admin ? null : progresoDeFases(fases, profile?.strategy_phase);
 
   const videos = onboardingDisponible();
   const vistos = videos.length
@@ -283,6 +296,14 @@ export default async function MiembrosPage() {
                 <div>
                   <span className="group-label">{hoyComidas?.dia && !/^todos/i.test(hoyComidas.dia) ? `Hoy · ${hoyComidas.dia}` : "Hoy comes"}</span>
                   <ComidasDelDia comidas={filasComida} puedeMarcar={puedeMarcar} />
+                </div>
+              )}
+
+              {/* Su recorrido: dónde está dentro del plan entero */}
+              {recorrido && (
+                <div>
+                  <span className="group-label">Tu estrategia</span>
+                  <FaseDeLaClienta fases={fases} progreso={recorrido} />
                 </div>
               )}
 
