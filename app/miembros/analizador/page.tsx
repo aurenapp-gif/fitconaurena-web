@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import Analizador from "@/components/Analizador";
+import EstrategiaDelMes from "@/components/EstrategiaDelMes";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect } from "@/lib/supabase";
@@ -103,6 +104,22 @@ export default async function AnalizadorPage({ searchParams }: { searchParams?: 
                 </div>
               </div>
               <Analizador hallazgos={hallazgos} />
+            </div>
+          )}
+
+          {hay && (
+            <div className="card-dark p-6 !transform-none mt-6">
+              <h2 className="font-bold text-ink mb-1">Estrategia del mes</h2>
+              <p className="text-xs text-ink-subtle mb-4">
+                Escríbelo o díctalo, y sale un PDF para mandárselo por WhatsApp.
+              </p>
+              <EstrategiaDelMes
+                email={elegida}
+                nombre={nombre}
+                sugerencias={hallazgos
+                  .filter((x) => x.prioridad === "alta" || x.prioridad === "media")
+                  .map((x) => x.quehacer)}
+              />
             </div>
           )}
         </div>
