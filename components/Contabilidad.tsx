@@ -57,6 +57,29 @@ export default function Contabilidad({
     }
   }
 
+  const [importando, setImportando] = useState(false);
+  const [importMsg, setImportMsg] = useState("");
+
+  /** Apunta las ventas de los contratos ya firmados que falten. */
+  async function importar() {
+    if (importando) return;
+    setImportando(true); setImportMsg("");
+    try {
+      const res = await fetch("/api/miembros/contabilidad", { method: "PUT" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setImportMsg(d.error ?? "No se pudo importar."); return; }
+      const partes = [
+        d.creadas > 0 ? `${d.creadas} apuntada${d.creadas === 1 ? "" : "s"}` : null,
+        d.yaEstaban > 0 ? `${d.yaEstaban} ya estaba${d.yaEstaban === 1 ? "" : "n"}` : null,
+        Array.isArray(d.sinPrecio) && d.sinPrecio.length > 0
+          ? `${d.sinPrecio.length} sin precio en el titulo (apuntalas a mano)` : null,
+      ].filter(Boolean);
+      setImportMsg(partes.length ? partes.join(" · ") : "No habia contratos que apuntar.");
+      router.refresh();
+    } catch { setImportMsg("Error de conexion."); }
+    finally { setImportando(false); }
+  }
+
   async function borrar(m: Movimiento) {
     if (!confirm(`¿Borrar este apunte de ${textoEuros(m.importe_cent)}?`)) return;
     try {
@@ -119,7 +142,14 @@ export default function Contabilidad({
       </div>
 
       <div>
-        <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Últimos movimientos</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+          <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">Últimos movimientos</p>
+          <button type="button" onClick={importar} disabled={importando}
+            className="btn-outline text-[13px] px-3 py-1.5 disabled:opacity-50">
+            {importando ? "Importando…" : "Importar contratos firmados"}
+          </button>
+        </div>
+        {importMsg && <p className="text-[13px] text-ink-muted mb-2">{importMsg}</p>}
         {movimientos.length === 0 ? (
           <p className="text-[15px] text-ink-muted">Todavía no hay nada apuntado.</p>
         ) : (
@@ -134,6 +164,7 @@ export default function Contabilidad({
                     {m.tipo === "cobro" ? "Cobro" : "Venta"} · {m.fecha}
                     {m.metodo ? ` · ${m.metodo}` : ""}
                     {"concepto" in m && m.concepto ? ` · ${m.concepto}` : ""}
+                    {"origen" in m && m.origen ? " · del contrato" : ""}
                   </span>
                 </span>
                 <span className={`text-[16px] font-bold tabular-nums shrink-0 ${m.tipo === "cobro" ? "text-success" : "text-ink"}`}>

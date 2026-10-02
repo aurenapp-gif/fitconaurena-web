@@ -17,6 +17,7 @@ import { sendContractSignedNotice } from "@/lib/mailer";
 import { sendPushToEmails } from "@/lib/push";
 import { waitUntil } from "@vercel/functions";
 import { bienvenidaSiProcede } from "@/lib/bienvenida";
+import { apuntarVentaDeContrato } from "@/lib/ventas-auto";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -174,6 +175,19 @@ export async function POST(req: NextRequest) {
   // tiene por qué esperar a un correo— pero encargada a la plataforma, que si
   // no la función se congela al responder y el correo se pierde.
   try { waitUntil(bienvenidaSiProcede(me)); } catch { void bienvenidaSiProcede(me); }
+
+  // Un contrato firmado es una venta: se apunta sola, para que la contabilidad
+  // no dependa de acordarse. Va por detrás de la respuesta, como la bienvenida,
+  // y si falla no rompe la firma: lo firmado está firmado.
+  if (esContrato) {
+    const venta = apuntarVentaDeContrato({
+      email: me,
+      titulo: tpl.title,
+      assignmentId: assignment.id,
+      firmadoEl: signedAt.toISOString(),
+    });
+    try { waitUntil(venta); } catch { void venta; }
+  }
 
   // Aviso a la coach (no bloqueante).
   const admins = adminEmails();
