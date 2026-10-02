@@ -22,12 +22,17 @@ function lista(ids: AnguloId[]): string {
 const fecha = (d: string) =>
   new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "2-digit", timeZone: "Europe/Madrid" });
 
+/**
+ * Las fotos van en 9:16, que es la forma de una foto de móvil: en 3:4 había
+ * que recortarle la cabeza o los pies a casi todas, y aquí se mira el cuerpo
+ * entero. Pinchando se abre la original sin recortar.
+ */
 function Foto({ src, full, alt, pie, nota }: { src?: string; full?: string; alt: string; pie: string; nota?: string }) {
   const img = src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className="w-full aspect-[3/4] object-cover rounded-[11px] bg-white/10" />
+    <img src={src} alt={alt} className="w-full aspect-[9/16] object-cover rounded-[11px] bg-white/10" />
   ) : (
-    <div className="w-full aspect-[3/4] rounded-[11px] bg-white/10" aria-hidden="true" />
+    <div className="w-full aspect-[9/16] rounded-[11px] bg-white/10" aria-hidden="true" />
   );
   return (
     <figure className="flex-1 min-w-0 m-0">
