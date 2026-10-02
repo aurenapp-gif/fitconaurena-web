@@ -52,3 +52,11 @@ create index if not exists cobros_member_idx on public.cobros (member_email);
 -- Y además, en la app solo las abre la coach.
 alter table public.ventas enable row level security;
 alter table public.cobros enable row level security;
+
+-- De dónde salió cada venta, cuando no la escribió la coach a mano:
+-- «contrato:<id de la asignación>». El índice único es lo que impide que el
+-- mismo contrato se apunte dos veces, firme cuando firme y se reintente lo que
+-- se reintente. Las filas escritas a mano llevan `origen` vacío, y en
+-- PostgreSQL los nulos no chocan entre sí, así que pueden ser muchas.
+alter table public.ventas add column if not exists origen text;
+create unique index if not exists ventas_origen_idx on public.ventas (origen);

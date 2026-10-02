@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbDelete, sbInsert } from "@/lib/supabase";
 import { METODOS, MAX_CENT, fechaValida, importeACent } from "@/lib/contabilidad";
+import { importarContratosFirmados } from "@/lib/ventas-auto";
 
 export const runtime = "nodejs";
 
@@ -82,4 +83,24 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo borrar." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Pone al día la contabilidad con los contratos ya firmados.
+ *
+ * Es idempotente: cada contrato lleva su llave (`origen`), así que pulsar esto
+ * dos veces no apunta nada dos veces. Lo que la coach escribió a mano no se
+ * toca.
+ */
+export async function PUT(req: NextRequest) {
+  if (!soloCoach(req)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  try {
+    const r = await importarContratosFirmados();
+    return NextResponse.json({ ok: true, ...r });
+  } catch (e) {
+    console.error("[contabilidad] importar", e);
+    return NextResponse.json({
+      error: "No se pudo importar. Ejecuta esto en Supabase: alter table public.ventas add column if not exists origen text; create unique index if not exists ventas_origen_idx on public.ventas (origen);",
+    }, { status: 502 });
+  }
 }
