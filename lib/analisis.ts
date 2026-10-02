@@ -84,7 +84,7 @@ export type Ritmo = { pctSemanal: number; kg: number; semanas: number; desde: st
  * meses parada. Y hacen falta tres semanas de margen para que el ruido del día
  * a día no se lea como una tendencia.
  */
-export function ritmoReciente(revisiones: Revision[], ventanaDias = 42): Ritmo | null {
+export function ritmoReciente(revisiones: Revision[], ventanaDias = 42, maxDias = 112): Ritmo | null {
   const conPeso = revisiones
     .map((r) => ({ fecha: r.created_at, kg: num(r.weight) }))
     .filter((r): r is { fecha: string; kg: number } => r.kg !== null && r.kg > 0)
@@ -92,10 +92,21 @@ export function ritmoReciente(revisiones: Revision[], ventanaDias = 42): Ritmo |
   if (conPeso.length < 2) return null;
 
   const ultima = conPeso[conPeso.length - 1];
-  const dentro = conPeso.filter((r) => diasEntre(r.fecha, ultima.fecha) <= ventanaDias);
-  const primera = dentro[0];
+  const minimo = RITMO.semanasMinimas * 7;
+  // El punto de partida es el más antiguo que entre en la ventana. Pero las
+  // revisiones son el día 1 y el 15: si las dos últimas están a 16 días, la
+  // ventana sola se queda corta para hablar de tendencia. En ese caso se sigue
+  // hacia atrás hasta encontrar un peso que dé margen suficiente, sin pasarse
+  // de `maxDias` —más atrás ya es otra etapa del programa, no la de ahora—.
+  let primera = conPeso.filter((r) => diasEntre(r.fecha, ultima.fecha) <= ventanaDias)[0];
+  if (diasEntre(primera.fecha, ultima.fecha) < minimo) {
+    const masAtras = conPeso.find(
+      (r) => diasEntre(r.fecha, ultima.fecha) >= minimo && diasEntre(r.fecha, ultima.fecha) <= maxDias
+    );
+    if (masAtras) primera = masAtras;
+  }
   const dias = diasEntre(primera.fecha, ultima.fecha);
-  if (dias < RITMO.semanasMinimas * 7) return null;
+  if (dias < minimo) return null;
 
   const semanas = dias / 7;
   const kg = ultima.kg - primera.kg;
