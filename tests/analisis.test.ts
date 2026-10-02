@@ -223,3 +223,22 @@ test("sin datos no se opina: todo lo que sale es «falta este dato»", () => {
   assert.ok(h.length > 0);
   assert.ok(h.every((x) => x.prioridad === "info"), h.map((x) => `${x.id}:${x.prioridad}`).join(","));
 });
+
+test("con revisiones el 1 y el 15, el ritmo se mide igual", () => {
+  // Las dos últimas están a 16 días: solas no llegan a las 3 semanas, así que
+  // hay que irse a la anterior en vez de decir que no se puede medir.
+  const r = ritmoReciente([
+    { created_at: dias(44), weight: 64.2 },
+    { created_at: dias(16), weight: 63 },
+    { created_at: dias(0), weight: 62.25 },
+  ]);
+  assert.ok(r, "no ha podido medir el ritmo con revisiones quincenales");
+  assert.equal(r!.semanas, 44 / 7);
+});
+
+test("no se va a buscar un peso de hace medio año para rellenar", () => {
+  assert.equal(
+    ritmoReciente([{ created_at: dias(200), weight: 80 }, { created_at: dias(0), weight: 70 }]),
+    null
+  );
+});
