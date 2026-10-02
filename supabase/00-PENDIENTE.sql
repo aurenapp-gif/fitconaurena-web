@@ -139,6 +139,11 @@ create index if not exists cobros_member_idx on public.cobros (member_email);
 alter table public.ventas enable row level security;
 alter table public.cobros enable row level security;
 
+-- De dónde salió cada venta cuando no la escribió la coach: el índice único
+-- es lo que impide apuntar dos veces el mismo contrato firmado.
+alter table public.ventas add column if not exists origen text;
+create unique index if not exists ventas_origen_idx on public.ventas (origen);
+
 -- 8) EL MAPA DE FASES DE LA ESTRATEGIA ----------------------
 create table if not exists public.strategy_phases (
   id           uuid primary key default gen_random_uuid(),
