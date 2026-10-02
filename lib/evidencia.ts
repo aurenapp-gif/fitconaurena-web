@@ -63,6 +63,21 @@ export const FUENTES: Record<string, Fuente> = {
     cita: "Revisión narrativa sobre fases del ciclo menstrual, rendimiento y apetito",
     url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12747961/",
   },
+  subregistro: {
+    clave: "subregistro",
+    cita: "Lichtman et al. (1992), N Engl J Med — midieron el gasto real con agua doblemente marcada en personas convencidas de que su metabolismo fallaba",
+    url: "https://www.nejm.org/doi/full/10.1056/NEJM199212313272701",
+  },
+  basal: {
+    clave: "basal",
+    cita: "Mifflin-St Jeor — la ecuación de metabolismo basal que más veces acierta dentro del 10 %",
+    url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4659265/",
+  },
+  energia: {
+    clave: "energia",
+    cita: "Mountjoy et al. — déficit energético relativo en el deporte (RED-S) y función menstrual",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10304901/",
+  },
   cintura: {
     clave: "cintura",
     cita: "Verweij et al. (2013), Public Health Nutr — error de medición de la cintura",
