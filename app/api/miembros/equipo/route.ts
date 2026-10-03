@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/members";
+import { sendAccesoEquipo } from "@/lib/mailer";
+import { siteOrigin } from "@/lib/routeUtils";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbUpsert, sbDelete, isMissingTable } from "@/lib/supabase";
 import { olvidarEquipo, SETUP_SQL } from "@/lib/equipo";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
+
+/** Lo que dura el enlace del correo de acceso. */
+const ACCESO_TTL = 7 * 24 * 60 * 60 * 1000; // 7 días
 
 /**
  * Dar de alta y de baja al equipo. SOLO el CEO.
@@ -17,7 +23,7 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let body: { email?: unknown; nombre?: unknown; puesto?: unknown; activo?: unknown };
+  let body: { email?: unknown; nombre?: unknown; puesto?: unknown; activo?: unknown; enviarAcceso?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
@@ -44,7 +50,23 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, email });
+  // Y se le manda su acceso. Sin esto, darle de alta no se entera nadie: era
+  // justo lo que pasaba antes —el entrenador quedaba dado de alta y esperando
+  // un correo que no existía—.
+  let enviado = false;
+  if (body.enviarAcceso !== false) {
+    try {
+      const token = createMagicToken(email, ACCESO_TTL);
+      await sendAccesoEquipo(email, fila.nombre, `${siteOrigin(req)}/api/miembros/verificar?token=${token}`);
+      enviado = true;
+    } catch (err) {
+      // El alta ya está hecha: se avisa, pero no se deshace. Siempre se le
+      // puede reenviar el acceso desde la misma pantalla.
+      console.error("[equipo] correo de acceso", err);
+    }
+  }
+
+  return NextResponse.json({ ok: true, email, enviado });
 }
 
 /** Quita a alguien del equipo. `?email=…`. Solo el CEO. */
