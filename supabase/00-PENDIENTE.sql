@@ -190,3 +190,23 @@ create table if not exists public.staff (
 );
 
 alter table public.staff enable row level security;
+
+-- 11) GASTOS: EL DINERO QUE SALE ---------------------------
+--
+-- Comisiones de recomendación, publicidad, herramientas… Sin esto, el
+-- «margen» del mes es solo la facturación, y eso no es lo que se gana.
+create table if not exists public.gastos (
+  id           uuid primary key default gen_random_uuid(),
+  concepto     text,
+  importe_cent bigint not null,
+  fecha        date not null,
+  categoria    text,
+  member_email text,
+  nota         text,
+  created_at   timestamptz not null default now(),
+  created_by   text
+);
+
+create index if not exists gastos_fecha_idx on public.gastos (fecha desc);
+
+alter table public.gastos enable row level security;

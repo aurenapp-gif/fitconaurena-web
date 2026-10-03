@@ -55,7 +55,7 @@ test("facturado y cobrado no son lo mismo", () => {
   const ventas = [venta("ana@x.com", 2500, "2026-09-10")];
   const cobros = [cobro("ana@x.com", 300, "2026-09-10")];
 
-  const r = resumen(ventas, cobros, "2026-09");
+  const r = resumen(ventas, cobros, [], "2026-09");
   assert.equal(r.facturado, 250000, "se ha vendido el programa entero");
   assert.equal(r.cobrado, 30000, "pero en el banco solo hay 300");
   assert.equal(r.pendiente, 220000, "y faltan 2.200 por entrar");
@@ -65,7 +65,7 @@ test("lo pendiente se mira sobre el total, no sobre el mes", () => {
   const ventas = [venta("ana@x.com", 2500, "2026-01-15")];
   const cobros = [cobro("ana@x.com", 2500, "2026-03-01")];
 
-  const marzo = resumen(ventas, cobros, "2026-03");
+  const marzo = resumen(ventas, cobros, [], "2026-03");
   assert.equal(marzo.facturado, 0, "en marzo no se vendió nada");
   assert.equal(marzo.cobrado, 250000, "pero entraron los 2.500 de enero");
   assert.equal(marzo.pendiente, 0, "y ya no queda nada por cobrar");
@@ -107,4 +107,50 @@ test("las fechas", () => {
   assert.equal(fechaValida("28/09/2026"), null);
   assert.equal(fechaValida(""), null);
   assert.equal(mesDe("2026-09-28"), "2026-09");
+});
+
+/* ---- Gastos y margen ---------------------------------------------------- */
+
+import { CATEGORIAS_GASTO, porMes, type Gasto } from "../lib/contabilidad";
+
+const gasto = (cent: number, fecha: string, categoria = CATEGORIAS_GASTO[0]): Gasto =>
+  ({ id: fecha + cent, concepto: null, importe_cent: cent, fecha, categoria, member_email: null, nota: null });
+
+test("el margen es lo cobrado menos lo gastado, no lo facturado", () => {
+  // Vendidos 2.500, cobrados 300, y 200 de comisión: el margen son 100.
+  const r = resumen(
+    [venta("ana@x.com", 2500, "2026-10-01")],
+    [cobro("ana@x.com", 300, "2026-10-01")],
+    [gasto(20000, "2026-10-02")],
+    "2026-10"
+  );
+  assert.equal(r.facturado, 250000);
+  assert.equal(r.cobrado, 30000);
+  assert.equal(r.gastos, 20000);
+  assert.equal(r.margen, 10000, "el margen sale de lo que ha entrado, no de lo prometido");
+});
+
+test("un mes puede salir en negativo, y hay que poder verlo", () => {
+  const r = resumen([], [], [gasto(40000, "2026-10-02")], "2026-10");
+  assert.equal(r.margen, -40000);
+});
+
+test("sin gastos, el margen es lo cobrado", () => {
+  const r = resumen([venta("ana@x.com", 2500, "2026-10-01")], [cobro("ana@x.com", 2500, "2026-10-01")], [], "2026-10");
+  assert.equal(r.margen, 250000);
+});
+
+test("cada gasto cuenta en su mes, y el margen del mes con él", () => {
+  const m = porMes(
+    [venta("ana@x.com", 2500, "2026-09-19")],
+    [cobro("ana@x.com", 2500, "2026-09-20")],
+    [gasto(20000, "2026-10-05")]
+  );
+  const sept = m.find((x) => x.mes === "2026-09")!;
+  const oct = m.find((x) => x.mes === "2026-10")!;
+  assert.equal(sept.gastos, 0);
+  assert.equal(sept.margen, 250000);
+  assert.equal(oct.gastos, 20000);
+  assert.equal(oct.margen, -20000, "un mes solo de gastos resta");
+  assert.equal(oct.contratos, 0);
 });

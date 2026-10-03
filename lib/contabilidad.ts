@@ -32,6 +32,34 @@ export type Cobro = {
   nota: string | null;
 };
 
+/**
+ * Un gasto: dinero que SALE.
+ *
+ * Nació por las comisiones de recomendación, pero vale para cualquier cosa:
+ * sin gastos, el «margen» del mes es solo la facturación, y eso no es el
+ * dinero que se gana.
+ */
+export type Gasto = {
+  id: string;
+  concepto: string | null;
+  importe_cent: number;
+  fecha: string;
+  categoria: string | null;
+  /** A quién se le paga, cuando va asociado a una clienta (una comisión). */
+  member_email: string | null;
+  nota: string | null;
+};
+
+/** En qué se gasta. La primera es la que motivó todo esto. */
+export const CATEGORIAS_GASTO = [
+  "Comisión de recomendación",
+  "Publicidad",
+  "Herramientas",
+  "Asesoría",
+  "Otro",
+] as const;
+export type CategoriaGasto = (typeof CATEGORIAS_GASTO)[number];
+
 /** Las formas de cobrar que usa el programa. */
 export const METODOS = ["Pago único", "seQura", "Transferencia", "Tarjeta", "Bizum", "Otro"] as const;
 export type Metodo = (typeof METODOS)[number];
@@ -110,6 +138,10 @@ export type Resumen = {
   cobrado: number;
   /** Lo vendido que todavía no ha entrado. Nunca negativo. */
   pendiente: number;
+  /** Lo que ha salido. */
+  gastos: number;
+  /** Lo cobrado menos lo gastado: el dinero que queda de verdad. */
+  margen: number;
 };
 
 /**
@@ -120,15 +152,19 @@ export type Resumen = {
  * se cobra en marzo sigue pendiente hasta marzo, y mirando solo un mes saldría
  * un número que no significa nada.
  */
-export function resumen(ventas: Venta[], cobros: Cobro[], mes?: string): Resumen {
+export function resumen(ventas: Venta[], cobros: Cobro[], gastos: Gasto[] = [], mes?: string): Resumen {
   const enMes = <T extends { fecha: string }>(x: T) => !mes || mesDe(x.fecha) === mes;
   const suma = (n: number, x: { importe_cent: number }) => n + x.importe_cent;
 
   const facturado = ventas.filter(enMes).reduce(suma, 0);
   const cobrado = cobros.filter(enMes).reduce(suma, 0);
   const pendiente = Math.max(0, ventas.reduce(suma, 0) - cobros.reduce(suma, 0));
+  const gasto = gastos.filter(enMes).reduce(suma, 0);
 
-  return { facturado, cobrado, pendiente };
+  // El margen se saca de lo COBRADO, no de lo facturado: lo que aún no ha
+  // entrado no se puede gastar, y un margen calculado sobre promesas es el
+  // número que hunde negocios que «iban bien».
+  return { facturado, cobrado, pendiente, gastos: gasto, margen: cobrado - gasto };
 }
 
 export type FilaClienta = {
@@ -180,6 +216,10 @@ export type MesContabilidad = {
   contratos: number;
   facturado: number;
   cobrado: number;
+  /** Lo que salió ese mes. */
+  gastos: number;
+  /** Lo cobrado menos lo gastado. Puede ser negativo, y entonces hay que verlo. */
+  margen: number;
   /** Ticket medio del mes. 0 si no hubo ventas. */
   medio: number;
 };
@@ -205,12 +245,14 @@ export function etiquetaDeMes(mes: string): string {
  * agosto. Por eso no se resta uno de otro para sacar un «pendiente del mes»,
  * que sería un número sin sentido.
  */
-export function porMes(ventas: Venta[], cobros: Cobro[]): MesContabilidad[] {
+export function porMes(ventas: Venta[], cobros: Cobro[], gastos: Gasto[] = []): MesContabilidad[] {
   const meses = new Map<string, MesContabilidad>();
   const dame = (mes: string) => {
     const y = meses.get(mes);
     if (y) return y;
-    const nueva: MesContabilidad = { mes, etiqueta: etiquetaDeMes(mes), contratos: 0, facturado: 0, cobrado: 0, medio: 0 };
+    const nueva: MesContabilidad = {
+      mes, etiqueta: etiquetaDeMes(mes), contratos: 0, facturado: 0, cobrado: 0, gastos: 0, margen: 0, medio: 0,
+    };
     meses.set(mes, nueva);
     return nueva;
   };
@@ -221,9 +263,13 @@ export function porMes(ventas: Venta[], cobros: Cobro[]): MesContabilidad[] {
     m.facturado += v.importe_cent;
   }
   for (const c of cobros) dame(mesDe(c.fecha)).cobrado += c.importe_cent;
+  for (const g of gastos) dame(mesDe(g.fecha)).gastos += g.importe_cent;
 
   const filas = Array.from(meses.values());
-  for (const m of filas) m.medio = m.contratos > 0 ? Math.round(m.facturado / m.contratos) : 0;
+  for (const m of filas) {
+    m.medio = m.contratos > 0 ? Math.round(m.facturado / m.contratos) : 0;
+    m.margen = m.cobrado - m.gastos;
+  }
   return filas.sort((a, b) => b.mes.localeCompare(a.mes));
 }
 
