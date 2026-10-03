@@ -76,7 +76,6 @@ const PESTANAS: Item[] = [
 
 // Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
 const RESTO: Item[] = [
-  { href: "/miembros/recomienda", label: "Recomienda y gana", icon: "recomienda" },
   { href: "/miembros/entreno", label: "Entreno", icon: "entreno" },
   { href: "/miembros/fitai", label: "FitAI", icon: "fitai" },
   { href: "/miembros/dudas", label: "Dudas", icon: "dudas" },

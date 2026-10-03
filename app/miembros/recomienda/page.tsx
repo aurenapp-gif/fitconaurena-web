@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { COMISION_EUROS } from "@/lib/afiliados";
+import { afiliadosVisible, COMISION_EUROS } from "@/lib/afiliados";
 
 export const metadata: Metadata = { title: "Recomienda y gana", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -19,9 +19,14 @@ export const dynamic = "force-dynamic";
  */
 export default async function RecomiendaPage() {
   const email = await requireMember();
-  // La coach y el equipo no recomiendan: esto es de las clientas.
-  if (isAdmin(email)) redirect("/miembros");
   if (!verifySession(cookies().get(SESSION_COOKIE)?.value)) redirect("/miembros/acceso");
+
+  // Mientras el programa esté apagado, solo lo ve la coach: así puede mirarlo
+  // tal como lo verán ellas antes de prometer nada. Para una clienta, leer
+  // esto es una promesa de dinero que ya no se puede retirar sin quedar mal.
+  const esCoach = isAdmin(email);
+  const visible = await afiliadosVisible();
+  if (!visible && !esCoach) redirect("/miembros");
 
   const Paso = ({ n, titulo, texto }: { n: number; titulo: string; texto: string }) => (
     <li className="flex items-start gap-3.5">
@@ -40,6 +45,12 @@ export default async function RecomiendaPage() {
       <AppShell />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
+          {esCoach && !visible && (
+            <p className="rounded-[14px] bg-warn-soft text-warn px-4 py-3 mb-5 text-[15px] font-semibold">
+              Vista previa. Las clientas todavía no ven esto: se enciende desde el Panel.
+            </p>
+          )}
+
           <h1 className="page-title mb-1">Recomienda y gana {COMISION_EUROS} €</h1>
           <p className="text-[17px] text-ink-muted mb-6">Por cada mujer que entre al programa.</p>
 

@@ -8,6 +8,7 @@ import ContractTemplatesList from "@/components/ContractTemplatesList";
 import CallUrlSetter from "@/components/CallUrlSetter";
 import AvisosEmailToggle from "@/components/AvisosEmailToggle";
 import { AJUSTE_SALA, leerAjuste, avisosPorEmail } from "@/lib/ajustes";
+import { afiliadosVisible, COMISION_EUROS } from "@/lib/afiliados";
 import { TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
@@ -34,6 +35,7 @@ export default async function AdminPage() {
   if (!isAdmin(email)) redirect("/miembros");
   const salaGuardada = await leerAjuste(AJUSTE_SALA);
   const avisosEmail = await avisosPorEmail();
+  const afiliadosOn = await afiliadosVisible();
   // Lo que le preguntan a FitAI: es donde se ve qué no está claro.
   const preguntas = await sbSelect<{ id: string; member_email: string; question: string; derivada: boolean; created_at: string }>(
     "fitai_messages", "select=id,member_email,question,derivada,created_at&order=created_at.desc&limit=12"
@@ -243,6 +245,21 @@ export default async function AdminPage() {
           <section className="card-dark p-6 !transform-none mb-8">
             <h2 className="font-bold text-ink mb-4">Tus avisos</h2>
             <AvisosEmailToggle initial={avisosEmail} />
+          </section>
+
+          {/* El programa de recomendación: apagado hasta que lo des por bueno */}
+          <section className="card-dark p-6 !transform-none mb-8">
+            <h2 className="font-bold text-ink mb-1">Recomienda y gana {COMISION_EUROS} €</h2>
+            <p className="text-xs text-ink-muted mb-4">
+              Puedes verlo tú en <strong className="text-ink">/miembros/recomienda</strong> antes de encenderlo.
+            </p>
+            <AvisosEmailToggle
+              initial={afiliadosOn}
+              campo="afiliados"
+              etiqueta="Visible para las clientas"
+              ayuda={`Apagado, no existe para ellas: ni en su inicio ni entrando a la dirección. Encendido, lo ven todas. Para una clienta, leer esto es una promesa de ${COMISION_EUROS} € que ya no se puede retirar sin quedar mal.`}
+              mensajes={{ on: "Encendido. Ya lo ven todas.", off: "Apagado. Las clientas no lo ven." }}
+            />
           </section>
 
           {/* Panel "Hoy": resumen accionable de la coach */}
