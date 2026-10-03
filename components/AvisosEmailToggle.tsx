@@ -10,7 +10,17 @@ import { useRouter } from "next/navigation";
  * horas y un buzón así se deja de leer entero. Las notificaciones al móvil
  * siguen llegando, que es donde se miran.
  */
-export default function AvisosEmailToggle({ initial }: { initial: boolean }) {
+export default function AvisosEmailToggle({
+  initial, campo = "avisos_email", etiqueta = "Avisos de actividad por correo",
+  ayuda, mensajes,
+}: {
+  initial: boolean;
+  /** Qué ajuste se guarda. */
+  campo?: "avisos_email" | "afiliados";
+  etiqueta?: string;
+  ayuda?: string;
+  mensajes?: { on: string; off: string };
+}) {
   const router = useRouter();
   const [on, setOn] = useState(initial);
   const [estado, setEstado] = useState<"idle" | "guardando" | "error">("idle");
@@ -24,12 +34,14 @@ export default function AvisosEmailToggle({ initial }: { initial: boolean }) {
       const res = await fetch("/api/miembros/admin/ajustes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avisos_email: valor }),
+        body: JSON.stringify({ [campo]: valor }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setOn(antes); setEstado("error"); setMsg(d.error ?? "No se pudo guardar."); return; }
       setEstado("idle");
-      setMsg(valor ? "Te llegarán también por correo." : "Solo al móvil. El correo se queda tranquilo.");
+      setMsg(valor
+        ? mensajes?.on ?? "Te llegarán también por correo."
+        : mensajes?.off ?? "Solo al móvil. El correo se queda tranquilo.");
       router.refresh();
     } catch { setOn(antes); setEstado("error"); setMsg("Error de conexión."); }
   }
@@ -37,12 +49,12 @@ export default function AvisosEmailToggle({ initial }: { initial: boolean }) {
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-ink">Avisos de actividad por correo</span>
+        <span className="text-sm text-ink">{etiqueta}</span>
         <button
           type="button"
           role="switch"
           aria-checked={on}
-          aria-label="Avisos de actividad por correo"
+          aria-label={etiqueta}
           disabled={estado === "guardando"}
           onClick={() => cambiar(!on)}
           className={`relative w-[52px] h-[31px] rounded-full transition-colors shrink-0 disabled:opacity-60 ${on ? "bg-brand" : "bg-line-strong"}`}
@@ -51,8 +63,7 @@ export default function AvisosEmailToggle({ initial }: { initial: boolean }) {
         </button>
       </div>
       <p className="text-xs text-ink-subtle mt-1.5">
-        Revisiones subidas, contratos firmados, vídeos de técnica y dudas nuevas. Apagado, siguen llegándote
-        al móvil como notificación. El código de acceso y las solicitudes de clientas nuevas van por correo siempre.
+        {ayuda ?? "Revisiones subidas, contratos firmados, vídeos de técnica y dudas nuevas. Apagado, siguen llegándote al móvil como notificación. El código de acceso y las solicitudes de clientas nuevas van por correo siempre."}
       </p>
       {msg && <p className={`text-xs mt-1.5 ${estado === "error" ? "text-warn" : "text-brand"}`}>{msg}</p>}
     </div>

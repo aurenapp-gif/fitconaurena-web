@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { AJUSTE_SALA, guardarAjuste, AJUSTE_AVISOS_EMAIL } from "@/lib/ajustes";
+import { AJUSTE_AFILIADOS } from "@/lib/afiliados";
 import { safeLink } from "@/lib/suplementos";
 import { isMissingTable } from "@/lib/supabase";
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let data: { call_url?: unknown; avisos_email?: unknown };
+  let data: { call_url?: unknown; avisos_email?: unknown; afiliados?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   // Los avisos de actividad por correo: encendidos o apagados.
@@ -24,6 +25,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
     }
     return NextResponse.json({ ok: true, avisos_email: data.avisos_email });
+  }
+
+  // El programa de recomendación: visible para las clientas o no.
+  if (typeof data.afiliados === "boolean") {
+    try {
+      await guardarAjuste(AJUSTE_AFILIADOS, data.afiliados ? "si" : "no", me);
+    } catch (err) {
+      console.error("[admin/ajustes] afiliados", err);
+      return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, afiliados: data.afiliados });
   }
 
   const raw = typeof data.call_url === "string" ? data.call_url.trim() : "";
