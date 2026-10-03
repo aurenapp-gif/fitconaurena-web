@@ -6,6 +6,7 @@ import { validateUpload } from "@/lib/upload";
 import { rateLimit } from "@/lib/ratelimit";
 import { sendPushToEmail } from "@/lib/push";
 import { sendCheckinDoneNotice } from "@/lib/mailer";
+import { avisosPorEmail } from "@/lib/ajustes";
 import { periodoDe, todayMadrid } from "@/lib/revisiones";
 import { limpiarEjercicios } from "@/lib/entreno";
 
@@ -146,7 +147,8 @@ export async function POST(req: NextRequest) {
         "profiles", `select=display_name&email=eq.${encodeURIComponent(email)}`
       ).catch(() => []))[0]?.display_name || email;
       const quincena = periodoDe(todayMadrid()).etiqueta;
-      sendCheckinDoneNotice(coaches, nombre, quincena).catch((e) => console.error("[checkin] aviso coach", e));
+      avisosPorEmail().then((si) => { if (si) return sendCheckinDoneNotice(coaches, nombre, quincena); })
+        .catch((e) => console.error("[checkin] aviso coach", e));
       sendPushToEmail(coaches[0], {
         title: "Revisión subida ✅",
         body: `${nombre} ha subido su revisión del ${quincena}.`,

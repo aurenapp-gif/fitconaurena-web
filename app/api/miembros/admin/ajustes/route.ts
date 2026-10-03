@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
-import { AJUSTE_SALA, guardarAjuste } from "@/lib/ajustes";
+import { AJUSTE_SALA, guardarAjuste, AJUSTE_AVISOS_EMAIL } from "@/lib/ajustes";
 import { safeLink } from "@/lib/suplementos";
 import { isMissingTable } from "@/lib/supabase";
 
@@ -11,8 +11,20 @@ export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  let data: { call_url?: unknown };
+  let data: { call_url?: unknown; avisos_email?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
+
+  // Los avisos de actividad por correo: encendidos o apagados.
+  if (typeof data.avisos_email === "boolean") {
+    try {
+      await guardarAjuste(AJUSTE_AVISOS_EMAIL, data.avisos_email ? "si" : "no", me);
+    } catch (err) {
+      console.error("[admin/ajustes] avisos_email", err);
+      if (isMissingTable(err)) return NextResponse.json({ error: "Falta crear la tabla app_settings (supabase/ajustes.sql)." }, { status: 400 });
+      return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, avisos_email: data.avisos_email });
+  }
 
   const raw = typeof data.call_url === "string" ? data.call_url.trim() : "";
   // Vacío = volver al enlace de respaldo. Con algo escrito, tiene que ser un

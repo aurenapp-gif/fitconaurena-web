@@ -6,7 +6,8 @@ import AppShell from "@/components/AppShell";
 import ContractTemplateUpload from "@/components/ContractTemplateUpload";
 import ContractTemplatesList from "@/components/ContractTemplatesList";
 import CallUrlSetter from "@/components/CallUrlSetter";
-import { AJUSTE_SALA, leerAjuste } from "@/lib/ajustes";
+import AvisosEmailToggle from "@/components/AvisosEmailToggle";
+import { AJUSTE_SALA, leerAjuste, avisosPorEmail } from "@/lib/ajustes";
 import { TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
@@ -32,6 +33,7 @@ export default async function AdminPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
   const salaGuardada = await leerAjuste(AJUSTE_SALA);
+  const avisosEmail = await avisosPorEmail();
   // Lo que le preguntan a FitAI: es donde se ve qué no está claro.
   const preguntas = await sbSelect<{ id: string; member_email: string; question: string; derivada: boolean; created_at: string }>(
     "fitai_messages", "select=id,member_email,question,derivada,created_at&order=created_at.desc&limit=12"
@@ -235,6 +237,12 @@ export default async function AdminPage() {
             <h2 className="font-bold text-ink mb-1">Videollamada grupal</h2>
             <p className="text-xs text-ink-muted mb-4">Todos los {TEXTO_DIA_LLAMADA} a las {TEXTO_HORA_LLAMADA} (hora de Madrid). Si cambias la reunión de Zoom, pega aquí el enlace nuevo.</p>
             <CallUrlSetter initial={salaGuardada ?? ""} />
+          </section>
+
+          {/* Qué te llega por correo y qué solo al móvil */}
+          <section className="card-dark p-6 !transform-none mb-8">
+            <h2 className="font-bold text-ink mb-4">Tus avisos</h2>
+            <AvisosEmailToggle initial={avisosEmail} />
           </section>
 
           {/* Panel "Hoy": resumen accionable de la coach */}
