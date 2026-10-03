@@ -33,25 +33,37 @@ export type Rol = "ceo" | "equipo" | "clienta";
 /** Cuánto se guarda la lista en memoria. El equipo cambia una vez al mes, no
  * cada visita, y esto se consulta en CADA página de miembro. */
 const TTL_MS = 60_000;
-let cache: { cuando: number; emails: Set<string> } | null = null;
+let cache: { cuando: number; emails: Set<string>; nombres: Map<string, string> } | null = null;
 
-async function emailsDelEquipo(): Promise<Set<string>> {
-  if (cache && Date.now() - cache.cuando < TTL_MS) return cache.emails;
+async function listaViva(): Promise<{ emails: Set<string>; nombres: Map<string, string> }> {
+  if (cache && Date.now() - cache.cuando < TTL_MS) return cache;
   try {
-    const filas = await sbSelect<{ email: string; activo: boolean | null }>(
-      "staff", "select=email,activo"
+    const filas = await sbSelect<{ email: string; nombre: string | null; activo: boolean | null }>(
+      "staff", "select=email,nombre,activo"
     );
-    const emails = new Set(
-      filas.filter((f) => f.activo !== false).map((f) => f.email.trim().toLowerCase())
+    const activos = filas.filter((f) => f.activo !== false);
+    const emails = new Set(activos.map((f) => f.email.trim().toLowerCase()));
+    const nombres = new Map(
+      activos.filter((f) => f.nombre?.trim()).map((f) => [f.email.trim().toLowerCase(), f.nombre!.trim()])
     );
-    cache = { cuando: Date.now(), emails };
-    return emails;
+    cache = { cuando: Date.now(), emails, nombres };
+    return cache;
   } catch {
     // Si la tabla aún no existe o Supabase falla, NO se abre la puerta: sin
     // lista, no hay equipo. Un fallo nunca puede dar permisos.
-    cache = { cuando: Date.now(), emails: new Set() };
-    return cache.emails;
+    cache = { cuando: Date.now(), emails: new Set(), nombres: new Map() };
+    return cache;
   }
+}
+
+async function emailsDelEquipo(): Promise<Set<string>> {
+  return (await listaViva()).emails;
+}
+
+/** Su nombre, para saludarle por él y no por su correo. */
+export async function nombreDelEquipo(email: string | null): Promise<string | null> {
+  if (!email) return null;
+  return (await listaViva()).nombres.get(email.trim().toLowerCase()) ?? null;
 }
 
 /** Olvida la lista guardada. Se llama al añadir o quitar a alguien. */

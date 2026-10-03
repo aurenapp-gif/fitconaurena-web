@@ -8,7 +8,7 @@ import { requireMember } from "@/lib/guard";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { progresoDeFases, type Fase } from "@/lib/estrategia";
 import { onboardingDisponible } from "@/lib/onboarding";
-import { puedeGestionarClientas } from "@/lib/equipo";
+import { nombreDelEquipo, puedeGestionarClientas } from "@/lib/equipo";
 import FaseDeLaClienta from "@/components/FaseDeLaClienta";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
@@ -120,7 +120,9 @@ export default async function MiembrosPage() {
           .catch((err) => (isMissingTable(err) ? null : ([] as { comida: string }[]))),
   ]);
 
-  const name = profile?.display_name || email.split("@")[0];
+  // Al equipo se le saluda por su nombre, que está en su ficha de equipo y no
+  // en `profiles`: no son clientas y no tienen perfil de clienta.
+  const name = profile?.display_name || (await nombreDelEquipo(email)) || email.split("@")[0];
   const photoUrl = profile?.photo_path ? await sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : undefined;
   const inicialCoach = (coach || "C").trim().charAt(0).toUpperCase();
 

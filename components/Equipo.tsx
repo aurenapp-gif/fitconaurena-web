@@ -99,8 +99,8 @@ export default function Equipo({ inicial }: { inicial: DelEquipo[] }) {
         <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mt-4 mb-2">Qué no</p>
         <p className="text-[15px] text-ink-muted leading-relaxed">
           Borrar una planificación subida, dar de alta o eliminar clientas, ver o asignar contratos,
-          la contabilidad, los comunicados, las solicitudes y los ajustes de la plataforma.
-          Todo eso es solo tuyo.
+          la contabilidad, las solicitudes, los ajustes de la plataforma y publicar comunicados.
+          Todo eso es solo tuyo. El tablón de avisos sí lo leen, como las clientas.
         </p>
       </div>
     </div>
