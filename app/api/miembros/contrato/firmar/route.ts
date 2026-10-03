@@ -14,6 +14,7 @@ import {
 } from "@/lib/contract";
 import { buildSignedContractPdf } from "@/lib/pdf";
 import { sendContractSignedNotice } from "@/lib/mailer";
+import { avisosPorEmail } from "@/lib/ajustes";
 import { sendPushToEmails } from "@/lib/push";
 import { waitUntil } from "@vercel/functions";
 import { bienvenidaSiProcede } from "@/lib/bienvenida";
@@ -192,7 +193,8 @@ export async function POST(req: NextRequest) {
   // Aviso a la coach (no bloqueante).
   const admins = adminEmails();
   if (admins.length) {
-    sendContractSignedNotice(admins, me, signerName).catch((e) => console.error("[contrato] email", e));
+    avisosPorEmail().then((si) => { if (si) return sendContractSignedNotice(admins, me, signerName, tpl.kind); })
+      .catch((e) => console.error("[contrato] email", e));
     sendPushToEmails(admins, {
       title: `${tpl.kind === "anexo_salud" ? "Anexo de salud firmado" : "Contrato firmado"} ✍️`,
       body: `${signerName} ha firmado ${tpl.title}.`,

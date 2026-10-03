@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, adminEmails } from "@/lib/members";
 import { sbInsert, sbUpdate, sbDelete, isMissingTable } from "@/lib/supabase";
 import { sendDudaNotice } from "@/lib/mailer";
+import { avisosPorEmail } from "@/lib/ajustes";
 import { isCategory, isStatus, categoryOf } from "@/lib/dudas";
 import { voterHash } from "@/lib/dudasVoto";
 import { rateLimit } from "@/lib/ratelimit";
@@ -71,8 +72,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Aviso a la coach. Nunca bloquea: la duda ya está guardada.
-  sendDudaNotice(adminEmails(), categoryOf(categoria).label.toLowerCase(), privada)
-    .catch((e) => console.error("[dudas] aviso", e));
+  avisosPorEmail().then((si) => { if (si) return sendDudaNotice(adminEmails(), categoryOf(categoria).label.toLowerCase(), privada)
+    .catch((e) => console.error("[dudas] aviso", e)); });
 
   return NextResponse.json({ ok: true, privada });
 }

@@ -157,14 +157,20 @@ export async function sendApplicationNotification(args: {
 }
 
 /** Avisa a la coach de que una clienta ha firmado el contrato. */
-export async function sendContractSignedNotice(to: string[], member: string, name: string): Promise<void> {
+export async function sendContractSignedNotice(
+  to: string[], member: string, name: string, kind?: string
+): Promise<void> {
+  // El anexo de salud y el contrato llegaban con el MISMO asunto: dos correos
+  // idénticos seguidos por la misma clienta, y pareciendo que algo se había
+  // enviado dos veces por error.
+  const que = kind === "anexo_salud" ? "el anexo de salud" : "el contrato";
   const url = `${SITE_URL}/miembros/clientas/${encodeURIComponent(member)}`;
-  const subject = `✍️ ${name} ha firmado el contrato`;
-  const text = `${name} (${member}) ha firmado el contrato. Descárgalo firmado en su ficha: ${url}`;
+  const subject = `✍️ ${name} ha firmado ${que}`;
+  const text = `${name} (${member}) ha firmado ${que}. Descárgalo firmado en su ficha: ${url}`;
   const html = `
   <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
-    <h2 style="margin:0 0 8px;">Contrato firmado ✍️</h2>
-    <p style="font-size:14px;line-height:1.5;"><strong>${name}</strong> (${member}) ha firmado el contrato.</p>
+    <h2 style="margin:0 0 8px;">Firmado ✍️</h2>
+    <p style="font-size:14px;line-height:1.5;"><strong>${name}</strong> (${member}) ha firmado ${que}.</p>
     <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Ver y descargar firmado</a>
   </div>`;
   await send({ to, subject, html, text });

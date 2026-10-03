@@ -11,6 +11,23 @@ import { MEMBER_AREA_URL } from "@/lib/config";
  */
 export const AJUSTE_SALA = "call_url";
 
+/**
+ * Si los avisos de actividad de las clientas le llegan a la coach también por
+ * correo. Por defecto NO.
+ *
+ * El día de revisión son catorce correos en dos horas —uno por clienta—, y un
+ * buzón con catorce avisos iguales se deja de leer entero. Esos avisos ya
+ * llegan como notificación al móvil, que es donde se miran. Lo que sí sigue
+ * yendo por correo pase lo que pase: el código de acceso (es la forma de
+ * entrar) y las solicitudes de clientas nuevas (perder una cuesta dinero).
+ */
+export const AJUSTE_AVISOS_EMAIL = "coach_email_avisos";
+
+/** ¿Le mandamos a la coach los avisos de actividad por correo? Por defecto, no. */
+export async function avisosPorEmail(): Promise<boolean> {
+  return (await leerAjuste(AJUSTE_AVISOS_EMAIL)) === "si";
+}
+
 export async function leerAjuste(key: string): Promise<string | null> {
   try {
     const rows = await sbSelect<{ value: string | null }>("app_settings", `select=value&key=eq.${encodeURIComponent(key)}`);

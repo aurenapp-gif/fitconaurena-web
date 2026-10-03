@@ -3,6 +3,7 @@ import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sbInsert, sbSelect, sbDelete, sbDeleteObject } from "@/lib/supabase";
 import { sendTechniqueUploadNotice } from "@/lib/mailer";
+import { avisosPorEmail } from "@/lib/ajustes";
 import { verifyPath } from "@/lib/token";
 
 export const runtime = "nodejs";
@@ -42,7 +43,8 @@ export async function POST(req: NextRequest) {
   // Aviso a la coach (no bloquea la respuesta).
   const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (admins.length) {
-    sendTechniqueUploadNotice(admins, email, exercise).catch((e) => console.error("[tecnica] aviso", e));
+    avisosPorEmail().then((si) => { if (si) return sendTechniqueUploadNotice(admins, email, exercise); })
+      .catch((e) => console.error("[tecnica] aviso", e));
   }
 
   return NextResponse.json({ ok: true });
