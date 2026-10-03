@@ -6,7 +6,7 @@ import Contabilidad from "@/components/Contabilidad";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
 import {
-  mesDe, porClienta, porMes, resumen, textoEuros, textoEurosCorto,
+  etiquetaDeMes, porClienta, porMes, resumen, textoEuros, textoEurosCorto,
   type Cobro, type Venta,
 } from "@/lib/contabilidad";
 
@@ -68,7 +68,7 @@ export default async function ContabilidadPage() {
           </p>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <Cifra etiqueta={`Facturado en ${mesDe(`${mes}-01`)}`} valor={textoEurosCorto(esteMes.facturado)} />
+            <Cifra etiqueta={`Facturado en ${etiquetaDeMes(mes).replace(/ de \d{4}$/, "")}`} valor={textoEurosCorto(esteMes.facturado)} />
             <Cifra etiqueta="Cobrado este mes" valor={textoEurosCorto(esteMes.cobrado)} tono="text-success" />
             <Cifra etiqueta="Pendiente de cobro" valor={textoEurosCorto(total.pendiente)} tono={total.pendiente > 0 ? "text-warn" : ""} />
             <Cifra etiqueta="Cobrado en total" valor={textoEurosCorto(total.cobrado)} />
