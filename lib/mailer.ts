@@ -235,6 +235,42 @@ export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<vo
 }
 
 /**
+ * El acceso de un entrenador o nutricionista.
+ *
+ * Es otro correo distinto al de la clienta a propósito: a él no le damos la
+ * bienvenida a un programa, le damos una herramienta de trabajo y le decimos
+ * en una línea qué puede hacer con ella.
+ */
+export async function sendAccesoEquipo(to: string, nombre: string | null, loginUrl: string): Promise<void> {
+  const hola = nombre?.trim() ? `Hola, ${nombre.trim()}` : "Hola";
+  const subject = "Tu acceso al Programa FITCON";
+  const text =
+    `${hola}.\n\nYa tienes acceso al área de trabajo del Programa FITCON: las fichas de las clientas, ` +
+    `sus planificaciones, sus revisiones y su seguimiento.\n\nEntra aquí: ${loginUrl}\n\n` +
+    `Para entrar otra vez más adelante: ${SITE_URL}/miembros/acceso con este mismo correo. ` +
+    `Te llegará un código de seis cifras.`;
+  const html = `
+  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
+    <div style="max-width:480px;margin:0 auto;">
+      <p style="font-weight:900;font-size:20px;margin:0 0 28px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
+      <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">${hola} 👋</h1>
+      <p style="color:#A0A0A0;line-height:1.65;margin:0 0 28px;font-size:15px;">
+        Ya tienes acceso al <strong style="color:#fff;">área de trabajo</strong> del Programa FITCON:
+        las fichas de las clientas, sus planificaciones, sus revisiones y su seguimiento.
+      </p>
+      <a href="${loginUrl}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:15px 30px;border-radius:12px;font-size:15px;">
+        Entrar al área de trabajo
+      </a>
+      <p style="color:#666;font-size:13px;line-height:1.6;margin:30px 0 0;">
+        Para entrar otra vez más adelante, ve a ${SITE_URL}/miembros/acceso con este mismo correo:
+        te llegará un código de seis cifras.
+      </p>
+    </div>
+  </div>`;
+  await send({ to, subject, html, text });
+}
+
+/**
  * La bienvenida de verdad: cuando ya está todo firmado y entra a su área.
  *
  * El correo del alta es logística —«aquí tienes tu enlace»—. Este es el otro:

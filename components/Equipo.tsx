@@ -30,9 +30,28 @@ export default function Equipo({ inicial }: { inicial: DelEquipo[] }) {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setEstado("error"); setMsg(d.error ?? "No se pudo guardar."); return; }
-      setEstado("idle"); setMsg(`${email} ya puede entrar con su correo.`);
+      setEstado("idle");
+      setMsg(d.enviado
+        ? `Hecho. Le he mandado su acceso a ${email}.`
+        : `${email} ya puede entrar, pero el correo de acceso no salió. Dale a «Reenviar acceso».`);
       setEmail(""); setNombre("");
       router.refresh();
+    } catch { setEstado("error"); setMsg("Error de conexión."); }
+  }
+
+  /** Vuelve a mandarle su enlace de entrada. */
+  async function reenviar(x: DelEquipo) {
+    setMsg("");
+    try {
+      const res = await fetch("/api/miembros/equipo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: x.email, nombre: x.nombre, puesto: x.puesto }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setEstado("error"); setMsg(d.error ?? "No se pudo reenviar."); return; }
+      setEstado("idle");
+      setMsg(d.enviado ? `Acceso reenviado a ${x.email}.` : "No salió el correo. Inténtalo en un minuto.");
     } catch { setEstado("error"); setMsg("Error de conexión."); }
   }
 
@@ -82,6 +101,8 @@ export default function Equipo({ inicial }: { inicial: DelEquipo[] }) {
                   {x.puesto ? `${x.puesto} · ` : ""}{x.email}{x.activo ? "" : " · de baja"}
                 </span>
               </span>
+              <button type="button" onClick={() => reenviar(x)}
+                className="shrink-0 text-[13px] text-brand px-2 min-h-[40px]">Reenviar acceso</button>
               <button type="button" onClick={() => quitar(x)} aria-label={`Quitar a ${x.nombre || x.email}`}
                 className="shrink-0 text-[13px] text-danger px-1">✕</button>
             </div>
