@@ -6,7 +6,7 @@ import Contabilidad from "@/components/Contabilidad";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
 import {
-  mesDe, porClienta, resumen, textoEuros, textoEurosCorto,
+  mesDe, porClienta, porMes, resumen, textoEuros, textoEurosCorto,
   type Cobro, type Venta,
 } from "@/lib/contabilidad";
 
@@ -35,6 +35,7 @@ export default async function ContabilidadPage() {
   const esteMes = resumen(ventas, cobros, mes);
   const total = resumen(ventas, cobros);
   const filas = porClienta(ventas, cobros, nombreDe);
+  const meses = porMes(ventas, cobros);
 
   // Sin tabla todavía, las consultas devuelven vacío y la página sale en
   // blanco sin decir por qué. Mejor decirlo.
@@ -77,6 +78,43 @@ export default async function ContabilidadPage() {
             <p className="text-[15px] text-warn bg-warn-soft rounded-[14px] px-4 py-3 mb-6">
               Si acabas de estrenar esto y no guarda nada, falta ejecutar <strong>supabase/contabilidad.sql</strong> en Supabase.
             </p>
+          )}
+
+          {/* Mes a mes: cuántos contratos y cuánto se facturó en cada uno. */}
+          {meses.length > 0 && (
+            <div className="mb-6">
+              <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Mes a mes</p>
+              <div className="bg-surface rounded-[14px] overflow-x-auto">
+                <table className="w-full text-[15px]">
+                  <thead>
+                    <tr className="text-[12px] uppercase tracking-wide text-ink-muted">
+                      <th scope="col" className="text-left font-semibold px-4 py-2.5">Mes</th>
+                      <th scope="col" className="text-right font-semibold px-3 py-2.5">Contratos</th>
+                      <th scope="col" className="text-right font-semibold px-3 py-2.5">Facturado</th>
+                      <th scope="col" className="text-right font-semibold px-3 py-2.5">Ticket medio</th>
+                      <th scope="col" className="text-right font-semibold px-4 py-2.5">Cobrado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {meses.map((m) => (
+                      <tr key={m.mes}>
+                        <th scope="row" className="text-left font-semibold px-4 py-3 whitespace-nowrap">{m.etiqueta}</th>
+                        <td className="text-right tabular-nums px-3 py-3">{m.contratos}</td>
+                        <td className="text-right tabular-nums font-bold px-3 py-3">{textoEurosCorto(m.facturado)}</td>
+                        <td className="text-right tabular-nums text-ink-muted px-3 py-3">{m.contratos > 0 ? textoEurosCorto(m.medio) : "—"}</td>
+                        <td className={`text-right tabular-nums px-4 py-3 ${m.cobrado > 0 ? "text-success" : "text-ink-muted"}`}>
+                          {m.cobrado > 0 ? textoEurosCorto(m.cobrado) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[13px] text-ink-muted mt-2">
+                Cada contrato firmado cuenta en el mes en que se firmó. Lo cobrado es lo que entró ese mes,
+                sea de una venta de ese mes o de otro.
+              </p>
+            </div>
           )}
 
           <div className="grid lg:grid-cols-2 gap-6 items-start">

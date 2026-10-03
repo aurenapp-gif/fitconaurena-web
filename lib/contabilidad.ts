@@ -171,6 +171,62 @@ export function porClienta(
   return filas.sort((a, b) => b.pendiente - a.pendiente || b.facturado - a.facturado);
 }
 
+export type MesContabilidad = {
+  /** «2026-09». */
+  mes: string;
+  /** «septiembre de 2026». */
+  etiqueta: string;
+  /** Cuántos contratos (ventas) se firmaron ese mes. */
+  contratos: number;
+  facturado: number;
+  cobrado: number;
+  /** Ticket medio del mes. 0 si no hubo ventas. */
+  medio: number;
+};
+
+const MESES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+/** «septiembre de 2026» a partir de «2026-09». */
+export function etiquetaDeMes(mes: string): string {
+  const [a, m] = mes.split("-");
+  const i = Number(m) - 1;
+  return i >= 0 && i < 12 ? `${MESES[i]} de ${a}` : mes;
+}
+
+/**
+ * Mes a mes, del más reciente al más antiguo.
+ *
+ * Aquí el cobrado SÍ es el del mes —a diferencia del pendiente del resumen
+ * general—: la pregunta de «¿cómo fue septiembre?» es cuánto se vendió y
+ * cuánto entró en septiembre, aunque lo que entró fuera de una venta de
+ * agosto. Por eso no se resta uno de otro para sacar un «pendiente del mes»,
+ * que sería un número sin sentido.
+ */
+export function porMes(ventas: Venta[], cobros: Cobro[]): MesContabilidad[] {
+  const meses = new Map<string, MesContabilidad>();
+  const dame = (mes: string) => {
+    const y = meses.get(mes);
+    if (y) return y;
+    const nueva: MesContabilidad = { mes, etiqueta: etiquetaDeMes(mes), contratos: 0, facturado: 0, cobrado: 0, medio: 0 };
+    meses.set(mes, nueva);
+    return nueva;
+  };
+
+  for (const v of ventas) {
+    const m = dame(mesDe(v.fecha));
+    m.contratos += 1;
+    m.facturado += v.importe_cent;
+  }
+  for (const c of cobros) dame(mesDe(c.fecha)).cobrado += c.importe_cent;
+
+  const filas = Array.from(meses.values());
+  for (const m of filas) m.medio = m.contratos > 0 ? Math.round(m.facturado / m.contratos) : 0;
+  return filas.sort((a, b) => b.mes.localeCompare(a.mes));
+}
+
 /* ------------------------------------------------------------------ *
  * Ventas que se apuntan solas al firmar un contrato
  * ------------------------------------------------------------------ */
