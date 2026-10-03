@@ -7,6 +7,7 @@ import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/member
 import { sbSelect } from "@/lib/supabase";
 import {
   etiquetaDeMes, porClienta, porMes, resumen, textoEuros, textoEurosCorto,
+  type Gasto,
   type Cobro, type Venta,
 } from "@/lib/contabilidad";
 
@@ -21,9 +22,11 @@ export default async function ContabilidadPage() {
   if (!email) redirect("/miembros/acceso");
   if (!isAdmin(email)) redirect("/miembros");
 
-  const [ventas, cobros, profiles, members] = await Promise.all([
+  const [ventas, cobros, gastos, profiles, members] = await Promise.all([
     sbSelect<Venta>("ventas", "select=*&order=fecha.desc&limit=2000").catch(() => [] as Venta[]),
     sbSelect<Cobro>("cobros", "select=*&order=fecha.desc&limit=2000").catch(() => [] as Cobro[]),
+    // Si falta la tabla (supabase/gastos.sql) se sigue viendo todo lo demás.
+    sbSelect<Gasto>("gastos", "select=*&order=fecha.desc&limit=2000").catch(() => [] as Gasto[]),
     sbSelect<Prof>("profiles", "select=email,display_name").catch(() => [] as Prof[]),
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email))).catch(() => [] as { email: string; name: string }[]),
   ]);
@@ -32,10 +35,10 @@ export default async function ContabilidadPage() {
   const nombreDe = (e: string) => nombres.get(e) || members.find((m) => m.email === e)?.name || e;
 
   const mes = new Date().toISOString().slice(0, 7);
-  const esteMes = resumen(ventas, cobros, mes);
-  const total = resumen(ventas, cobros);
+  const esteMes = resumen(ventas, cobros, gastos, mes);
+  const total = resumen(ventas, cobros, gastos);
   const filas = porClienta(ventas, cobros, nombreDe);
-  const meses = porMes(ventas, cobros);
+  const meses = porMes(ventas, cobros, gastos);
 
   // Sin tabla todavía, las consultas devuelven vacío y la página sale en
   // blanco sin decir por qué. Mejor decirlo.
@@ -48,6 +51,7 @@ export default async function ContabilidadPage() {
   const movimientos = [
     ...ventas.map((v) => ({ ...v, tipo: "venta" as const })),
     ...cobros.map((c) => ({ ...c, tipo: "cobro" as const })),
+    ...gastos.map((g) => ({ ...g, tipo: "gasto" as const })),
   ].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 40);
 
   const Cifra = ({ etiqueta, valor, tono = "" }: { etiqueta: string; valor: string; tono?: string }) => (
@@ -71,7 +75,8 @@ export default async function ContabilidadPage() {
             <Cifra etiqueta={`Facturado en ${etiquetaDeMes(mes).replace(/ de \d{4}$/, "")}`} valor={textoEurosCorto(esteMes.facturado)} />
             <Cifra etiqueta="Cobrado este mes" valor={textoEurosCorto(esteMes.cobrado)} tono="text-success" />
             <Cifra etiqueta="Pendiente de cobro" valor={textoEurosCorto(total.pendiente)} tono={total.pendiente > 0 ? "text-warn" : ""} />
-            <Cifra etiqueta="Cobrado en total" valor={textoEurosCorto(total.cobrado)} />
+            <Cifra etiqueta="Margen del mes" valor={textoEurosCorto(esteMes.margen)}
+              tono={esteMes.margen < 0 ? "text-danger" : ""} />
           </div>
 
           {sinTabla && (
@@ -92,7 +97,9 @@ export default async function ContabilidadPage() {
                       <th scope="col" className="text-right font-semibold px-3 py-2.5">Contratos</th>
                       <th scope="col" className="text-right font-semibold px-3 py-2.5">Facturado</th>
                       <th scope="col" className="text-right font-semibold px-3 py-2.5">Ticket medio</th>
-                      <th scope="col" className="text-right font-semibold px-4 py-2.5">Cobrado</th>
+                      <th scope="col" className="text-right font-semibold px-3 py-2.5">Cobrado</th>
+                      <th scope="col" className="text-right font-semibold px-3 py-2.5">Gastos</th>
+                      <th scope="col" className="text-right font-semibold px-4 py-2.5">Margen</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
@@ -102,8 +109,14 @@ export default async function ContabilidadPage() {
                         <td className="text-right tabular-nums px-3 py-3">{m.contratos}</td>
                         <td className="text-right tabular-nums font-bold px-3 py-3">{textoEurosCorto(m.facturado)}</td>
                         <td className="text-right tabular-nums text-ink-muted px-3 py-3">{m.contratos > 0 ? textoEurosCorto(m.medio) : "—"}</td>
-                        <td className={`text-right tabular-nums px-4 py-3 ${m.cobrado > 0 ? "text-success" : "text-ink-muted"}`}>
+                        <td className={`text-right tabular-nums px-3 py-3 ${m.cobrado > 0 ? "text-success" : "text-ink-muted"}`}>
                           {m.cobrado > 0 ? textoEurosCorto(m.cobrado) : "—"}
+                        </td>
+                        <td className={`text-right tabular-nums px-3 py-3 ${m.gastos > 0 ? "text-warn" : "text-ink-muted"}`}>
+                          {m.gastos > 0 ? `−${textoEurosCorto(m.gastos)}` : "—"}
+                        </td>
+                        <td className={`text-right tabular-nums font-bold px-4 py-3 ${m.margen < 0 ? "text-danger" : ""}`}>
+                          {textoEurosCorto(m.margen)}
                         </td>
                       </tr>
                     ))}
@@ -112,7 +125,8 @@ export default async function ContabilidadPage() {
               </div>
               <p className="text-[13px] text-ink-muted mt-2">
                 Cada contrato firmado cuenta en el mes en que se firmó. Lo cobrado es lo que entró ese mes,
-                sea de una venta de ese mes o de otro.
+                sea de una venta de ese mes o de otro. El margen es lo cobrado menos los gastos: lo que de
+                verdad queda, no lo que se ha vendido.
               </p>
             </div>
           )}

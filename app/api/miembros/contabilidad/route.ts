@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbDelete, sbInsert } from "@/lib/supabase";
-import { METODOS, MAX_CENT, fechaValida, importeACent } from "@/lib/contabilidad";
+import { METODOS, MAX_CENT, CATEGORIAS_GASTO, fechaValida, importeACent } from "@/lib/contabilidad";
 import { importarContratosFirmados } from "@/lib/ventas-auto";
 
 export const runtime = "nodejs";
@@ -20,17 +20,23 @@ function soloCoach(req: NextRequest): string | null {
  * entrado). Son dos cosas distintas y se apuntan por separado a propósito.
  */
 export async function POST(req: NextRequest) {
-  if (!soloCoach(req)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  const me = soloCoach(req);
+  if (!me) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: Record<string, unknown>;
   try { body = (await req.json()) as Record<string, unknown>; }
   catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
-  const tipo = body.tipo === "cobro" ? "cobro" : body.tipo === "venta" ? "venta" : null;
-  if (!tipo) return NextResponse.json({ error: "Di si es una venta o un cobro." }, { status: 400 });
+  const tipo = body.tipo === "cobro" ? "cobro" : body.tipo === "venta" ? "venta"
+    : body.tipo === "gasto" ? "gasto" : null;
+  if (!tipo) return NextResponse.json({ error: "Di si es una venta, un cobro o un gasto." }, { status: 400 });
 
+  // En un gasto la clienta es opcional: una comisión va asociada a quien
+  // recomendó, pero la publicidad o una herramienta no van con nadie.
   const member = typeof body.member === "string" ? normalizeEmail(body.member) : "";
-  if (!isValidEmail(member)) return NextResponse.json({ error: "Elige una clienta." }, { status: 400 });
+  if (tipo !== "gasto" && !isValidEmail(member)) {
+    return NextResponse.json({ error: "Elige una clienta." }, { status: 400 });
+  }
 
   const importe_cent = importeACent(body.importe);
   if (importe_cent === null || importe_cent <= 0) {
@@ -51,7 +57,15 @@ export async function POST(req: NextRequest) {
   const concepto = typeof body.concepto === "string" ? body.concepto.trim().slice(0, 120) || null : null;
 
   try {
-    if (tipo === "venta") {
+    if (tipo === "gasto") {
+      const categoria = typeof body.categoria === "string" && (CATEGORIAS_GASTO as readonly string[]).includes(body.categoria)
+        ? body.categoria : null;
+      await sbInsert("gastos", {
+        concepto, importe_cent, fecha, categoria,
+        member_email: isValidEmail(member) ? member : null,
+        nota, created_by: me,
+      });
+    } else if (tipo === "venta") {
       await sbInsert("ventas", { member_email: member, concepto, importe_cent, fecha, metodo, nota });
     } else {
       const venta_id = typeof body.venta === "string" && UUID.test(body.venta) ? body.venta : null;
@@ -72,7 +86,8 @@ export async function DELETE(req: NextRequest) {
   if (!soloCoach(req)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   const p = req.nextUrl.searchParams;
-  const tipo = p.get("tipo") === "cobro" ? "cobros" : p.get("tipo") === "venta" ? "ventas" : null;
+  const tipo = p.get("tipo") === "cobro" ? "cobros" : p.get("tipo") === "venta" ? "ventas"
+    : p.get("tipo") === "gasto" ? "gastos" : null;
   const id = p.get("id") ?? "";
   if (!tipo || !UUID.test(id)) return NextResponse.json({ error: "Apunte no válido." }, { status: 400 });
 

@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { filtraDecimal } from "@/lib/numeros";
 import {
-  METODOS, importeACent, textoEuros, type Cobro, type Venta,
+  CATEGORIAS_GASTO, METODOS, importeACent, textoEuros,
+  type Cobro, type Gasto, type Venta,
 } from "@/lib/contabilidad";
 
 type Clienta = { email: string; nombre: string };
-type Movimiento = (Venta | Cobro) & { tipo: "venta" | "cobro" };
+type Movimiento = (Venta | Cobro | Gasto) & { tipo: "venta" | "cobro" | "gasto" };
 
 /**
  * Apuntar una venta o un cobro, y ver los últimos movimientos.
@@ -23,7 +24,8 @@ export default function Contabilidad({
   const router = useRouter();
   const hoy = new Date().toISOString().slice(0, 10);
 
-  const [tipo, setTipo] = useState<"venta" | "cobro">("cobro");
+  const [tipo, setTipo] = useState<"venta" | "cobro" | "gasto">("cobro");
+  const [categoria, setCategoria] = useState<string>(CATEGORIAS_GASTO[0]);
   const [member, setMember] = useState("");
   const [importe, setImporte] = useState("");
   const [fecha, setFecha] = useState(hoy);
@@ -34,7 +36,8 @@ export default function Contabilidad({
   const [msg, setMsg] = useState("");
 
   const cent = useMemo(() => importeACent(importe), [importe]);
-  const listo = !!member && cent !== null && cent > 0 && !!fecha;
+  // En un gasto la clienta es opcional: la publicidad no va con nadie.
+  const listo = (tipo === "gasto" || !!member) && cent !== null && cent > 0 && !!fecha;
 
   async function guardar() {
     if (!listo || estado === "guardando") return;
@@ -43,7 +46,7 @@ export default function Contabilidad({
       const res = await fetch("/api/miembros/contabilidad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo, member, importe, fecha, metodo, concepto, nota }),
+        body: JSON.stringify({ tipo, member, importe, fecha, metodo, concepto, nota, categoria }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -95,22 +98,30 @@ export default function Contabilidad({
     <div className="flex flex-col gap-6">
       <div className="bg-surface rounded-[14px] p-4 flex flex-col gap-3">
         <div className="flex gap-2">
-          {(["cobro", "venta"] as const).map((t) => (
+          {(["cobro", "venta", "gasto"] as const).map((t) => (
             <button key={t} type="button" onClick={() => setTipo(t)}
               className={`flex-1 rounded-xl py-2.5 text-[15px] font-semibold transition-colors ${
                 tipo === t ? "bg-brand text-white" : "bg-page text-ink-muted"}`}>
-              {t === "cobro" ? "Apuntar un cobro" : "Apuntar una venta"}
+              {t === "cobro" ? "Cobro" : t === "venta" ? "Venta" : "Gasto"}
             </button>
           ))}
         </div>
         <p className="text-[13px] text-ink-muted -mt-1">
           {tipo === "cobro"
             ? "Dinero que ya ha entrado en la cuenta."
-            : "Lo que se ha comprometido a pagar, aunque todavía no lo hayas cobrado."}
+            : tipo === "venta"
+              ? "Lo que se ha comprometido a pagar, aunque todavía no lo hayas cobrado."
+              : "Dinero que sale: una comisión de recomendación, publicidad, herramientas… Resta del margen del mes."}
         </p>
 
+        {tipo === "gasto" && (
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className={campo} aria-label="Categoría del gasto">
+            {CATEGORIAS_GASTO.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+
         <select value={member} onChange={(e) => setMember(e.target.value)} className={campo} aria-label="Clienta">
-          <option value="">— Elige la clienta —</option>
+          <option value="">{tipo === "gasto" ? "— Sin clienta (opcional) —" : "— Elige la clienta —"}</option>
           {clientas.map((c) => <option key={c.email} value={c.email}>{c.nombre}</option>)}
         </select>
 
@@ -156,19 +167,24 @@ export default function Contabilidad({
           <div className="bg-surface rounded-[14px] divide-y divide-line">
             {movimientos.map((m) => (
               <div key={`${m.tipo}-${m.id}`} className="flex items-center gap-3 px-4 py-3">
-                <span className={`shrink-0 w-2 h-2 rounded-full ${m.tipo === "cobro" ? "bg-success" : "bg-brand"}`}
+                <span className={`shrink-0 w-2 h-2 rounded-full ${
+                  m.tipo === "cobro" ? "bg-success" : m.tipo === "gasto" ? "bg-warn" : "bg-brand"}`}
                   aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-semibold truncate">{nombreDe(m.member_email)}</span>
+                  <span className="block text-[16px] font-semibold truncate">
+                    {m.member_email ? nombreDe(m.member_email) : ("categoria" in m && m.categoria) || "Gasto"}
+                  </span>
                   <span className="block text-[13px] text-ink-muted truncate">
-                    {m.tipo === "cobro" ? "Cobro" : "Venta"} · {m.fecha}
-                    {m.metodo ? ` · ${m.metodo}` : ""}
+                    {m.tipo === "cobro" ? "Cobro" : m.tipo === "gasto" ? "Gasto" : "Venta"} · {m.fecha}
+                    {"metodo" in m && m.metodo ? ` · ${m.metodo}` : ""}
+                    {"categoria" in m && m.categoria && m.member_email ? ` · ${m.categoria}` : ""}
                     {"concepto" in m && m.concepto ? ` · ${m.concepto}` : ""}
                     {"origen" in m && m.origen ? " · del contrato" : ""}
                   </span>
                 </span>
-                <span className={`text-[16px] font-bold tabular-nums shrink-0 ${m.tipo === "cobro" ? "text-success" : "text-ink"}`}>
-                  {textoEuros(m.importe_cent)}
+                <span className={`text-[16px] font-bold tabular-nums shrink-0 ${
+                  m.tipo === "cobro" ? "text-success" : m.tipo === "gasto" ? "text-warn" : "text-ink"}`}>
+                  {m.tipo === "gasto" ? "−" : ""}{textoEuros(m.importe_cent)}
                 </span>
                 <button type="button" onClick={() => borrar(m)} aria-label="Borrar apunte"
                   className="shrink-0 text-[13px] text-danger px-1">✕</button>

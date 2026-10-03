@@ -8,6 +8,7 @@ import { requireMember } from "@/lib/guard";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { progresoDeFases, type Fase } from "@/lib/estrategia";
 import { onboardingDisponible } from "@/lib/onboarding";
+import { COMISION_EUROS } from "@/lib/afiliados";
 import { nombreDelEquipo, puedeGestionarClientas } from "@/lib/equipo";
 import FaseDeLaClienta from "@/components/FaseDeLaClienta";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
@@ -378,6 +379,8 @@ export default async function MiembrosPage() {
               </Grupo>
 
               <Grupo label="Más">
+                <Fila href="/miembros/recomienda" titulo={`Recomienda y gana ${COMISION_EUROS} €`}
+                  sub="Por cada mujer que entre al programa" />
                 <Fila href="/miembros/entreno" titulo="Mi entreno" sub={ent ? "Apunta tus pesos mientras entrenas" : "Cuando tengas plan de entrenamiento"} />
                 <Fila href="/miembros/fitai" titulo="FitAI" sub="Tus dudas del programa, al momento" />
                 <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
