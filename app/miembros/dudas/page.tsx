@@ -7,6 +7,7 @@ import DudaLike from "@/components/DudaLike";
 import DudaAnswer from "@/components/DudaAnswer";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, isMissingTable } from "@/lib/supabase";
 import { CATEGORIES, categoryOf, statusOf, type Duda, type DudaStatus } from "@/lib/dudas";
 import { voterHash } from "@/lib/dudasVoto";
@@ -52,7 +53,10 @@ function fmtDay(d: string) {
 
 export default async function DudasPage({ searchParams }: { searchParams: { tema?: string } }) {
   const email = await requireMember();
-  const admin = isAdmin(email);
+  // `admin` aquí significa «trabaja con las clientas»: CEO y equipo ven lo
+  // mismo. Lo que solo es del CEO se mira con `esCeo`.
+  const admin = await puedeGestionarClientas(email);
+  const esCeo = isAdmin(email);
   const tema = CATEGORIES.some((c) => c.id === searchParams.tema) ? searchParams.tema : undefined;
 
   let all: Duda[] = [];
@@ -101,7 +105,7 @@ export default async function DudasPage({ searchParams }: { searchParams: { tema
 
   return (
     <>
-      <AppShell admin={admin} />
+      <AppShell admin={admin} ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">

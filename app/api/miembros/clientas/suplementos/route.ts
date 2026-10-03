@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbDelete, sbUpsert, sbUpdate, isMissingTable } from "@/lib/supabase";
 import { safeLink, parseAgua, parsePasos, MAX_NAME, MAX_DOSE, MAX_TIMING, MAX_NOTE, MIN_AGUA, MAX_AGUA, MIN_PASOS, MAX_PASOS } from "@/lib/suplementos";
@@ -17,7 +18,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let data: { member?: unknown; agua?: unknown; pasos?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown; items?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let data: { id?: unknown; name?: unknown; dose?: unknown; timing?: unknown; url?: unknown; note?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

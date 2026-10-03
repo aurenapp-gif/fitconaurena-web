@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbUpdate, sbSelect } from "@/lib/supabase";
 import { sendCheckinReplyEmail } from "@/lib/mailer";
 import { sendPushToEmail } from "@/lib/push";
 
 export const runtime = "nodejs";
 
-// Solo la coach (admin) responde a un check-in.
+// Responden la coach y el equipo: contestar una revisión es su trabajo.
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!email || !isAdmin(email)) {
+  if (!email || !(await puedeGestionarClientas(email))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

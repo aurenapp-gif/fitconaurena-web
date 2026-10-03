@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbUpsert, sbDelete } from "@/lib/supabase";
 import { normalizarFases, faseEnCurso, type Fase } from "@/lib/estrategia";
 
@@ -20,7 +21,7 @@ export const maxDuration = 30;
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: { email?: unknown; fases?: unknown; actual?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: { email?: unknown; desde?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

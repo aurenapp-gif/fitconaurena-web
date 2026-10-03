@@ -6,6 +6,7 @@ import TechniqueReply from "@/components/TechniqueReply";
 import TechniqueDelete from "@/components/TechniqueDelete";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Revisión de técnica", robots: { index: false, follow: false } };
@@ -35,7 +36,10 @@ function isAudioReply(path: string | null): boolean {
 
 export default async function TecnicaPage() {
   const email = await requireMember();
-  const admin = isAdmin(email);
+  // `admin` aquí significa «trabaja con las clientas»: CEO y equipo ven lo
+  // mismo. Lo que solo es del CEO se mira con `esCeo`.
+  const admin = await puedeGestionarClientas(email);
+  const esCeo = isAdmin(email);
 
   let rows: Review[] = [];
   try {
@@ -60,7 +64,7 @@ export default async function TecnicaPage() {
 
   return (
     <>
-      <AppShell admin={admin} />
+      <AppShell admin={admin} ceo={esCeo} />
       <main className="app-main relative overflow-hidden min-h-screen">
         <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">

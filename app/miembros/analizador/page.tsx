@@ -7,6 +7,7 @@ import Analizador from "@/components/Analizador";
 import EstrategiaDelMes from "@/components/EstrategiaDelMes";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect } from "@/lib/supabase";
 import { hoyMadrid } from "@/lib/renovaciones";
 import { analizar, resumenCorto, type Habito, type Revision, type Serie } from "@/lib/analisis";
@@ -27,7 +28,8 @@ export const dynamic = "force-dynamic";
 export default async function AnalizadorPage({ searchParams }: { searchParams?: { clienta?: string } }) {
   const me = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!me) redirect("/miembros/acceso");
-  if (!isAdmin(me)) redirect("/miembros");
+  if (!(await puedeGestionarClientas(me))) redirect("/miembros");
+  const esCeo = isAdmin(me);
 
   const elegida = searchParams?.clienta ? normalizeEmail(searchParams.clienta) : "";
   const hay = elegida !== "" && isValidEmail(elegida);
@@ -88,7 +90,7 @@ export default async function AnalizadorPage({ searchParams }: { searchParams?: 
 
   return (
     <>
-      <AppShell admin />
+      <AppShell admin ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
           <span className="section-tag">Solo administración</span>

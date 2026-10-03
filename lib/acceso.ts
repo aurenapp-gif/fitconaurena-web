@@ -20,6 +20,7 @@
  */
 
 import { isAdmin, isMember } from "@/lib/members";
+import { esEquipo } from "@/lib/equipo";
 import { sbSelect } from "@/lib/supabase";
 
 /** ¿Tiene ficha y sin el acceso retirado? */
@@ -44,6 +45,9 @@ async function tieneFichaActiva(email: string): Promise<boolean> {
  */
 export async function puedeRecibirCodigo(email: string): Promise<boolean> {
   if (isAdmin(email)) return true;
+  // El equipo entra por su puesto, no por tener ficha de clienta ni estar en
+  // una lista de correo: un entrenador no es ni una cosa ni la otra.
+  if (await esEquipo(email)) return true;
   if (await tieneFichaActiva(email)) return true;
   return isMember(email);
 }

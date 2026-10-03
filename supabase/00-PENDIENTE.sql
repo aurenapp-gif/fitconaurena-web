@@ -175,3 +175,18 @@ alter table public.strategy_phases enable row level security;
 -- o porque no se está comiendo lo que pone el plan.
 alter table public.plans add column if not exists kcal      int;
 alter table public.plans add column if not exists protein_g int;
+
+-- 10) EL EQUIPO: ENTRENADORES Y NUTRICIONISTAS --------------
+--
+-- El CEO no está aquí: vive en ADMIN_EMAILS. Un fallo de la base de datos no
+-- puede dejarle fuera de su empresa ni meter a nadie en su sitio.
+create table if not exists public.staff (
+  email      text primary key,
+  nombre     text,
+  puesto     text,
+  activo     boolean not null default true,
+  created_at timestamptz not null default now(),
+  created_by text
+);
+
+alter table public.staff enable row level security;

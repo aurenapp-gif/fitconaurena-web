@@ -8,6 +8,7 @@ import ClientasLista, { type FilaClienta } from "@/components/ClientasLista";
 import RenovacionesPendientes, { type FilaRenovacion } from "@/components/RenovacionesPendientes";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect } from "@/lib/supabase";
 import { servicePct } from "@/lib/company";
 import { renovacionAlimentacion, renovacionEntrenamiento, hoyMadrid, diaDe, ordenUrgencia } from "@/lib/renovaciones";
@@ -31,7 +32,8 @@ type Uso = {
 export default async function ClientasPage() {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
-  if (!isAdmin(email)) redirect("/miembros");
+  if (!(await puedeGestionarClientas(email))) redirect("/miembros");
+  const esCeo = isAdmin(email);
 
   // Todo en paralelo. Cada consulta cae por su cuenta para que el listado no se
   // caiga entero si una tabla flaquea.
@@ -143,7 +145,7 @@ export default async function ClientasPage() {
 
   return (
     <>
-      <AppShell admin />
+      <AppShell admin ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
@@ -154,7 +156,8 @@ export default async function ClientasPage() {
             </div>
           </div>
 
-          <AddClient contracts={contractTpls} hasAnexo={hasAnexo} />
+          {/* Dar de alta es decisión de negocio: solo el CEO. */}
+          {esCeo && <AddClient contracts={contractTpls} hasAnexo={hasAnexo} />}
 
           {members.length > 0 && <RenovacionesPendientes filas={renovaciones} />}
 

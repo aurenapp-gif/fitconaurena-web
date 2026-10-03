@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
+import { esEquipo } from "@/lib/equipo";
 
 /**
  * Gate de las páginas de miembro: valida la sesión y comprueba que la clienta
@@ -41,7 +42,11 @@ export async function requireMember(opts?: { skipContractGate?: boolean }): Prom
  * columna `contracts_exempt` todavía no existe se trata como exenta.
  */
 export async function memberState(email: string): Promise<{ revoked: boolean; needsOnboarding: boolean; pendingContracts: number; contractsExempt: boolean; accessFrom: string | null }> {
-  if (isAdmin(email)) return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true, accessFrom: null };
+  // El CEO y el equipo entran directos: ni bienvenida de clienta, ni contratos
+  // que firmar, ni fecha de inicio de servicio. Nada de eso va con ellos.
+  if (isAdmin(email) || (await esEquipo(email))) {
+    return { revoked: false, needsOnboarding: false, pendingContracts: 0, contractsExempt: true, accessFrom: null };
+  }
   try {
     const [profRows, pending] = await Promise.all([
       sbSelect<{ access_revoked: boolean | null; onboarding_completed_at: string | null; contracts_exempt?: boolean | null; access_from?: string | null }>(

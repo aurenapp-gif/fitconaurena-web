@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbUpdate } from "@/lib/supabase";
 import { sendTechniqueReplyEmail } from "@/lib/mailer";
 import { verifyPath } from "@/lib/token";
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 // La coach responde a un vídeo de técnica (texto + vídeo de respuesta opcional).
 export async function POST(req: NextRequest) {
   const email = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!email || !isAdmin(email)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!email || !(await puedeGestionarClientas(email))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: { id?: unknown; reply?: unknown; reply_path?: unknown; pathToken?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
