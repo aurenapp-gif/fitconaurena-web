@@ -69,3 +69,49 @@ test("dos firmas distintas dan llaves distintas; la misma, la misma", () => {
   assert.notEqual(una.origen, otra.origen);
   assert.equal(una.origen, repetida.origen);
 });
+
+/* ---- Mes a mes ---------------------------------------------------------- */
+
+import { porMes, etiquetaDeMes, type Cobro, type Venta } from "../lib/contabilidad";
+
+const venta = (fecha: string, cent: number): Venta =>
+  ({ id: fecha + cent, member_email: "a@b.com", concepto: null, importe_cent: cent, fecha, metodo: null, nota: null });
+const cobro = (fecha: string, cent: number): Cobro =>
+  ({ id: fecha + cent, member_email: "a@b.com", venta_id: null, importe_cent: cent, fecha, metodo: null, nota: null });
+
+test("el mes se escribe como se dice", () => {
+  assert.equal(etiquetaDeMes("2026-09"), "septiembre de 2026");
+  assert.equal(etiquetaDeMes("2026-01"), "enero de 2026");
+});
+
+test("cada mes trae sus contratos, su facturación y su ticket medio", () => {
+  const m = porMes(
+    [venta("2026-08-17", 189700), venta("2026-08-26", 119700), venta("2026-09-19", 250000)],
+    []
+  );
+  assert.equal(m.length, 2);
+  // Del más reciente al más antiguo.
+  assert.equal(m[0].mes, "2026-09");
+  assert.equal(m[0].contratos, 1);
+  assert.equal(m[0].facturado, 250000);
+  assert.equal(m[1].contratos, 2);
+  assert.equal(m[1].facturado, 309400);
+  assert.equal(m[1].medio, 154700);
+});
+
+test("un cobro de un mes aparece en ese mes aunque la venta fuera de otro", () => {
+  const m = porMes([venta("2026-08-17", 189700)], [cobro("2026-09-05", 50000)]);
+  assert.equal(m.find((x) => x.mes === "2026-09")!.cobrado, 50000);
+  assert.equal(m.find((x) => x.mes === "2026-09")!.contratos, 0);
+  assert.equal(m.find((x) => x.mes === "2026-08")!.cobrado, 0);
+});
+
+test("un mes solo de cobros no inventa un ticket medio", () => {
+  const m = porMes([], [cobro("2026-09-05", 50000)]);
+  assert.equal(m[0].contratos, 0);
+  assert.equal(m[0].medio, 0);
+});
+
+test("sin nada apuntado no hay meses", () => {
+  assert.deepEqual(porMes([], []), []);
+});

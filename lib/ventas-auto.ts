@@ -49,11 +49,19 @@ export async function importarContratosFirmados(): Promise<Importacion> {
   const [firmas, plantillas, ventas] = await Promise.all([
     sbSelect<Firma>("contract_signatures", "select=member_email,assignment_id,template_id,signed_at&order=signed_at.asc"),
     sbSelect<{ id: string; title: string; kind: string }>("contract_templates", "select=id,title,kind"),
-    sbSelect<{ origen: string | null }>("ventas", "select=origen"),
+    sbSelect<{ origen: string | null; member_email: string; fecha: string; importe_cent: number }>(
+      "ventas", "select=origen,member_email,fecha,importe_cent"
+    ),
   ]);
 
   const tpl = new Map(plantillas.map((t) => [t.id, t]));
   const yaApuntadas = new Set(ventas.map((v) => v.origen).filter((x): x is string => !!x));
+  // Y también las que se apuntaron A MANO con los mismos datos. Sin esto, una
+  // venta escrita antes de que existiera la llave se volvería a apuntar al
+  // importar, y el mes saldría con el doble de facturación.
+  const aMano = new Set(
+    ventas.filter((v) => !v.origen).map((v) => `${v.member_email}|${v.fecha}|${v.importe_cent}`)
+  );
   const res: Importacion = { creadas: 0, yaEstaban: 0, sinPrecio: [] };
 
   for (const f of firmas) {
@@ -69,6 +77,7 @@ export async function importarContratosFirmados(): Promise<Importacion> {
     });
     if (!fila) { res.sinPrecio.push(t.title); continue; }
     if (fila.origen && yaApuntadas.has(fila.origen)) { res.yaEstaban++; continue; }
+    if (aMano.has(`${fila.member_email}|${fila.fecha}|${fila.importe_cent}`)) { res.yaEstaban++; continue; }
 
     try {
       await sbInsertIgnore("ventas", fila, "origen");
