@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin, adminEmails, getMembers } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect } from "@/lib/supabase";
 import { faseEnCurso, type Fase } from "@/lib/estrategia";
 import { CINTURA } from "@/lib/evidencia";
@@ -31,7 +32,7 @@ const conSigno = (n: number, u: string) => `${n > 0 ? "+" : n < 0 ? "-" : ""}${u
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: { email?: unknown; bloques?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

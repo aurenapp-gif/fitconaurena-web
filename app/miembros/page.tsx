@@ -8,6 +8,7 @@ import { requireMember } from "@/lib/guard";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { progresoDeFases, type Fase } from "@/lib/estrategia";
 import { onboardingDisponible } from "@/lib/onboarding";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import FaseDeLaClienta from "@/components/FaseDeLaClienta";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
@@ -62,7 +63,10 @@ function Anillo({ hechos, total }: { hechos: number; total: number }) {
 
 export default async function MiembrosPage() {
   const email = await requireMember();
-  const admin = isAdmin(email);
+  // `admin` = trabaja con las clientas (CEO o equipo); su inicio es el atajo a
+  // su trabajo, no la pantalla de una clienta.
+  const admin = await puedeGestionarClientas(email);
+  const esCeo = isAdmin(email);
   const hoy = todayMadrid();
   const periodo = periodoDe(hoy);
   const e = encodeURIComponent(email);
@@ -229,14 +233,15 @@ export default async function MiembrosPage() {
   if (admin) {
     return (
       <>
-        <AppShell admin />
+        <AppShell admin ceo={esCeo} />
         <main className="app-main relative min-h-screen">
           <div className="container-content relative z-10 py-6 lg:py-12">
             {cabecera}
             <Grupo label="Tu trabajo">
-              <Fila href="/miembros/admin" titulo="Panel de la coach" sub="Comunicados, plantillas y administración" />
+              {esCeo && <Fila href="/miembros/admin" titulo="Panel de dirección" sub="Comunicados, plantillas y administración" />}
               <Fila href="/miembros/clientas" titulo="Clientas" sub="Fichas, planes y renovaciones" />
               <Fila href="/miembros/checkins" titulo="Revisiones" sub={`Revisión del ${periodo.etiqueta}`} />
+              <Fila href="/miembros/analizador" titulo="Analizador" sub="Dónde está el freno de cada clienta" />
               <Fila href="/miembros/dudas" titulo="Dudas" sub="Lo que no se atreven a preguntar en la llamada" />
             </Grupo>
             <div className="mt-5">

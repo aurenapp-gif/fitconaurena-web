@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbInsert } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ ok: false }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ ok: false }, { status: 403 });
 
   try {
     const d = await req.json();

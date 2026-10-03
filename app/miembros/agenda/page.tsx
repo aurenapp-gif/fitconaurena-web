@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Agenda", robots: { index: false, follow: false } };
@@ -16,7 +17,8 @@ const DOW = ["L", "M", "X", "J", "V", "S", "D"];
 export default async function AgendaPage({ searchParams }: { searchParams: { ym?: string; day?: string } }) {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
-  if (!isAdmin(email)) redirect("/miembros");
+  if (!(await puedeGestionarClientas(email))) redirect("/miembros");
+  const esCeo = isAdmin(email);
 
   const now = new Date();
   const m = /^(\d{4})-(\d{2})$/.exec(searchParams.ym ?? "");
@@ -51,7 +53,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: { ym?
 
   return (
     <>
-      <AppShell admin />
+      <AppShell admin ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">

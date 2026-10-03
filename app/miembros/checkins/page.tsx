@@ -12,6 +12,7 @@ import ComparativaRevision from "@/components/ComparativaRevision";
 import { Grupo, NotaCoach, Privado } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
 import { diaDe, fechaCorta } from "@/lib/renovaciones";
@@ -134,7 +135,10 @@ export default async function CheckinsPage({
   searchParams?: { clienta?: string };
 }) {
   const email = await requireMember();
-  const admin = isAdmin(email);
+  // `admin` aquí significa «trabaja con las clientas»: CEO y equipo ven lo
+  // mismo. Lo que solo es del CEO se mira con `esCeo`.
+  const admin = await puedeGestionarClientas(email);
+  const esCeo = isAdmin(email);
   const hoy = todayMadrid();
 
   // Clienta elegida en el buscador (solo la coach). Con una elegida se trae su
@@ -355,7 +359,7 @@ export default async function CheckinsPage({
 
   return (
     <>
-      <AppShell admin={admin} />
+      <AppShell admin={admin} ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className={`${admin ? "container-wide" : "container-content"} relative z-10 py-6 lg:py-12`}>
           <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">

@@ -23,6 +23,7 @@ import { callDay, DEFAULT_TITLE, SETUP_SQL as CALLS_SQL, type MemberCall } from 
 import { type Supplement } from "@/lib/suplementos";
 import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, edadDe, fechaLarga, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
@@ -90,7 +91,8 @@ const ACTION_LABEL: Record<string, string> = {
 export default async function ClientaPage({ params }: { params: { email: string } }) {
   const me = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!me) redirect("/miembros/acceso");
-  if (!isAdmin(me)) redirect("/miembros");
+  if (!(await puedeGestionarClientas(me))) redirect("/miembros");
+  const esCeo = isAdmin(me);
 
   const member = normalizeEmail(decodeURIComponent(params.email));
   if (!isValidEmail(member)) redirect("/miembros/clientas");
@@ -315,7 +317,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   return (
     <>
-      <AppShell admin />
+      <AppShell admin ceo={esCeo} />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
@@ -382,7 +384,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
               )}
             </div>
             {estrategiaNeedSetup ? (
-              <SetupSql title="Falta un paso para poder usar el mapa de fases" sql={ESTRATEGIA_SQL} />
+              esCeo ? <SetupSql title="Falta un paso para poder usar el mapa de fases" sql={ESTRATEGIA_SQL} /> : <p className="text-sm text-ink-muted">El mapa de fases todavía no está activado.</p>
             ) : (
               <>
                 <p className="text-xs text-ink-subtle mb-4">
@@ -500,7 +502,8 @@ export default async function ClientaPage({ params }: { params: { email: string 
                           ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Ver</a>
                           : <span className="text-danger text-xs" title="El archivo no está disponible. Vuelve a subirlo.">⚠️ sin archivo</span>}
                         <PlanTypeSwitch id={p.id} type={p.type} />
-                        <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />
+                        {/* Subir sí, borrar no: el equipo no puede deshacer lo que ya está entregado. */}
+                        {esCeo && <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />}
                       </span>
                     </div>
                     {p.type === "nutricion" && (
@@ -553,7 +556,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
             </p>
 
             {callsNeedSetup ? (
-              <SetupSql title="Falta un paso para poder subir llamadas" sql={CALLS_SQL} />
+              esCeo ? <SetupSql title="Falta un paso para poder subir llamadas" sql={CALLS_SQL} /> : <p className="text-sm text-ink-muted">Las llamadas todavía no están activadas.</p>
             ) : (
               <>
                 <CallAdd member={member} />
@@ -587,7 +590,9 @@ export default async function ClientaPage({ params }: { params: { email: string 
             )}
           </div>
 
-          {/* Contratos: asignar + estado + firmados */}
+          {/* Contratos: asignar + estado + firmados. Solo el CEO: ahí dentro
+              están el DNI, la dirección y los PDFs firmados de cada clienta. */}
+          {esCeo && (
           <div className="card-dark p-6 !transform-none mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <h2 className="font-bold text-ink">Contratos y anexo de salud</h2>
@@ -640,6 +645,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
               </div>
             )}
           </div>
+          )}
 
           {/* Uso del servicio: evidencia para disputas y reclamaciones */}
           <div className="card-dark p-6 !transform-none mb-6">
@@ -748,12 +754,14 @@ export default async function ClientaPage({ params }: { params: { email: string 
             )}
           </div>
 
-          {/* Zona de eliminación */}
-          <div className="card-dark p-6 !transform-none mt-6 border-danger/20">
-            <h2 className="font-bold text-ink mb-1">Eliminar clienta</h2>
-            <p className="text-sm text-ink-muted mb-4">Le quita el acceso al área de miembros. Sus datos no se borran.</p>
-            <RemoveClient email={member} />
-          </div>
+          {/* Zona de eliminación. Solo el CEO. */}
+          {esCeo && (
+            <div className="card-dark p-6 !transform-none mt-6 border-danger/20">
+              <h2 className="font-bold text-ink mb-1">Eliminar clienta</h2>
+              <p className="text-sm text-ink-muted mb-4">Le quita el acceso al área de miembros. Sus datos no se borran.</p>
+              <RemoveClient email={member} />
+            </div>
+          )}
         </div>
       </main>
     </>

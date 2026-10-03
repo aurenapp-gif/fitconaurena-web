@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbInsert, sbDelete, isMissingTable } from "@/lib/supabase";
 import { safeLink, MAX_TITLE, MAX_NOTE } from "@/lib/llamadas";
@@ -12,7 +13,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Guarda el enlace de la llamada estratégica de una clienta. Solo la coach. */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let data: { member?: unknown; url?: unknown; title?: unknown; date?: unknown; note?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

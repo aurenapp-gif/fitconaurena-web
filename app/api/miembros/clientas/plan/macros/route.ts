@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbUpdate } from "@/lib/supabase";
 import { macrosValidos } from "@/lib/nutricion";
 
@@ -16,7 +17,7 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   const me = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!me || !isAdmin(me)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   let body: { planId?: unknown; kcal?: unknown; proteina?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }

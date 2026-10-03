@@ -145,8 +145,8 @@ export default async function AdminPage() {
         <div className="container-wide relative z-10 py-6 lg:py-12">
           <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
             <div>
-              <span className="section-tag">Solo administración</span>
-              <h1 className="section-title">Panel de la coach</h1>
+              <span className="section-tag">CEO · Director del programa</span>
+              <h1 className="section-title">Panel de dirección</h1>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Link href="/miembros/clientas" className="btn-brand text-sm px-5 py-2.5">Clientas</Link>
