@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { COMISION_EUROS, estadoAfiliados, puedeVerAfiliados } from "@/lib/afiliados";
+import { afiliadosVisible, COMISION_EUROS, puedeVerAfiliados } from "@/lib/afiliados";
 
 export const metadata: Metadata = { title: "Recomienda y gana", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -24,9 +24,8 @@ export default async function RecomiendaPage() {
   // Mientras el programa esté apagado, solo lo ve la coach: así puede mirarlo
   // tal como lo verán ellas antes de prometer nada. Para una clienta, leer
   // esto es una promesa de dinero que ya no se puede retirar sin quedar mal.
-  const estado = await estadoAfiliados();
-  if (!puedeVerAfiliados(estado, email)) redirect("/miembros");
-  const visible = estado === "si";
+  const visible = await afiliadosVisible();
+  if (!puedeVerAfiliados(visible, email)) redirect("/miembros");
 
   const Paso = ({ n, titulo, texto }: { n: number; titulo: string; texto: string }) => (
     <li className="flex items-start gap-3.5">
