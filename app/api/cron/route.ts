@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMembers, isAdmin, adminEmails } from "@/lib/members";
+import { soloClientas } from "@/lib/equipo";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sbSelect, sbUpsert, sbUpdate, sbDeleteObject } from "@/lib/supabase";
 import { sendCallReminder, sendCheckinReminder, sendCheckinReport, sendEsperaTerminada, sendPlanUpdateEmail } from "@/lib/mailer";
@@ -109,7 +110,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const members = (await getMembers()).filter((m) => !isAdmin(m.email));
+  // Ni la coach ni el equipo reciben lo que reciben las clientas, aunque
+  // alguien les dé de alta en la lista de correo por error.
+  const members = await soloClientas(await getMembers(), (m) => m.email);
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
   let callSent = 0;
   let checkinSent = 0;

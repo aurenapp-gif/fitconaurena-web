@@ -7,6 +7,7 @@ import AnnouncementPoll from "@/components/AnnouncementPoll";
 import GroupCallForm from "@/components/GroupCallForm";
 import SetupSql from "@/components/SetupSql";
 import { isAdmin } from "@/lib/members";
+import { soloClientas } from "@/lib/equipo";
 import { requireMember } from "@/lib/guard";
 import { sbSelect, isMissingTable } from "@/lib/supabase";
 import { recuento, miVoto } from "@/lib/votaciones";
@@ -120,8 +121,7 @@ export default async function ComunicadosPage({ searchParams }: { searchParams: 
     const profs = await sbSelect<{ email: string; display_name: string | null; access_revoked: boolean | null }>(
       "profiles", "select=email,display_name,access_revoked"
     ).catch(() => [] as { email: string; display_name: string | null; access_revoked: boolean | null }[]);
-    for (const p of profs) {
-      if (isAdmin(p.email)) continue;
+    for (const p of await soloClientas(profs, (x) => x.email)) {
       nombres.set(p.email, p.display_name || p.email);
       if (!p.access_revoked) activas.push(p.email);
     }
