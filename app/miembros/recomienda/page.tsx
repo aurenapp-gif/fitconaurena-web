@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { afiliadosVisible, COMISION_EUROS } from "@/lib/afiliados";
+import { COMISION_EUROS, estadoAfiliados, puedeVerAfiliados } from "@/lib/afiliados";
 
 export const metadata: Metadata = { title: "Recomienda y gana", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -24,9 +24,9 @@ export default async function RecomiendaPage() {
   // Mientras el programa esté apagado, solo lo ve la coach: así puede mirarlo
   // tal como lo verán ellas antes de prometer nada. Para una clienta, leer
   // esto es una promesa de dinero que ya no se puede retirar sin quedar mal.
-  const esCoach = isAdmin(email);
-  const visible = await afiliadosVisible();
-  if (!visible && !esCoach) redirect("/miembros");
+  const estado = await estadoAfiliados();
+  if (!puedeVerAfiliados(estado, email)) redirect("/miembros");
+  const visible = estado === "si";
 
   const Paso = ({ n, titulo, texto }: { n: number; titulo: string; texto: string }) => (
     <li className="flex items-start gap-3.5">
@@ -45,7 +45,7 @@ export default async function RecomiendaPage() {
       <AppShell />
       <main className="app-main relative min-h-screen">
         <div className="container-content relative z-10 py-6 lg:py-12">
-          {esCoach && !visible && (
+          {!visible && (
             <p className="rounded-[14px] bg-warn-soft text-warn px-4 py-3 mb-5 text-[15px] font-semibold">
               Vista previa. Las clientas todavía no ven esto: se enciende desde el Panel.
             </p>
