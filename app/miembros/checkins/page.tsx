@@ -15,6 +15,7 @@ import { requireMember } from "@/lib/guard";
 import { puedeGestionarClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
+import RecordarRevision, { type SinSubir } from "@/components/RecordarRevision";
 import { diaDe, fechaCorta } from "@/lib/renovaciones";
 import { comparacionDeFotos } from "@/lib/comparativa-fotos";
 import { comparar, objetivoDe } from "@/lib/progreso";
@@ -73,6 +74,19 @@ function hayNumero(v: unknown): boolean {
   if (v === null || v === undefined || v === "") return false;
   const n = Number(v);
   return Number.isFinite(n) && n > 0;
+}
+
+/** «hoy a las 10:32», «ayer», «el 2 de octubre». Para la marca del recordatorio. */
+function cuandoSeLeAviso(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const cuando = new Date(iso);
+  const dia = (x: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(x);
+  const hoy = dia(new Date());
+  const ayer = dia(new Date(Date.now() - 86400000));
+  const hora = cuando.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
+  if (dia(cuando) === hoy) return `hoy a las ${hora}`;
+  if (dia(cuando) === ayer) return `ayer a las ${hora}`;
+  return `el ${cuando.toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" })}`;
 }
 
 function fmt(d: string) {
@@ -204,7 +218,9 @@ export default async function CheckinsPage({
     : rows.some((r) => r.created_at.slice(0, 10) >= periodo.inicio);
   const prox = proximaRevision(hoy, hechaEstaQuincena);
 
-  let pendientes: string[] = [];
+  // `pendientes` lleva el correo además del nombre: sin él no se le puede
+  // recordar nada.
+  let pendientes: SinSubir[] = [];
   let alDia: string[] = [];
   // Nombre de cada clienta, para no enseñarle correos donde puede ir el nombre.
   const nombres = new Map<string, string>();
@@ -214,7 +230,7 @@ export default async function CheckinsPage({
 
   if (admin) {
     try {
-      const [profs, hechas, todas] = await Promise.all([
+      const [profs, hechas, todas, recordatorios] = await Promise.all([
         sbSelect<{ email: string; display_name: string | null; access_revoked: boolean | null; questionnaire: Record<string, string> | null }>(
           "profiles", "select=email,display_name,access_revoked,questionnaire"
         ),
@@ -222,7 +238,16 @@ export default async function CheckinsPage({
         // Una fila por revisión, solo con correo y fecha: es lo justo para
         // contar cuántas tiene cada una y cuándo fue la última.
         sbSelect<{ member_email: string; created_at: string }>("check_ins", "select=member_email,created_at"),
+        // A quién se le ha recordado ya ESTA quincena, para no mandarlo dos
+        // veces sin saberlo. Si la tabla falla, se enseña sin la marca.
+        sbSelect<{ member_email: string; created_at: string }>(
+          "activity_log",
+          `select=member_email,created_at&action=eq.recordatorio_revision&created_at=gte.${periodo.inicio}T00:00:00&order=created_at.desc`
+        ).catch(() => [] as { member_email: string; created_at: string }[]),
       ]);
+      // La primera de cada clienta es la más reciente: vienen ordenadas.
+      const ultimoAviso = new Map<string, string>();
+      for (const r of recordatorios) if (!ultimoAviso.has(r.member_email)) ultimoAviso.set(r.member_email, r.created_at);
       const yaEstan = new Set(hechas.map((h) => h.member_email));
       const cuenta = new Map<string, { n: number; ultima: string }>();
       for (const c of todas) {
@@ -235,7 +260,12 @@ export default async function CheckinsPage({
         nombres.set(p.email, p.display_name || p.email);
         if (p.email === elegida) objetivo = objetivoDe(p.questionnaire);
         if (p.access_revoked === true) continue;
-        (yaEstan.has(p.email) ? alDia : pendientes).push(p.display_name || p.email);
+        if (yaEstan.has(p.email)) alDia.push(p.display_name || p.email);
+        else pendientes.push({
+          email: p.email,
+          nombre: p.display_name || p.email,
+          recordada: cuandoSeLeAviso(ultimoAviso.get(p.email)),
+        });
         const c = cuenta.get(p.email);
         fichas.push({
           email: p.email,
@@ -244,7 +274,7 @@ export default async function CheckinsPage({
           ultima: c?.ultima ?? null,
         });
       }
-      pendientes.sort(); alDia.sort();
+      pendientes.sort((x, y) => x.nombre.localeCompare(y.nombre, "es")); alDia.sort();
       // Primero quien más revisiones tiene: es con quien hay algo que comparar.
       fichas.sort((a, b) => b.revisiones - a.revisiones || a.nombre.localeCompare(b.nombre, "es"));
     } catch (e) { console.error("[checkins] pendientes", e); }
@@ -385,10 +415,7 @@ export default async function CheckinsPage({
               {pendientes.length === 0 ? (
                 <p className="text-sm text-success">Todas al día</p>
               ) : (
-                <>
-                  <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-1.5">Sin hacer ({pendientes.length})</p>
-                  <p className="text-sm text-ink mb-3">{pendientes.join(" · ")}</p>
-                </>
+                <RecordarRevision pendientes={pendientes} />
               )}
               {alDia.length > 0 && (
                 <>
