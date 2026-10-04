@@ -99,3 +99,24 @@ test("no queda ninguna pantalla de coach sin decidir su papel", () => {
   }
   assert.deepEqual(pendientes, [], `estas pantallas no dicen qué ve el equipo: ${pendientes.join(", ")}`);
 });
+
+/* ---- El equipo no es clienta -------------------------------------------- */
+
+test("las listas de clientas dejan fuera al equipo y a la coach", () => {
+  // La prueba mira el código, no la base: lo que importa es que estas tres
+  // pantallas sigan filtrando. Son las que mandan correos o cuentan clientas.
+  for (const archivo of [
+    "app/miembros/checkins/page.tsx",
+    "app/api/cron/route.ts",
+    "app/miembros/comunicados/page.tsx",
+  ]) {
+    assert.match(leer(archivo), /soloClientas/, `${archivo} lista clientas sin filtrar al equipo`);
+  }
+});
+
+test("el filtro deja fuera al CEO aunque la lista del equipo falle", () => {
+  const s = leer("lib/equipo.ts");
+  const fn = s.slice(s.indexOf("export async function soloClientas"));
+  assert.match(fn, /!isAdmin\(e\)/, "tiene que excluir también al CEO");
+  assert.match(fn, /equipo\.has\(e\)/);
+});

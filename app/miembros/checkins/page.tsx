@@ -12,7 +12,7 @@ import ComparativaRevision from "@/components/ComparativaRevision";
 import { Grupo, NotaCoach, Privado } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
-import { puedeGestionarClientas } from "@/lib/equipo";
+import { puedeGestionarClientas, soloClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
 import RecordarRevision, { type SinSubir } from "@/components/RecordarRevision";
@@ -255,8 +255,10 @@ export default async function CheckinsPage({
         if (!prev) cuenta.set(c.member_email, { n: 1, ultima: c.created_at });
         else cuenta.set(c.member_email, { n: prev.n + 1, ultima: c.created_at > prev.ultima ? c.created_at : prev.ultima });
       }
-      for (const p of profs) {
-        if (isAdmin(p.email)) continue;
+      // Fuera la coach y el equipo: tienen ficha en `profiles` desde que entran
+      // una vez, pero no son clientas y no les falta ninguna revisión.
+      const soloEllas = await soloClientas(profs, (x) => x.email);
+      for (const p of soloEllas) {
         nombres.set(p.email, p.display_name || p.email);
         if (p.email === elegida) objetivo = objetivoDe(p.questionnaire);
         if (p.access_revoked === true) continue;

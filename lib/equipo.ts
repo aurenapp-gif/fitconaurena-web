@@ -110,3 +110,20 @@ export const SETUP_SQL = `create table if not exists public.staff (
 );
 
 alter table public.staff enable row level security;`;
+
+/**
+ * Quita de una lista a quien NO es clienta: la coach y el equipo.
+ *
+ * Hace falta porque el equipo acaba teniendo ficha en `profiles` en cuanto
+ * entra una vez, y a partir de ahí aparece en todo lo que se arma leyendo esa
+ * tabla: los recordatorios de revisión, los avisos de la llamada, los
+ * comunicados… Un entrenador recibiendo «sube tus fotos de frente, perfil y
+ * espaldas» es exactamente lo que no puede pasar.
+ */
+export async function soloClientas<T>(filas: T[], email: (f: T) => string): Promise<T[]> {
+  const equipo = await emailsDelEquipo();
+  return filas.filter((f) => {
+    const e = (email(f) ?? "").trim().toLowerCase();
+    return !!e && !isAdmin(e) && !equipo.has(e);
+  });
+}
