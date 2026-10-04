@@ -21,25 +21,9 @@ export const COMISION_EUROS = 200;
  */
 export const AJUSTE_AFILIADOS = "afiliados_visible";
 
-/**
- * Tres estados, no dos:
- *
- *  · «no» (lo que hay por defecto): no existe para nadie.
- *  · «prueba»: lo ven la coach y sus perfiles de prueba, y NADIE más. Es la
- *    única forma de mirar el inicio tal y como va a quedar —la tarjeta, dónde
- *    cae, qué tapa— sin prometerle 200 € a veintitantas mujeres.
- *  · «si»: lo ven todas.
- */
-export type EstadoAfiliados = "no" | "prueba" | "si";
-
-export async function estadoAfiliados(): Promise<EstadoAfiliados> {
-  const v = (await leerAjuste(AJUSTE_AFILIADOS))?.trim().toLowerCase();
-  return v === "si" ? "si" : v === "prueba" ? "prueba" : "no";
-}
-
-/** Si está encendido para todas. Es lo que enseña el interruptor del Panel. */
+/** Si está encendido para las clientas. Es el interruptor del Panel. */
 export async function afiliadosVisible(): Promise<boolean> {
-  return (await estadoAfiliados()) === "si";
+  return (await leerAjuste(AJUSTE_AFILIADOS))?.trim().toLowerCase() === "si";
 }
 
 /**
@@ -60,16 +44,16 @@ export function esPerfilDePrueba(email: string | null, jefes: string[]): boolean
 /**
  * ¿Esta persona ve el apartado de recomendación?
  *
- * La coach lo ve siempre, esté como esté el interruptor: es suyo y tiene que
- * poder mirarlo. Las clientas, solo con «si». Y los perfiles de prueba de la
- * coach, también con «prueba», que es para lo que está.
+ * Con el interruptor apagado lo ven la coach y sus perfiles de prueba, y
+ * nadie más. Hace falta para poder mirar el inicio tal y como va a quedar —la
+ * tarjeta, dónde cae, qué tapa— sin prometerle 200 € a veintitantas mujeres.
+ * Y no abre nada que no estuviera ya abierto: un alias de su propio correo es
+ * ella misma.
  */
-export function puedeVerAfiliados(estado: EstadoAfiliados, email: string | null): boolean {
-  if (estado === "si") return true;
-  if (isAdmin(email)) return true;
-  return estado === "prueba" && esPerfilDePrueba(email, adminEmails());
+export function puedeVerAfiliados(visible: boolean, email: string | null): boolean {
+  return visible || isAdmin(email) || esPerfilDePrueba(email, adminEmails());
 }
 
 export async function veAfiliados(email: string | null): Promise<boolean> {
-  return puedeVerAfiliados(await estadoAfiliados(), email);
+  return puedeVerAfiliados(await afiliadosVisible(), email);
 }

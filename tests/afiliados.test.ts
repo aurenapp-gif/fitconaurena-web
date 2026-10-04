@@ -15,23 +15,20 @@ const JEFES = ["aurenapp@gmail.com"];
 const CLIENTA = "laura@gmail.com";
 
 test("apagado: ninguna clienta lo ve", () => {
-  assert.equal(puedeVerAfiliados("no", CLIENTA), false);
-  assert.equal(puedeVerAfiliados("prueba", CLIENTA), false);
-  assert.equal(puedeVerAfiliados("no", null), false);
+  assert.equal(puedeVerAfiliados(false, CLIENTA), false);
+  assert.equal(puedeVerAfiliados(false, null), false);
+  // Ni aunque se ponga un «+» en su propio correo: el alias tiene que ser del
+  // correo de la coach.
+  assert.equal(puedeVerAfiliados(false, "laura+reco@gmail.com"), false);
 });
 
-test("en prueba lo ven la coach y sus perfiles de prueba, y nadie más", () => {
-  assert.equal(puedeVerAfiliados("prueba", "aurenapp@gmail.com"), true);
-  assert.equal(puedeVerAfiliados("prueba", "aurenapp+reco@gmail.com"), true);
-  assert.equal(puedeVerAfiliados("prueba", "otra+reco@gmail.com"), false);
+test("apagado lo ven la coach y sus perfiles de prueba, para poder mirarlo", () => {
+  assert.equal(puedeVerAfiliados(false, "aurenapp@gmail.com"), true);
+  assert.equal(puedeVerAfiliados(false, "aurenapp+reco@gmail.com"), true);
 });
 
 test("encendido lo ven todas", () => {
-  assert.equal(puedeVerAfiliados("si", CLIENTA), true);
-});
-
-test("la coach lo ve siempre, para poder mirarlo antes de encenderlo", () => {
-  assert.equal(puedeVerAfiliados("no", "aurenapp@gmail.com"), true);
+  assert.equal(puedeVerAfiliados(true, CLIENTA), true);
 });
 
 test("el alias tiene que ser del correo de la coach, no de cualquiera", () => {
