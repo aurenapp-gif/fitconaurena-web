@@ -8,7 +8,8 @@ import { requireMember } from "@/lib/guard";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
 import { progresoDeFases, type Fase } from "@/lib/estrategia";
 import { onboardingDisponible } from "@/lib/onboarding";
-import { afiliadosVisible, COMISION_EUROS } from "@/lib/afiliados";
+import { veAfiliados } from "@/lib/afiliados";
+import TarjetaRecomienda from "@/components/TarjetaRecomienda";
 import { nombreDelEquipo, puedeGestionarClientas } from "@/lib/equipo";
 import FaseDeLaClienta from "@/components/FaseDeLaClienta";
 import { isMissingTable, sbSelect, sbSignedUrl } from "@/lib/supabase";
@@ -197,7 +198,7 @@ export default async function MiembrosPage() {
 
   // El programa de recomendación, mientras no esté encendido, no existe para
   // ellas: ni en el menú ni en el inicio.
-  const afiliadosOn = await afiliadosVisible();
+  const afiliadosOn = await veAfiliados(email);
 
   const videos = onboardingDisponible();
   const vistos = videos.length
@@ -382,11 +383,9 @@ export default async function MiembrosPage() {
                   sub={ent ? (renEnt.toca ? `Vigente hasta el ${fechaCorta(renEnt.toca)}` : undefined) : "Tu coach aún no lo ha subido"} />
               </Grupo>
 
+              {afiliadosOn && <TarjetaRecomienda />}
+
               <Grupo label="Más">
-                {afiliadosOn && (
-                  <Fila href="/miembros/recomienda" titulo={`Recomienda y gana ${COMISION_EUROS} €`}
-                    sub="Por cada mujer que entre al programa" />
-                )}
                 <Fila href="/miembros/entreno" titulo="Mi entreno" sub={ent ? "Apunta tus pesos mientras entrenas" : "Cuando tengas plan de entrenamiento"} />
                 <Fila href="/miembros/fitai" titulo="FitAI" sub="Tus dudas del programa, al momento" />
                 <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
