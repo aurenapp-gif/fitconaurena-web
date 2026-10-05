@@ -23,7 +23,9 @@ export default async function EjercicioPage({ params }: { params: { id: string }
   const e = ejercicioPorId(params.id);
   if (!e) notFound();
 
-  const falta = loQueFalta(e);
+  // La imagen y el vídeo se piden en el bloque de abajo, que ya lo dice; aquí
+  // solo se avisa de lo que de verdad falta por escribir.
+  const falta = loQueFalta(e).filter((f) => f !== "imagen o vídeo");
 
   const Bloque = ({ titulo, children }: { titulo: string; children: React.ReactNode }) => (
     <section className="mb-5">

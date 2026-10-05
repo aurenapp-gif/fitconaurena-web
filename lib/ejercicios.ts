@@ -17,7 +17,7 @@
  * desde la app. Lo editado manda sobre lo del repositorio.
  */
 
-import type { Grupo } from "./musculos";
+import { NOMBRE_GRUPO, type Grupo } from "./musculos";
 
 /** Con qué se hace. Importa para saber si su gimnasio lo tiene. */
 export type Material =
@@ -141,11 +141,26 @@ export function normaliza(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-/** ¿Encaja este ejercicio con lo que se ha escrito en el buscador? */
+/**
+ * ¿Encaja este ejercicio con lo que se ha escrito en el buscador?
+ *
+ * Busca también por grupo, material y patrón, no solo por el nombre: quien
+ * escribe «glúteo» quiere los de glúteo, y quien escribe «polea» quiere ver
+ * qué puede hacer en la torre. Con solo los nombres, «glúteo» devolvía tres
+ * de nueve, que es peor que no buscar.
+ */
 export function coincide(e: Ejercicio, termino: string): boolean {
   const t = normaliza(termino);
   if (!t) return true;
-  return [e.nombre, ...e.alias].some((n) => normaliza(n).includes(t));
+  const campos = [
+    e.nombre,
+    ...e.alias,
+    NOMBRE_GRUPO[e.grupo],
+    ...e.secundarios.map((g) => NOMBRE_GRUPO[g]),
+    NOMBRE_MATERIAL[e.material],
+    NOMBRE_PATRON[e.patron],
+  ];
+  return campos.some((n) => normaliza(n).includes(t));
 }
 
 /**
