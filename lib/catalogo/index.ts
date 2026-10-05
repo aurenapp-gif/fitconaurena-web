@@ -10,9 +10,11 @@ import type { Ejercicio } from "../ejercicios";
 import { coincide } from "../ejercicios";
 import type { Grupo } from "../musculos";
 import { INFERIOR } from "./inferior";
+import { INFERIOR_2 } from "./inferior2";
 import { SUPERIOR } from "./superior";
+import { SUPERIOR_2 } from "./superior2";
 
-export const CATALOGO: Ejercicio[] = [...INFERIOR, ...SUPERIOR];
+export const CATALOGO: Ejercicio[] = [...INFERIOR, ...INFERIOR_2, ...SUPERIOR, ...SUPERIOR_2];
 
 const POR_ID = new Map(CATALOGO.map((e) => [e.id, e]));
 
