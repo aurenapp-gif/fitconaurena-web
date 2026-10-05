@@ -12,7 +12,12 @@ import { NOMBRE_GRUPO, type Grupo } from "@/lib/musculos";
  * fichas, caben enteras en la página, y así escribir en el buscador no espera
  * a nadie. El día que sean mil, esto se cambia; hoy sería complicarlo gratis.
  */
-export default function CatalogoEjercicios({ ejercicios }: { ejercicios: Ejercicio[] }) {
+export default function CatalogoEjercicios({
+  ejercicios, conVideo = [], conFoto = [],
+}: { ejercicios: Ejercicio[]; conVideo?: string[]; conFoto?: string[] }) {
+  const video = useMemo(() => new Set(conVideo), [conVideo]);
+  const foto = useMemo(() => new Set(conFoto), [conFoto]);
+  const [soloSinMedios, setSoloSinMedios] = useState(false);
   const [texto, setTexto] = useState("");
   const [grupo, setGrupo] = useState<Grupo | "">("");
   const [material, setMaterial] = useState<Material | "">("");
@@ -31,9 +36,12 @@ export default function CatalogoEjercicios({ ejercicios }: { ejercicios: Ejercic
 
   const lista = useMemo(
     () => ejercicios.filter((e) =>
-      coincide(e, texto) && (!grupo || e.grupo === grupo) && (!material || e.material === material)
+      coincide(e, texto)
+      && (!grupo || e.grupo === grupo)
+      && (!material || e.material === material)
+      && (!soloSinMedios || (!video.has(e.id) && !foto.has(e.id)))
     ),
-    [ejercicios, texto, grupo, material]
+    [ejercicios, texto, grupo, material, soloSinMedios, video, foto]
   );
 
   const chip = (activo: boolean) =>
@@ -70,9 +78,14 @@ export default function CatalogoEjercicios({ ejercicios }: { ejercicios: Ejercic
         ))}
       </div>
 
-      <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide mb-2">
-        {lista.length} {lista.length === 1 ? "ejercicio" : "ejercicios"}
-      </p>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+        <p className="text-xs font-semibold text-ink-subtle uppercase tracking-wide">
+          {lista.length} {lista.length === 1 ? "ejercicio" : "ejercicios"} · {video.size} con vídeo · {foto.size} con foto
+        </p>
+        <button type="button" className={chip(soloSinMedios)} onClick={() => setSoloSinMedios(!soloSinMedios)}>
+          Sin vídeo ni foto
+        </button>
+      </div>
 
       {lista.length === 0 ? (
         <p className="bg-surface rounded-xl p-4 text-[15px] text-ink-muted">
@@ -94,6 +107,8 @@ export default function CatalogoEjercicios({ ejercicios }: { ejercicios: Ejercic
                 {falta.length > 0 && (
                   <span className="shrink-0 text-[12px] text-warn">incompleta</span>
                 )}
+                {video.has(e.id) && <span className="shrink-0 text-[12px] text-brand">vídeo</span>}
+                {!video.has(e.id) && foto.has(e.id) && <span className="shrink-0 text-[12px] text-ink-subtle">foto</span>}
                 <span className="shrink-0 text-ink-subtle">›</span>
               </Link>
             );

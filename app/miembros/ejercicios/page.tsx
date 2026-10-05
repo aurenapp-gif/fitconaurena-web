@@ -6,8 +6,11 @@ import CatalogoEjercicios from "@/components/CatalogoEjercicios";
 import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
 import { puedeGestionarClientas } from "@/lib/equipo";
 import { CATALOGO } from "@/lib/catalogo";
+import { mediosDelCatalogo } from "@/lib/ejercicios-media";
 
 export const metadata: Metadata = { title: "Ejercicios", robots: { index: false, follow: false } };
+// Los medios se suben desde la propia pantalla: no puede quedarse cacheada.
+export const dynamic = "force-dynamic";
 
 /**
  * El catálogo de ejercicios. Coach y equipo.
@@ -21,6 +24,12 @@ export default async function EjerciciosPage() {
   if (!me) redirect("/miembros/acceso");
   if (!(await puedeGestionarClientas(me))) redirect("/miembros");
 
+  // Qué fichas tienen ya vídeo o foto. Es lo que convierte «llenar el
+  // catálogo» en una tarea con final visible en vez de en una sensación.
+  const medios = await mediosDelCatalogo();
+  const conVideo = Array.from(medios.values()).filter((m) => m.video_url).map((m) => m.exercise_id);
+  const conFoto = Array.from(medios.values()).filter((m) => m.image_path).map((m) => m.exercise_id);
+
   return (
     <>
       <AppShell admin ceo={isAdmin(me)} />
@@ -30,7 +39,7 @@ export default async function EjerciciosPage() {
           <p className="text-[17px] text-ink-muted mb-6">
             El catálogo de la casa: cómo se hace cada uno, cómo se deja la máquina y por cuál cambiarlo.
           </p>
-          <CatalogoEjercicios ejercicios={CATALOGO} />
+          <CatalogoEjercicios ejercicios={CATALOGO} conVideo={conVideo} conFoto={conFoto} />
         </div>
       </main>
     </>

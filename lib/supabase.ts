@@ -103,6 +103,28 @@ export async function sbUpdate(table: string, filter: string, patch: object): Pr
   if (!res.ok) throw new Error(`sbUpdate ${table}: ${res.status} ${await res.text()}`);
 }
 
+/**
+ * Se asegura de que el bucket existe antes de subir nada.
+ *
+ * Los buckets de siempre (perfil, planes, contratos, checkins) se crearon a
+ * mano en el panel de Supabase. Para los nuevos no hace falta: si no está, se
+ * crea privado la primera vez que se sube algo, y así nadie tiene que acordarse
+ * de un paso manual para que una pantalla funcione.
+ */
+export async function sbEnsureBucket(bucket: string): Promise<void> {
+  const ver = await fetchT(`${URL_BASE}/storage/v1/bucket/${bucket}`, { headers: headers() });
+  if (ver.ok) return;
+  const res = await fetchT(`${URL_BASE}/storage/v1/bucket`, {
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ id: bucket, name: bucket, public: false }),
+  });
+  // 409 = ya existía (dos peticiones a la vez). No es un fallo.
+  if (!res.ok && res.status !== 409) {
+    throw new Error(`sbEnsureBucket ${bucket}: ${res.status} ${await res.text()}`);
+  }
+}
+
 /** Sube un archivo a un bucket. `data` son los bytes. */
 export async function sbUpload(
   bucket: string,
