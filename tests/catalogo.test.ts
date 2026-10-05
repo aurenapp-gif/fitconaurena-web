@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { CATALOGO, ejercicioPorId, fichaDeNombre } from "../lib/catalogo";
 import { coincide, loQueFalta, necesitaAjuste } from "../lib/ejercicios";
 import { grupoDe } from "../lib/musculos";
+import { idDeYoutube } from "../lib/ejercicios-media";
 
 test("hay catálogo y todos los identificadores son únicos", () => {
   assert.ok(CATALOGO.length >= 40, `solo hay ${CATALOGO.length} ejercicios`);
@@ -91,4 +92,24 @@ test("el buscador entiende «glúteo» y «polea», no solo los nombres", () => 
   // Y sigue encontrando por nombre y por alias: los tres hip thrust más el
   // unilateral, que lo lleva de alias.
   assert.equal(CATALOGO.filter((e) => coincide(e, "hip thrust")).length, 4);
+});
+
+/* ---- Los vídeos ---------------------------------------------------------- */
+
+test("solo entra un vídeo de YouTube, y solo su identificador", () => {
+  // Lo que se guarda es lo que se va a incrustar: si entrara una URL
+  // cualquiera, acabaría dentro de un iframe en la pantalla de una clienta.
+  assert.equal(idDeYoutube("https://youtu.be/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(idDeYoutube("https://www.youtube.com/watch?v=dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(idDeYoutube("https://www.youtube.com/shorts/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(idDeYoutube("https://www.youtube.com/embed/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(idDeYoutube("dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(idDeYoutube("  https://youtu.be/dQw4w9WgXcQ  "), "dQw4w9WgXcQ");
+
+  // Y nada más: ni otro sitio, ni javascript:, ni un enlace a medias.
+  assert.equal(idDeYoutube("https://vimeo.com/12345678"), null);
+  assert.equal(idDeYoutube("javascript:alert(1)"), null);
+  assert.equal(idDeYoutube("https://youtube.com.malo.es/watch?v=dQw4w9WgXcQ"), null);
+  assert.equal(idDeYoutube("https://www.youtube.com/watch?v=corto"), null);
+  assert.equal(idDeYoutube(""), null);
 });

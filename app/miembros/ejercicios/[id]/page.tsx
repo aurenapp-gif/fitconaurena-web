@@ -8,6 +8,8 @@ import { puedeGestionarClientas } from "@/lib/equipo";
 import { ejercicioPorId } from "@/lib/catalogo";
 import { NOMBRE_MATERIAL, NOMBRE_MOTIVO, NOMBRE_NIVEL, NOMBRE_PATRON, loQueFalta } from "@/lib/ejercicios";
 import { NOMBRE_GRUPO } from "@/lib/musculos";
+import MediosEjercicio from "@/components/MediosEjercicio";
+import { mediosDe, urlDeIncrustacion } from "@/lib/ejercicios-media";
 
 export const metadata: Metadata = { title: "Ejercicio", robots: { index: false, follow: false } };
 // Dinámica: la ficha es igual para todas, pero quién puede verla NO. Si se
@@ -22,6 +24,8 @@ export default async function EjercicioPage({ params }: { params: { id: string }
 
   const e = ejercicioPorId(params.id);
   if (!e) notFound();
+
+  const medios = await mediosDe(e.id);
 
   // La imagen y el vídeo se piden en el bloque de abajo, que ya lo dice; aquí
   // solo se avisa de lo que de verdad falta por escribir.
@@ -124,10 +128,25 @@ export default async function EjercicioPage({ params }: { params: { id: string }
                 </div>
               </Bloque>
 
-              <Bloque titulo="Vídeo e imagen">
-                <p className="bg-surface rounded-xl p-4 text-[15px] text-ink-muted leading-relaxed">
-                  Todavía no. Las imágenes de arranque y, después, tus vídeos entran en el siguiente paso.
-                </p>
+              <Bloque titulo="Vídeo y foto">
+                {medios.video && (
+                  <div className="rounded-xl overflow-hidden bg-ink mb-3 aspect-video">
+                    <iframe
+                      src={urlDeIncrustacion(medios.video)}
+                      title={`Vídeo de ${e.nombre}`}
+                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  </div>
+                )}
+                {medios.imagen && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={medios.imagen} alt={`Cómo se hace: ${e.nombre}`}
+                    className="w-full rounded-xl bg-surface mb-3" />
+                )}
+                <MediosEjercicio id={e.id} imagen={medios.imagen} video={medios.video}
+                  puedeBorrar={isAdmin(me)} />
               </Bloque>
             </div>
           </div>

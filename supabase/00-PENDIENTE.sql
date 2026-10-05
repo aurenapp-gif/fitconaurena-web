@@ -210,3 +210,17 @@ create table if not exists public.gastos (
 create index if not exists gastos_fecha_idx on public.gastos (fecha desc);
 
 alter table public.gastos enable row level security;
+
+-- =====================================================================
+-- CATÁLOGO DE EJERCICIOS: la foto y el vídeo de cada uno
+-- (el texto de las fichas va en el código; esto solo guarda los archivos)
+-- =====================================================================
+create table if not exists public.exercise_media (
+  exercise_id text primary key,
+  image_path text,
+  video_url text,
+  updated_by text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.exercise_media enable row level security;
