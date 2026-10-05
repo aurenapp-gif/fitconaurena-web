@@ -29,14 +29,17 @@ export const NOMBRE_GRUPO: Record<Grupo, string> = {
 
 /**
  * Palabras que identifican cada grupo, de la más específica a la más general.
- * El orden importa: «peso muerto rumano» es femoral, y hay que verlo antes de
- * que «peso muerto» lo mande a espalda.
+ * El orden importa, y no es un detalle: «peso muerto rumano» es femoral, y hay
+ * que verlo antes de que «peso muerto» lo mande a espalda; «gemelos en
+ * prensa» es gemelo, y hay que verlo antes de que «prensa» lo mande a
+ * cuádriceps (que es lo que pasaba, y el analizador contaba esas series en el
+ * grupo equivocado).
  */
 const REGLAS: ReadonlyArray<{ grupo: Grupo; patrones: RegExp }> = [
   { grupo: "femoral", patrones: /rumano|femoral|isquio|curl tumbad|curl de pierna|buenos dias|good morning/ },
   { grupo: "gluteo", patrones: /hip thrust|empuje de cadera|puente de gluteo|gluteo|patada|abduct|coz|kickback/ },
-  { grupo: "cuadriceps", patrones: /sentadilla|squat|prensa|leg press|zancada|lunge|bulgar|extension de cuadriceps|extension de pierna|step ?up|subida al cajon|hack/ },
   { grupo: "gemelo", patrones: /gemelo|soleo|calf|elevacion de talon/ },
+  { grupo: "cuadriceps", patrones: /sentadilla|squat|prensa|leg press|zancada|lunge|bulgar|extension de cuadriceps|extension de pierna|step ?up|subida al cajon|hack/ },
   { grupo: "espalda", patrones: /jalon|dominada|pull ?up|pull ?over|remo|row|peso muerto|deadlift|face ?pull|encogimiento de hombro|trapecio/ },
   { grupo: "pecho", patrones: /press de banca|press banca|press inclinado|press plano|press declinado|aperturas|pec ?deck|contractora|fondo|push ?up|flexion/ },
   { grupo: "hombro", patrones: /press militar|press de hombro|press hombro|elevacion lateral|elevacion frontal|deltoid|hombro|arnold/ },
