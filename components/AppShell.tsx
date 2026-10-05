@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
  * que es quien la ha comprobado en el servidor.
  */
 
-type Icono = "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "contabilidad" | "analizador" | "equipo" | "recomienda" | "salir";
+type Icono = "ejercicios" | "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "contabilidad" | "analizador" | "equipo" | "recomienda" | "salir";
 type Item = { href: string; label: string; icon: Icono; coach?: boolean };
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -43,6 +43,7 @@ const LINEA: Record<Icono, JSX.Element> = {
   leads: <path d="M4 5h16l-6 8v6l-4-2v-4z" />,
   contabilidad: <><rect x="4.5" y="3" width="15" height="18" rx="2.2" /><path d="M8.5 7.5h7M8.5 11.5h2M13 11.5h2.5M8.5 15h2M13 15h2.5M8.5 18h7" /></>,
   analizador: <><path d="M4 19V5M4 19h16" /><path d="M8 16v-4M12 16V8M16 16v-6" /></>,
+  ejercicios: <><path d="M6.5 9v6M17.5 9v6M3.5 10.5v3M20.5 10.5v3M6.5 12h11" /></>,
   recomienda: <><path d="M12 21s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 8.4a4.1 4.1 0 0 1 7.5 3.2C19.5 16.4 12 21 12 21z" /></>,
   equipo: <><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8" /><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17.5 14.9c2 .6 3.5 2.2 3.5 4.6" /></>,
   salir: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" /></>,
@@ -91,6 +92,7 @@ const COACH: (Item & { soloCeo?: boolean })[] = [
   { href: "/miembros/admin", label: "Panel", icon: "panel", coach: true, soloCeo: true },
   { href: "/miembros/agenda", label: "Agenda", icon: "agenda", coach: true },
   { href: "/miembros/contratos", label: "Contratos", icon: "contratos", coach: true, soloCeo: true },
+  { href: "/miembros/ejercicios", label: "Ejercicios", icon: "ejercicios", coach: true },
   { href: "/miembros/analizador", label: "Analizador", icon: "analizador", coach: true },
   { href: "/miembros/contabilidad", label: "Contabilidad", icon: "contabilidad", coach: true, soloCeo: true },
   { href: "/miembros/equipo", label: "Equipo", icon: "equipo", coach: true, soloCeo: true },
