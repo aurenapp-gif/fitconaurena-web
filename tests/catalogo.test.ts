@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CATALOGO, ejercicioPorId, fichaDeNombre } from "../lib/catalogo";
-import { loQueFalta, necesitaAjuste } from "../lib/ejercicios";
+import { coincide, loQueFalta, necesitaAjuste } from "../lib/ejercicios";
 import { grupoDe } from "../lib/musculos";
 
 test("hay catálogo y todos los identificadores son únicos", () => {
@@ -78,4 +78,17 @@ test("los sustitutos de cada ejercicio son distintos entre sí", () => {
     }
   }
   assert.deepEqual(repes, []);
+});
+
+test("el buscador entiende «glúteo» y «polea», no solo los nombres", () => {
+  const porGrupo = CATALOGO.filter((e) => coincide(e, "gluteo"));
+  const deGluteo = CATALOGO.filter((e) => e.grupo === "gluteo");
+  assert.ok(
+    porGrupo.length >= deGluteo.length,
+    `buscar «glúteo» devuelve ${porGrupo.length} y hay ${deGluteo.length} de glúteo`
+  );
+  assert.ok(CATALOGO.filter((e) => coincide(e, "polea")).length >= 4);
+  // Y sigue encontrando por nombre y por alias: los tres hip thrust más el
+  // unilateral, que lo lleva de alias.
+  assert.equal(CATALOGO.filter((e) => coincide(e, "hip thrust")).length, 4);
 });

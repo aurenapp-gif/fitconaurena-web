@@ -47,7 +47,7 @@ export default function CatalogoEjercicios({ ejercicios }: { ejercicios: Ejercic
         type="search"
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
-        placeholder="Buscar «hip thrust», «glúteo», «sin máquina»…"
+        placeholder="Buscar «hip thrust», «glúteo», «polea»…"
         aria-label="Buscar ejercicio"
         className="w-full rounded-xl border border-line bg-surface px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
       />
