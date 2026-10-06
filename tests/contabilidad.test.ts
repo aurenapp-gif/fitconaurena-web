@@ -154,3 +154,58 @@ test("cada gasto cuenta en su mes, y el margen del mes con él", () => {
   assert.equal(oct.margen, -20000, "un mes solo de gastos resta");
   assert.equal(oct.contratos, 0);
 });
+
+/* ---- El objetivo del mes ------------------------------------------------- */
+
+import { diasDelMes, progresoDelObjetivo, ticketMedioReciente } from "../lib/objetivos";
+
+test("la barra dice lo que falta, en clientas y en días", () => {
+  // 30.000 € de objetivo, 1.897 € facturados, ticket medio 1.588 €, día 6 de
+  // octubre: faltan 28.103 €, unas 18 clientas, y quedan 26 días (hoy cuenta).
+  const p = progresoDelObjetivo(3_000_000, 189_700, 158_800, "2026-10", "2026-10-06");
+  assert.equal(p.falta, 2_810_300);
+  assert.equal(p.clientas, 18);
+  assert.equal(p.diasRestantes, 26);
+  assert.equal(p.pct, 6);
+});
+
+test("la barra nunca se pasa del final ni se queda en negativo", () => {
+  const pasado = progresoDelObjetivo(1_000_000, 1_500_000, 150_000, "2026-10", "2026-10-20");
+  assert.equal(pasado.pct, 100);
+  assert.equal(pasado.falta, 0);
+  assert.equal(pasado.clientas, 0);
+});
+
+test("el último día del mes todavía cuenta como día", () => {
+  const p = progresoDelObjetivo(1_000_000, 500_000, 100_000, "2026-10", "2026-10-31");
+  assert.equal(p.diasRestantes, 1);
+});
+
+test("un mes que ya pasó no deja días por delante", () => {
+  const p = progresoDelObjetivo(1_000_000, 900_000, 100_000, "2026-09", "2026-10-06");
+  assert.equal(p.diasRestantes, 0);
+});
+
+test("los días de cada mes, incluido febrero bisiesto", () => {
+  assert.equal(diasDelMes("2026-10"), 31);
+  assert.equal(diasDelMes("2026-02"), 28);
+  assert.equal(diasDelMes("2028-02"), 29);
+  assert.equal(diasDelMes("2026-04"), 30);
+});
+
+test("el ticket medio sale de lo vendido hace poco, no de lo de hace un año", () => {
+  const ventas = [
+    { importe_cent: 100_000, fecha: "2025-10-01" }, // viejo: no cuenta
+    { importe_cent: 150_000, fecha: "2026-09-10" },
+    { importe_cent: 190_000, fecha: "2026-10-05" },
+  ];
+  assert.equal(ticketMedioReciente(ventas, "2026-10-06"), 170_000);
+  // Si en 90 días no hay nada, se usa lo que haya antes que no decir nada.
+  assert.equal(ticketMedioReciente([ventas[0]], "2026-10-06"), 100_000);
+  assert.equal(ticketMedioReciente([], "2026-10-06"), null);
+});
+
+test("sin objetivo no se inventa un progreso", () => {
+  const p = progresoDelObjetivo(0, 189_700, 158_800, "2026-10", "2026-10-06");
+  assert.equal(p.pct, 0);
+});

@@ -10,6 +10,9 @@ import {
   type Gasto,
   type Cobro, type Venta,
 } from "@/lib/contabilidad";
+import ObjetivoDelMes from "@/components/ObjetivoDelMes";
+import { objetivoDelMes, progresoDelObjetivo, ticketMedioReciente } from "@/lib/objetivos";
+import { hoyMadrid } from "@/lib/renovaciones";
 
 export const metadata: Metadata = { title: "Contabilidad", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -34,11 +37,20 @@ export default async function ContabilidadPage() {
   const nombres = new Map(profiles.map((p) => [p.email, p.display_name?.trim() || ""]));
   const nombreDe = (e: string) => nombres.get(e) || members.find((m) => m.email === e)?.name || e;
 
-  const mes = new Date().toISOString().slice(0, 7);
+  // El mes y el día, en horario de Madrid: el día que cuenta es el de aquí.
+  const hoy = hoyMadrid();
+  const mes = hoy.slice(0, 7);
   const esteMes = resumen(ventas, cobros, gastos, mes);
   const total = resumen(ventas, cobros, gastos);
   const filas = porClienta(ventas, cobros, nombreDe);
   const meses = porMes(ventas, cobros, gastos);
+
+  // El objetivo del mes y cómo va. El ticket medio sale de lo vendido en los
+  // últimos 90 días, que es lo que de verdad se está cobrando ahora.
+  const objetivo = await objetivoDelMes(mes);
+  const progreso = objetivo
+    ? progresoDelObjetivo(objetivo, esteMes.facturado, ticketMedioReciente(ventas, hoy), mes, hoy)
+    : null;
 
   // Sin tabla todavía, las consultas devuelven vacío y la página sale en
   // blanco sin decir por qué. Mejor decirlo.
@@ -70,6 +82,8 @@ export default async function ContabilidadPage() {
           <p className="text-[15px] text-ink-muted mb-5">
             Lo facturado es lo que se han comprometido a pagar. Lo cobrado es lo que hay en el banco.
           </p>
+
+          <ObjetivoDelMes mes={mes} etiqueta={etiquetaDeMes(mes).replace(/ de \d{4}$/, "")} progreso={progreso} />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <Cifra etiqueta={`Facturado en ${etiquetaDeMes(mes).replace(/ de \d{4}$/, "")}`} valor={textoEurosCorto(esteMes.facturado)} />
