@@ -209,3 +209,30 @@ test("sin objetivo no se inventa un progreso", () => {
   const p = progresoDelObjetivo(0, 189_700, 158_800, "2026-10", "2026-10-06");
   assert.equal(p.pct, 0);
 });
+
+test("la barra lleva también el listón del mes anterior", () => {
+  // Octubre: objetivo 30.000, llevamos 1.897, septiembre cerró en 16.073.
+  const p = progresoDelObjetivo(3_000_000, 189_700, 158_800, "2026-10", "2026-10-06", 1_607_300);
+  assert.equal(p.anterior, 1_607_300);
+  assert.equal(p.pctAnterior, 54);              // dónde cae la marca en la barra
+  assert.equal(p.faltaAnterior, 1_417_600);     // lo que falta para superarlo
+  assert.equal(p.clientasAnterior, 9);
+});
+
+test("superar el mes anterior se da por ganado aunque falte para el objetivo", () => {
+  const p = progresoDelObjetivo(3_000_000, 1_700_000, 158_800, "2026-10", "2026-10-20", 1_607_300);
+  assert.equal(p.faltaAnterior, 0);
+  assert.equal(p.clientasAnterior, 0);
+  assert.ok(p.falta > 0, "sigue faltando para el objetivo");
+});
+
+test("si el mes pasado fue mejor que el objetivo, la marca no se sale de la barra", () => {
+  const p = progresoDelObjetivo(1_000_000, 0, 150_000, "2026-10", "2026-10-06", 2_000_000);
+  assert.equal(p.pctAnterior, 100);
+});
+
+test("sin mes anterior no se inventa ningún listón", () => {
+  const p = progresoDelObjetivo(3_000_000, 189_700, 158_800, "2026-10", "2026-10-06");
+  assert.equal(p.anterior, 0);
+  assert.equal(p.faltaAnterior, 0);
+});

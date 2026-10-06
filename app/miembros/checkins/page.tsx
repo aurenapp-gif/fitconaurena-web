@@ -437,8 +437,10 @@ export default async function CheckinsPage({
                 </p>
                 <p className="text-[15px] text-ink-muted mt-0.5">
                   {hechaEstaQuincena
-                    ? `La siguiente, el ${fechaCorta(prox.fecha)}. Las revisiones son el 1 y el 15 de cada mes.`
-                    : periodo.dia === 0 ? "Hoy toca. Peso opcional y tres fotos: frente, perfil y espaldas." : `Sigue sin subir. Peso opcional y tres fotos: frente, perfil y espaldas.`}
+                    ? `La siguiente, el ${fechaCorta(prox.fecha)}. Las revisiones son el 1 y el 15, pero puedes subir otra cuando quieras.`
+                    : periodo.dia === 0
+                      ? "Hoy toca. Peso, medidas y tres fotos: frente, perfil y espaldas."
+                      : `Sigue sin subir. Súbela igual aunque se te haya pasado el día: peso, medidas y tres fotos.`}
                 </p>
               </div>
             </div>

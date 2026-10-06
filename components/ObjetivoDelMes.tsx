@@ -71,9 +71,13 @@ export default function ObjetivoDelMes({
     );
   }
 
-  const { objetivo, facturado, pct, falta, clientas, diasRestantes, porDia, proyeccion } = progreso;
+  const {
+    objetivo, facturado, pct, falta, clientas, diasRestantes, porDia, proyeccion,
+    anterior, pctAnterior, faltaAnterior, clientasAnterior,
+  } = progreso;
   const llegado = falta === 0;
   const vaBien = proyeccion >= objetivo;
+  const superaAnterior = anterior > 0 && faltaAnterior === 0;
 
   return (
     <div className="bg-surface rounded-[14px] px-4 py-4 mb-6">
@@ -91,11 +95,35 @@ export default function ObjetivoDelMes({
         <p className={`text-[15px] font-semibold tabular-nums ${llegado ? "text-success" : "text-ink-muted"}`}>{pct} %</p>
       </div>
 
-      <div className="h-3 rounded-full bg-surface-2 overflow-hidden" role="img"
-        aria-label={`${pct} por ciento del objetivo de ${etiqueta}`}>
-        <div className={`h-full rounded-full transition-all ${llegado ? "bg-success" : "bg-brand"}`}
-          style={{ width: `${Math.max(pct, facturado > 0 ? 2 : 0)}%` }} />
+      {/* La barra, con la marca de lo que se facturó el mes pasado: ese listón
+          es el que de verdad no se puede perder. */}
+      <div className="relative h-3 rounded-full bg-surface-2" role="img"
+        aria-label={`${pct} por ciento del objetivo de ${etiqueta}${anterior > 0 ? `, y el mes anterior quedó en el ${pctAnterior} por ciento` : ""}`}>
+        <div className="absolute inset-0 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${llegado ? "bg-success" : superaAnterior ? "bg-sage" : "bg-brand"}`}
+            style={{ width: `${Math.max(pct, facturado > 0 ? 2 : 0)}%` }} />
+        </div>
+        {anterior > 0 && pctAnterior < 100 && (
+          <span aria-hidden="true"
+            className="absolute top-[-3px] bottom-[-3px] w-[2px] bg-ink/45 rounded-full"
+            style={{ left: `${pctAnterior}%` }} />
+        )}
       </div>
+      {anterior > 0 && (
+        <p className="text-[13px] text-ink-muted mt-1.5">
+          {superaAnterior ? (
+            <span className="text-success font-semibold">
+              Mes ganado: ya has superado los {textoEurosCorto(anterior)} del mes pasado.
+            </span>
+          ) : (
+            <>
+              La marca es el mes pasado ({textoEurosCorto(anterior)}). Para superarlo faltan{" "}
+              <strong className="text-ink">{textoEurosCorto(faltaAnterior)}</strong>
+              {clientasAnterior != null && clientasAnterior > 0 && <>, {clientasAnterior} {clientasAnterior === 1 ? "clienta" : "clientas"}</>}.
+            </>
+          )}
+        </p>
+      )}
 
       {llegado ? (
         <p className="text-[15px] text-success font-semibold mt-3">

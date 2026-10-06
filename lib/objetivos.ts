@@ -30,6 +30,14 @@ export async function guardarObjetivo(mes: string, centimos: number | null, por:
 export type Progreso = {
   objetivo: number;
   facturado: number;
+  /** Lo que se facturó el mes pasado. Es el listón que de verdad se defiende. */
+  anterior: number;
+  /** Dónde cae ese listón en la barra, de 0 a 100. */
+  pctAnterior: number;
+  /** Lo que falta para superarlo. 0 si ya está superado. */
+  faltaAnterior: number;
+  /** Cuántas clientas más para superarlo, al ticket medio. */
+  clientasAnterior: number | null;
   /** De 0 a 100, ya recortado: una barra no pasa del final. */
   pct: number;
   /** Lo que falta para llegar. 0 si ya está. */
@@ -57,12 +65,21 @@ export function diasDelMes(mes: string): number {
  * `hoy` llega en formato ISO («2026-10-06») y en horario de Madrid: el día que
  * cuenta es el de aquí, no el del servidor.
  */
+/**
+ * Cómo va el mes, contra DOS listones.
+ *
+ * El objetivo es a lo que se aspira; superar el mes anterior es lo que no se
+ * puede perder. Son cosas distintas y por eso se enseñan las dos: un mes puede
+ * quedarse lejos del objetivo y aun así ser el mejor de la historia del
+ * negocio, y eso hay que saberlo el día que pasa, no en la reunión de enero.
+ */
 export function progresoDelObjetivo(
   objetivo: number,
   facturado: number,
   ticketMedio: number | null,
   mes: string,
-  hoy: string
+  hoy: string,
+  anterior = 0
 ): Progreso {
   const total = diasDelMes(mes);
   const mesDeHoy = hoy.slice(0, 7);
@@ -74,14 +91,22 @@ export function progresoDelObjetivo(
   const transcurridos = Math.max(1, dia);
 
   const falta = Math.max(0, objetivo - facturado);
-  const clientas = ticketMedio && ticketMedio > 0 && falta > 0 ? Math.ceil(falta / ticketMedio) : falta > 0 ? null : 0;
+  const cuantas = (cuanto: number) =>
+    cuanto <= 0 ? 0 : ticketMedio && ticketMedio > 0 ? Math.ceil(cuanto / ticketMedio) : null;
+  const faltaAnterior = Math.max(0, anterior - facturado);
 
   return {
     objetivo,
     facturado,
+    anterior,
+    // Si el mes anterior fue MEJOR que el objetivo, la marca se queda al
+    // final: la barra no puede pintar algo que se sale de ella.
+    pctAnterior: objetivo > 0 ? Math.min(100, Math.round((anterior / objetivo) * 100)) : 0,
+    faltaAnterior,
+    clientasAnterior: cuantas(faltaAnterior),
     pct: objetivo > 0 ? Math.min(100, Math.round((facturado / objetivo) * 100)) : 0,
     falta,
-    clientas,
+    clientas: cuantas(falta),
     ticketMedio,
     diasRestantes,
     porDia: diasRestantes > 0 ? Math.round(falta / diasRestantes) : falta,
