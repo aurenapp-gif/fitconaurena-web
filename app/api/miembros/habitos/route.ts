@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(email)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  let body: { water?: unknown; steps?: unknown; sleep?: unknown; cycle_day?: unknown; energy?: unknown; day?: unknown };
+  let body: { water?: unknown; steps?: unknown; sleep?: unknown; cycle_day?: unknown; energy?: unknown; trained?: unknown; day?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -57,16 +57,23 @@ export async function POST(req: NextRequest) {
     sleep: num(body.sleep, 24),
     updated_at: new Date().toISOString(),
   };
-  const extra = { cycle_day: parseDiaCiclo(body.cycle_day), energy: energia != null && energia >= 1 ? Math.round(energia) : null };
+  // `trained` va con el ciclo y la energía: son las columnas que pueden no
+  // existir todavía. Si falta alguna, se guarda lo demás igual.
+  const extra = {
+    cycle_day: parseDiaCiclo(body.cycle_day),
+    energy: energia != null && energia >= 1 ? Math.round(energia) : null,
+    trained: typeof body.trained === "boolean" ? body.trained : null,
+  };
 
   try {
     await sbUpsert("habit_logs", { ...fila, ...extra });
   } catch (err) {
-    // Si las columnas de ciclo y energía aún no existen (falta ejecutar
-    // supabase/para-ellas.sql), se guarda lo demás igualmente.
+    // Si las columnas de ciclo, energía o entreno aún no existen (falta
+    // ejecutar supabase/para-ellas.sql o entreno-habito.sql), se guarda lo
+    // demás igualmente: perder el agua por una columna que falta sería peor.
     try {
       await sbUpsert("habit_logs", fila);
-      console.error("[api/miembros/habitos] sin ciclo/energía (¿falta la migración?)", err);
+      console.error("[api/miembros/habitos] sin ciclo/energía/entreno (¿falta la migración?)", err);
     } catch (err2) {
       console.error("[api/miembros/habitos]", err2);
       return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
