@@ -52,17 +52,6 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const [celebrate, setCelebrate] = useState("");
-  const [paso, setPaso] = useState(0);
-
-  // Los pasos que le tocan. El del entreno solo existe si su plan trae
-  // ejercicios; una clienta sin ellos no tiene por qué pasar por una pantalla
-  // vacía.
-  const PASOS = ejercicios.length > 0
-    ? (["fotos", "cuerpo", "entreno", "nota"] as const)
-    : (["fotos", "cuerpo", "nota"] as const);
-  const actual = PASOS[Math.min(paso, PASOS.length - 1)];
-  const ultimo = paso >= PASOS.length - 1;
-
   const TITULOS: Record<string, { t: string; s: string }> = {
     fotos: { t: "Tus tres fotos", s: "Mismo sitio y misma luz que la última vez. Solo las veis tú y tu coach." },
     cuerpo: { t: "Peso y medidas", s: "Los dos son opcionales. Si prefieres no pesarte, tu progreso se sigue viendo con las fotos." },
@@ -186,30 +175,35 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
     );
   }
 
+  /** El título de cada bloque. Todos se ven de una vez: antes esto iba por
+   *  pasos y más de una clienta se quedaba en el primero creyendo que la
+   *  revisión eran solo las fotos. */
+  const Titulo = ({ de }: { de: keyof typeof TITULOS }) => (
+    <div className="mt-2">
+      <p className="text-[17px] font-bold text-ink leading-tight">{TITULOS[de].t}</p>
+      <p className="text-[14px] text-ink-muted mt-0.5 mb-1">{TITULOS[de].s}</p>
+    </div>
+  );
+
   const campo = "rounded-[11px] bg-page px-4 py-3 text-[17px] text-ink placeholder:text-ink-subtle outline-none focus:ring-2 focus:ring-brand/40";
   const campoChico = "w-full rounded-[9px] bg-page px-3 py-2 text-[15px] text-ink placeholder:text-ink-subtle outline-none focus:ring-2 focus:ring-brand/40 text-right";
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="bg-surface rounded-[14px] p-4 sm:p-5 scroll-mt-20">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-1">
         {plegado && (
           <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar"
             className="text-[15px] text-ink-muted min-h-[40px] w-8 text-left">✕</button>
         )}
-        <span className="flex-1 text-[15px] text-ink-muted text-center">Paso {paso + 1} de {PASOS.length}</span>
+        <h3 className="flex-1 text-[24px] font-bold text-ink leading-tight tracking-tight">Tu revisión</h3>
         <span className="w-8" />
       </div>
-      <div className="flex gap-1.5 mb-5" aria-hidden="true">
-        {PASOS.map((_, i) => (
-          <span key={i} className={`flex-1 h-1 rounded-full ${i <= paso ? "bg-brand" : "bg-line"}`} />
-        ))}
-      </div>
-
-      <h3 className="text-[24px] font-bold text-ink leading-tight tracking-tight">{TITULOS[actual].t}</h3>
-      <p className="text-[15px] text-ink-muted mt-1.5 mb-4">{TITULOS[actual].s}</p>
+      <p className="text-[15px] text-ink-muted mb-4">
+        Rellena lo que quieras y dale a enviar. Nada es obligatorio: ni las fotos, ni el peso, ni las medidas.
+      </p>
 
       <div className="flex flex-col gap-3">
-        {actual === "fotos" && (
+        <Titulo de="fotos" />
         <div className="rounded-[11px] bg-page p-4">
           <div className="grid grid-cols-3 gap-2">
             {PHOTOS.map((p) => (
@@ -224,9 +218,8 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
             ))}
           </div>
         </div>
-        )}
 
-        {actual === "cuerpo" && (
+        <Titulo de="cuerpo" />
         <div className="flex flex-col gap-1">
           <input
             type="text" inputMode="decimal" value={weight}
@@ -234,12 +227,10 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
             className={campo}
           />
           <p className="text-[13px] text-ink-muted px-1">
-            Si te pesas, en ayunas. Si prefieres no pesarte, déjalo en blanco: tu progreso se sigue viendo con las fotos y las medidas.
+            Si te pesas, en ayunas y después de ir al baño. Si prefieres no pesarte, déjalo en blanco: tu progreso se sigue viendo con las fotos y las medidas.
           </p>
         </div>
-        )}
 
-        {actual === "cuerpo" && (
         <div className="rounded-[11px] bg-page p-4">
           <button
             type="button"
@@ -271,9 +262,10 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
             </>
           )}
         </div>
-        )}
 
-        {actual === "entreno" && entreno.length > 0 && (
+        {entreno.length > 0 && (
+          <>
+          <Titulo de="entreno" />
           <div className="rounded-[11px] bg-page p-4">
             <p className="text-[13px] text-ink-muted mb-3">
               {deEntrenos > 0
@@ -298,15 +290,15 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
               ))}
             </div>
           </div>
+          </>
         )}
 
-        {actual === "nota" && (
-          <textarea
+        <Titulo de="nota" />
+        <textarea
             value={note} onChange={(e) => setNote(e.target.value)} rows={4}
             placeholder="Cómo te has sentido, qué te ha costado, qué ha ido bien…" aria-label="Nota para tu coach"
             className={`${campo} resize-none`}
           />
-        )}
 
         {status === "error" && <p role="alert" className="text-[15px] text-danger">{message}</p>}
         {celebrate && (
@@ -317,34 +309,13 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
 
         <p className="text-[13px] text-ink-muted text-center mt-1">
           Puedes dejarlo a medias y seguir luego: lo que escribas se guarda en este móvil.
-          {actual === "fotos" ? " Las fotos sí tendrás que volver a elegirlas." : ""}
+          Las fotos sí tendrás que volver a elegirlas.
         </p>
 
-        <div className="flex gap-2">
-          {paso > 0 && (
-            <button type="button" onClick={() => setPaso((n) => n - 1)}
-              className="rounded-[14px] bg-page px-5 py-4 text-[17px] text-ink min-h-[50px]">Atrás</button>
-          )}
-          {/*
-            LAS DOS CLAVES SON IMPRESCINDIBLES.
-
-            Sin ellas React reutiliza el mismo nodo del DOM para los dos
-            botones. Al pulsar «Siguiente» en el penúltimo paso, el manejador
-            cambia el paso, React convierte ese mismo botón en el de enviar
-            —que es type="submit"— y el navegador, que todavía está procesando
-            ese clic, ejecuta su acción por defecto: enviaba la revisión sola,
-            sin que la clienta llegara a ver el último paso.
-          */}
-          {ultimo ? (
-            <button key="enviar" type="submit" disabled={status === "loading"} className="btn-brand text-[17px] flex-1 !min-h-[50px] disabled:opacity-60">
-              {status === "loading" ? "Enviando…" : "Enviar mi revisión"}
-            </button>
-          ) : (
-            <button key="siguiente" type="button" onClick={() => setPaso((n) => n + 1)} className="btn-brand text-[17px] flex-1 !min-h-[50px]">
-              Siguiente
-            </button>
-          )}
-        </div>
+        <button type="submit" disabled={status === "loading"}
+          className="btn-brand text-[17px] w-full !min-h-[50px] disabled:opacity-60">
+          {status === "loading" ? "Enviando…" : "Enviar mi revisión"}
+        </button>
       </div>
     </form>
   );
