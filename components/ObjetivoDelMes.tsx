@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Progreso } from "@/lib/objetivos";
-import { textoEuros, textoEurosCorto } from "@/lib/contabilidad";
+import { textoEurosCorto } from "@/lib/contabilidad";
 
 /**
  * La barra del objetivo del mes.
@@ -87,7 +87,7 @@ export default function ObjetivoDelMes({
       </div>
 
       <div className="flex items-end justify-between gap-3 mb-2">
-        <p className="text-[30px] font-bold tracking-tight tabular-nums leading-none">{textoEuros(facturado)}</p>
+        <p className="text-[30px] font-bold tracking-tight tabular-nums leading-none">{textoEurosCorto(facturado)}</p>
         <p className={`text-[15px] font-semibold tabular-nums ${llegado ? "text-success" : "text-ink-muted"}`}>{pct} %</p>
       </div>
 
@@ -104,7 +104,7 @@ export default function ObjetivoDelMes({
       ) : (
         <>
           <p className="text-[17px] text-ink mt-3 leading-snug">
-            Faltan <strong>{textoEuros(falta)}</strong>
+            Faltan <strong>{textoEurosCorto(falta)}</strong>
             {clientas != null && <> · unas <strong>{clientas} {clientas === 1 ? "clienta" : "clientas"}</strong></>}
             {diasRestantes > 0 && <> · quedan <strong>{diasRestantes} {diasRestantes === 1 ? "día" : "días"}</strong></>}
           </p>
