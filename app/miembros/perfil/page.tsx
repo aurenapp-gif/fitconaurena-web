@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 type Profile = { email: string; display_name: string | null; photo_path: string | null; questionnaire: Questionnaire | null; renewal_date: string | null; questionnaire_completed_at: string | null; water_target_l?: number | null; steps_target?: number | null; hide_weight?: boolean | null };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null };
-type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null };
+type HabitRow = { day: string; water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null; trained?: boolean | null };
 
 const fechaLarga = (iso: string) => new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" });
 
@@ -113,7 +113,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   const since = new Date(Date.now() - 40 * 86400000).toISOString().slice(0, 10);
 
   // 1ª tanda: todo lo independiente en paralelo (una sola ida/vuelta, no en cascada).
-  const [profile, plans, habitRows, signatures, calls, supplements, coach] = await Promise.all([
+  const [profile, plans, habitRows, signatures, calls, supplements, coach, sesiones] = await Promise.all([
     sbSelect<Profile>("profiles", `select=*&email=eq.${encodeURIComponent(email)}`)
       .then((r) => r[0] ?? null)
       .catch((e) => { console.error("[perfil] profile", e); return null; }),
@@ -148,6 +148,12 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
       ? sbSelect<{ display_name: string | null }>("profiles", `select=display_name&email=eq.${encodeURIComponent(coachEmail)}`)
           .then((r) => r[0]?.display_name ?? null).catch(() => null)
       : Promise.resolve(null),
+    admin
+      ? Promise.resolve([] as { started_at: string }[])
+      : sbSelect<{ started_at: string }>(
+          "workout_sessions",
+          `select=started_at&member_email=eq.${encodeURIComponent(email)}&started_at=gte.${since}`
+        ).catch((e) => { console.error("[perfil] sesiones", e); return [] as { started_at: string }[]; }),
   ]);
   const inicialCoach = (coach || "C").trim().charAt(0).toUpperCase();
 
@@ -162,6 +168,12 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   const sigTplById = new Map(sigTemplates.map((t) => [t.id, t]));
 
   // 2ª tanda: URLs firmadas de planes, foto y PDFs de contratos firmados.
+  // Los días que ya se metió a apuntar pesos en «Mi entreno». Sirve para no
+  // preguntarle dos veces si ha entrenado.
+  const entrenosApuntados = Array.from(
+    new Set((sesiones ?? []).map((s) => diaDe(s.started_at)))
+  );
+
   const [planUrls, photoUrl, signedPdfUrls] = await Promise.all([
     Promise.all((plans ?? []).map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
@@ -185,11 +197,11 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
 
   const loggedDays = new Set(habitRows.map((r) => r.day));
   const todayRow = habitRows.find((r) => r.day === hoy);
-  const habitToday = { water: todayRow?.water ?? null, steps: todayRow?.steps ?? null, sleep: todayRow?.sleep ?? null, cycle_day: todayRow?.cycle_day ?? null, energy: todayRow?.energy ?? null };
+  const habitToday = { water: todayRow?.water ?? null, steps: todayRow?.steps ?? null, sleep: todayRow?.sleep ?? null, cycle_day: todayRow?.cycle_day ?? null, energy: todayRow?.energy ?? null, trained: todayRow?.trained ?? null };
   // Lo que ya tiene apuntado cada día de la última semana, para que al tocar
   // un día anterior salga lo suyo y no lo de hoy.
   const valoresPorDia = Object.fromEntries(
-    habitRows.map((r) => [r.day, { water: r.water ?? null, steps: r.steps ?? null, sleep: r.sleep ?? null, cycle_day: r.cycle_day ?? null, energy: r.energy ?? null }])
+    habitRows.map((r) => [r.day, { water: r.water ?? null, steps: r.steps ?? null, sleep: r.sleep ?? null, cycle_day: r.cycle_day ?? null, energy: r.energy ?? null, trained: r.trained ?? null }])
   );
   const habitStreak = rachaDias(loggedDays, hoy);
   const semana = semanaDe(hoy, loggedDays);
@@ -256,7 +268,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
               initial={searchParams?.tab ?? (faltaCuestionario ? "cuestionario" : undefined)}
               tabs={[
                 { id: "planes", label: "Planes", node: planesTab },
-                { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} dias={diasApuntables(hoy, loggedDays)} valores={valoresPorDia} aguaObjetivo={agua} pasosObjetivo={pasosObj} /> },
+                { id: "habitos", label: "Hábitos", node: <HabitsTracker initial={habitToday} streak={habitStreak} semana={semana} dias={diasApuntables(hoy, loggedDays)} valores={valoresPorDia} aguaObjetivo={agua} pasosObjetivo={pasosObj} entrenosApuntados={entrenosApuntados} /> },
                 { id: "cuestionario", label: "Cuestionario", aviso: faltaCuestionario, node: (
                   <div className="flex flex-col gap-5">
                     {profileForm}

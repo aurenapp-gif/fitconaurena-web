@@ -140,7 +140,7 @@ export default async function MiembrosPage() {
       ? { t: "Hoy ya has apuntado tu día", s: "Mañana, otra vez. Así se hace la constancia." }
       : hechosSemana > 0
         ? { t: "Apunta tu día en un minuto", s: `Llevas ${hechosSemana} de 7 esta semana.` }
-        : { t: "Apunta tu día en un minuto", s: "Agua, pasos y sueño. Es lo que te hace constante." };
+        : { t: "Apunta tu día en un minuto", s: "Agua, pasos, sueño y si has entrenado. Es lo que te hace constante." };
 
   // ---- Lo de hoy -----------------------------------------------------------
   const hechaEstaQuincena = !!revision && diaDe(revision.created_at) >= periodo.inicio;

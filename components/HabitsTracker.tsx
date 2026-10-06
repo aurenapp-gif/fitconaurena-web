@@ -7,10 +7,11 @@ import { ENERGIA, litrosDeVasos, textoLitros, type DiaApuntable, type DiaSemana 
 import { Barra, Grupo } from "@/components/Grupo";
 import { aPunto, filtraDecimal, filtraEntero } from "@/lib/numeros";
 
-type Today = { water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null };
+type Today = { water: number | null; steps: number | null; sleep: number | null; cycle_day?: number | null; energy?: number | null; trained?: boolean | null };
 
 /**
- * Apuntar el día: agua, pasos, sueño, y si ella quiere, ciclo y energía.
+ * Apuntar el día: agua, pasos, sueño, entreno, y si ella quiere, ciclo y
+ * energía.
  *
  * Grupos al estilo de iOS, con el pulgar en mente: el agua se cuenta con un
  * control de más/menos en pasos de 0,25 L (un vaso), el número se lee de un
@@ -25,6 +26,7 @@ export default function HabitsTracker({
   valores,
   aguaObjetivo,
   pasosObjetivo,
+  entrenosApuntados = [],
 }: {
   initial: Today;
   streak: number;
@@ -37,6 +39,14 @@ export default function HabitsTracker({
   aguaObjetivo?: number | null;
   /** Pasos al día que le ha puesto su coach, si le ha puesto alguno. */
   pasosObjetivo?: number | null;
+  /**
+   * Los días en que ya apuntó series en «Mi entreno».
+   *
+   * Si ya se ha metido a apuntar pesos, no tiene sentido preguntarle otra vez
+   * si ha entrenado: se marca solo. Pedir dos veces lo mismo es la forma más
+   * rápida de que deje de apuntar.
+   */
+  entrenosApuntados?: string[];
 }) {
   const router = useRouter();
   const hoyFecha = dias && dias.length > 0 ? dias[dias.length - 1].fecha : "";
@@ -46,19 +56,24 @@ export default function HabitsTracker({
   const [sleep, setSleep] = useState<string>(initial.sleep != null ? String(initial.sleep) : "");
   const [ciclo, setCiclo] = useState<string>(initial.cycle_day != null ? String(initial.cycle_day) : "");
   const [energia, setEnergia] = useState<number | null>(initial.energy ?? null);
+  const deMiEntreno = new Set(entrenosApuntados);
+  const [entreno, setEntreno] = useState<boolean | null>(
+    initial.trained ?? (hoyFecha && deMiEntreno.has(hoyFecha) ? true : null)
+  );
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errMsg, setErrMsg] = useState("");
 
   /** Cambiar de día trae lo que ya tenía apuntado ese día, no lo de hoy. */
   function elegirDia(fecha: string) {
     if (fecha === dia) return;
-    const v = valores?.[fecha] ?? { water: null, steps: null, sleep: null, cycle_day: null, energy: null };
+    const v = valores?.[fecha] ?? { water: null, steps: null, sleep: null, cycle_day: null, energy: null, trained: null };
     setDia(fecha);
     setWater(v.water ?? 0);
     setSteps(v.steps != null ? String(v.steps) : "");
     setSleep(v.sleep != null ? String(v.sleep) : "");
     setCiclo(v.cycle_day != null ? String(v.cycle_day) : "");
     setEnergia(v.energy ?? null);
+    setEntreno(v.trained ?? (deMiEntreno.has(fecha) ? true : null));
     setStatus("idle");
     setErrMsg("");
   }
@@ -80,6 +95,7 @@ export default function HabitsTracker({
           sleep: sleep === "" ? null : Number(aPunto(sleep)),
           cycle_day: ciclo === "" ? null : Number(ciclo),
           energy: energia,
+          trained: entreno,
           ...(esHoy ? {} : { day: dia }),
         }),
       });
@@ -116,7 +132,7 @@ export default function HabitsTracker({
       <Grupo label="Esta semana" foot={
         streak >= 2
           ? `${streak} días seguidos. ${semana.some((d) => d.hoy && !d.done) ? "Hoy, con apuntarlo, ya son " + (streak + 1) + "." : "Sigue así."}`
-          : hechosSemana > 0 ? `${hechosSemana} de 7 esta semana.` : "Apunta tu día en un minuto: agua, pasos y sueño."
+          : hechosSemana > 0 ? `${hechosSemana} de 7 esta semana.` : "Apunta tu día en un minuto: agua, pasos, sueño y entreno."
       }>
         <div className="flex justify-between px-4 py-3" aria-label="Días con hábitos apuntados">
           {semana.map((d) => (
@@ -199,6 +215,39 @@ export default function HabitsTracker({
           </div>
         </label>
         {pasosObjetivo != null && <div className="px-4 pb-3 -mt-1"><Barra pct={pasosPct} /></div>}
+      </Grupo>
+
+      <Grupo
+        label="Entrenamiento"
+        foot={
+          deMiEntreno.has(dia)
+            ? "Ya lo has apuntado en Mi entreno, así que esto se marca solo."
+            : "Con decir si has entrenado basta. Los pesos se apuntan en Mi entreno."
+        }
+      >
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[17px] text-ink">{esHoy ? "¿Has entrenado hoy?" : `¿Entrenaste el ${etiquetaDia.toLowerCase()}?`}</span>
+          </div>
+          <div className="flex gap-1 p-0.5 rounded-lg bg-surface-2" role="radiogroup"
+            aria-label={esHoy ? "¿Has entrenado hoy?" : `¿Entrenaste el ${etiquetaDia.toLowerCase()}?`}>
+            {[
+              { v: true, t: "Sí" },
+              { v: false, t: "Hoy no" },
+            ].map(({ v, t }) => {
+              const on = entreno === v;
+              return (
+                <button key={t} type="button" role="radio" aria-checked={on}
+                  onClick={() => setEntreno(on ? null : v)}
+                  className={`flex-1 min-h-[38px] rounded-[7px] text-[14px] font-medium ${
+                    on ? "bg-surface text-ink shadow-sm font-semibold" : "text-ink-muted"
+                  }`}>
+                  {v === false && !esHoy ? "No" : t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </Grupo>
 
       <Grupo label="Descanso y ciclo" foot="El ciclo es opcional. Apuntarlo ayuda a entender el peso y la energía de cada semana, y solo lo veis tú y tu coach.">

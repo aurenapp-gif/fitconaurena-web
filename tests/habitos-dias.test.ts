@@ -55,3 +55,33 @@ test("una fecha con mala pinta no cuela", () => {
   assert.equal(sePuedeApuntar("2026-13-40", HOY), false);
   assert.equal(sePuedeApuntar("", HOY), false);
 });
+
+/* ---- El entreno, un hábito más ------------------------------------------ */
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+const leer = (p: string) => readFileSync(join(import.meta.dirname ?? ".", "..", p), "utf8");
+
+test("el entreno se guarda junto al ciclo y la energía, no con el agua", () => {
+  // Las tres son columnas que pueden no existir todavía. Si `trained` fuera
+  // con el agua y la columna faltara, un día entero de hábitos se perdería
+  // por una migración sin ejecutar.
+  const api = leer("app/api/miembros/habitos/route.ts");
+  const extra = api.slice(api.indexOf("const extra = {"), api.indexOf("try {", api.indexOf("const extra = {")));
+  assert.match(extra, /trained/);
+  // Solo el objeto, no el comentario que viene después.
+  const desde = api.indexOf("const fila = {");
+  const fila = api.slice(desde, api.indexOf("};", desde));
+  assert.ok(!/trained/.test(fila), "trained no puede ir en la fila que siempre se guarda");
+});
+
+test("solo se guarda un sí o un no, nunca lo que llegue", () => {
+  const api = leer("app/api/miembros/habitos/route.ts");
+  assert.match(api, /typeof body\.trained === "boolean" \? body\.trained : null/);
+});
+
+test("si ya apuntó pesos ese día, no se le pregunta dos veces", () => {
+  const tracker = leer("components/HabitsTracker.tsx");
+  assert.match(tracker, /entrenosApuntados/);
+  assert.match(tracker, /deMiEntreno\.has\(fecha\)/);
+});
