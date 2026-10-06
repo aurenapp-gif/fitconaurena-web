@@ -157,7 +157,7 @@ test("cada gasto cuenta en su mes, y el margen del mes con él", () => {
 
 /* ---- El objetivo del mes ------------------------------------------------- */
 
-import { diasDelMes, progresoDelObjetivo, ticketMedioReciente } from "../lib/objetivos";
+import { diasDelMes, progresoDelObjetivo, ticketDePrevision, ticketMedioReciente } from "../lib/objetivos";
 
 test("la barra dice lo que falta, en clientas y en días", () => {
   // 30.000 € de objetivo, 1.897 € facturados, ticket medio 1.588 €, día 6 de
@@ -235,4 +235,22 @@ test("sin mes anterior no se inventa ningún listón", () => {
   const p = progresoDelObjetivo(3_000_000, 189_700, 158_800, "2026-10", "2026-10-06");
   assert.equal(p.anterior, 0);
   assert.equal(p.faltaAnterior, 0);
+});
+
+test("las clientas que faltan se cuentan con el ticket mínimo, no con el histórico", () => {
+  // El histórico arrastra contratos viejos más baratos (1.588 €). Si a partir
+  // de ahora nadie entra por menos de 1.797 €, contar con el histórico diría
+  // que hacen falta más clientas de las que hacen falta.
+  assert.equal(ticketDePrevision(179_700, 158_800), 179_700);
+  // Pero si se está cerrando POR ENCIMA del mínimo, esa es la cuenta buena.
+  assert.equal(ticketDePrevision(179_700, 210_000), 210_000);
+  // Y sin histórico, el mínimo.
+  assert.equal(ticketDePrevision(179_700, null), 179_700);
+});
+
+test("con el ticket nuevo salen menos clientas para el mismo objetivo", () => {
+  const antes = progresoDelObjetivo(3_000_000, 189_700, 158_800, "2026-10", "2026-10-06");
+  const ahora = progresoDelObjetivo(3_000_000, 189_700, 179_700, "2026-10", "2026-10-06");
+  assert.equal(antes.clientas, 18);
+  assert.equal(ahora.clientas, 16);
 });

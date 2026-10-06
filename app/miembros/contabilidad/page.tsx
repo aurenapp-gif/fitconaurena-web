@@ -11,7 +11,7 @@ import {
   type Cobro, type Venta,
 } from "@/lib/contabilidad";
 import ObjetivoDelMes from "@/components/ObjetivoDelMes";
-import { objetivoDelMes, progresoDelObjetivo, ticketMedioReciente } from "@/lib/objetivos";
+import { objetivoDelMes, progresoDelObjetivo, ticketDePrevision, ticketMedioReciente, ticketMinimo } from "@/lib/objetivos";
 import { hoyMadrid } from "@/lib/renovaciones";
 
 export const metadata: Metadata = { title: "Contabilidad", robots: { index: false, follow: false } };
@@ -47,7 +47,7 @@ export default async function ContabilidadPage() {
 
   // El objetivo del mes y cómo va. El ticket medio sale de lo vendido en los
   // últimos 90 días, que es lo que de verdad se está cobrando ahora.
-  const objetivo = await objetivoDelMes(mes);
+  const [objetivo, minimo] = await Promise.all([objetivoDelMes(mes), ticketMinimo()]);
   // Lo del mes pasado: el listón que no se puede perder.
   const mesAnterior = (() => {
     const [a, m] = mes.split("-").map(Number);
@@ -55,8 +55,9 @@ export default async function ContabilidadPage() {
     return d.toISOString().slice(0, 7);
   })();
   const facturadoAnterior = resumen(ventas, cobros, gastos, mesAnterior).facturado;
+  const ticket = ticketDePrevision(minimo, ticketMedioReciente(ventas, hoy));
   const progreso = objetivo
-    ? progresoDelObjetivo(objetivo, esteMes.facturado, ticketMedioReciente(ventas, hoy), mes, hoy, facturadoAnterior)
+    ? progresoDelObjetivo(objetivo, esteMes.facturado, ticket, mes, hoy, facturadoAnterior)
     : null;
 
   // Sin tabla todavía, las consultas devuelven vacío y la página sale en
@@ -90,7 +91,7 @@ export default async function ContabilidadPage() {
             Lo facturado es lo que se han comprometido a pagar. Lo cobrado es lo que hay en el banco.
           </p>
 
-          <ObjetivoDelMes mes={mes} etiqueta={etiquetaDeMes(mes).replace(/ de \d{4}$/, "")} progreso={progreso} />
+          <ObjetivoDelMes mes={mes} etiqueta={etiquetaDeMes(mes).replace(/ de \d{4}$/, "")} progreso={progreso} minimo={minimo} />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <Cifra etiqueta={`Facturado en ${etiquetaDeMes(mes).replace(/ de \d{4}$/, "")}`} valor={textoEurosCorto(esteMes.facturado)} />

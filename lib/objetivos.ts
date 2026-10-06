@@ -15,6 +15,38 @@ import { guardarAjuste, leerAjuste } from "./ajustes";
 
 export const claveObjetivo = (mes: string) => `objetivo:${mes}`;
 
+/**
+ * El precio mínimo de un contrato, en céntimos.
+ *
+ * Es el suelo: a partir de ahora nadie entra por menos. Sirve para traducir
+ * «faltan 28.000 €» en «faltan N clientas», que es la cuenta que de verdad se
+ * hace. Se guarda en los ajustes para poder subirlo sin tocar código.
+ */
+export const AJUSTE_TICKET_MINIMO = "ticket_minimo";
+export const TICKET_MINIMO_POR_DEFECTO = 179_700;
+
+export async function ticketMinimo(): Promise<number> {
+  const v = await leerAjuste(AJUSTE_TICKET_MINIMO);
+  const n = v ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : TICKET_MINIMO_POR_DEFECTO;
+}
+
+export async function guardarTicketMinimo(centimos: number, por: string): Promise<void> {
+  await guardarAjuste(AJUSTE_TICKET_MINIMO, String(Math.round(centimos)), por);
+}
+
+/**
+ * Con qué ticket se calcula lo que falta.
+ *
+ * El mayor de los dos: el mínimo que se cobra ahora y lo que se está cobrando
+ * de media últimamente. El histórico arrastra contratos viejos más baratos y
+ * haría pensar que hacen falta más clientas de las que hacen falta; y si de
+ * hecho se está vendiendo por encima del mínimo, esa es la cuenta buena.
+ */
+export function ticketDePrevision(minimo: number, medioReciente: number | null): number {
+  return Math.max(minimo, medioReciente ?? 0);
+}
+
 /** El objetivo del mes en CÉNTIMOS, o null si no se ha puesto ninguno. */
 export async function objetivoDelMes(mes: string): Promise<number | null> {
   const v = await leerAjuste(claveObjetivo(mes));

@@ -15,11 +15,12 @@ import { textoEurosCorto } from "@/lib/contabilidad";
  * El objetivo se cambia aquí mismo. Cada mes guarda el suyo.
  */
 export default function ObjetivoDelMes({
-  mes, etiqueta, progreso,
-}: { mes: string; etiqueta: string; progreso: Progreso | null }) {
+  mes, etiqueta, progreso, minimo,
+}: { mes: string; etiqueta: string; progreso: Progreso | null; minimo: number }) {
   const router = useRouter();
   const [editando, setEditando] = useState(false);
   const [valor, setValor] = useState(progreso ? String(Math.round(progreso.objetivo / 100)) : "");
+  const [ticket, setTicket] = useState(String(Math.round(minimo / 100)));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,7 +31,7 @@ export default function ObjetivoDelMes({
       const res = await fetch("/api/miembros/contabilidad/objetivo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mes, importe: quitar ? "" : valor }),
+        body: JSON.stringify({ mes, importe: quitar ? "" : valor, ticketMinimo: ticket }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setError(d.error ?? "No se pudo guardar."); return; }
@@ -66,6 +67,21 @@ export default function ObjetivoDelMes({
         <p className="text-[13px] text-ink-subtle mt-2">
           En euros, sin puntos. Es la facturación que quieres cerrar este mes.
         </p>
+
+        <label className="block mt-4">
+          <span className="block text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-1">
+            Ticket mínimo
+          </span>
+          <input
+            type="text" inputMode="numeric" value={ticket}
+            onChange={(e) => setTicket(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+            placeholder="1797" aria-label="Ticket mínimo, en euros"
+            className="w-full sm:w-44 rounded-xl border border-line bg-page px-4 py-3 text-[17px] tabular-nums text-ink placeholder:text-ink-subtle outline-none focus:border-brand"
+          />
+          <span className="block text-[13px] text-ink-subtle mt-1">
+            Lo menos que puede pagar una clienta. Con esto se calcula cuántas faltan.
+          </span>
+        </label>
         {error && <p className="text-xs text-warn mt-2">{error}</p>}
       </div>
     );
@@ -73,7 +89,7 @@ export default function ObjetivoDelMes({
 
   const {
     objetivo, facturado, pct, falta, clientas, diasRestantes, porDia, proyeccion,
-    anterior, pctAnterior, faltaAnterior, clientasAnterior,
+    anterior, pctAnterior, faltaAnterior, clientasAnterior, ticketMedio,
   } = progreso;
   const llegado = falta === 0;
   const vaBien = proyeccion >= objetivo;
@@ -135,6 +151,12 @@ export default function ObjetivoDelMes({
             Faltan <strong>{textoEurosCorto(falta)}</strong>
             {clientas != null && <> · unas <strong>{clientas} {clientas === 1 ? "clienta" : "clientas"}</strong></>}
             {diasRestantes > 0 && <> · quedan <strong>{diasRestantes} {diasRestantes === 1 ? "día" : "días"}</strong></>}
+          </p>
+          <p className="text-[13px] text-ink-subtle mt-2">
+            La cuenta de clientas va con {textoEurosCorto(ticketMedio ?? minimo)} por contrato
+            {ticketMedio != null && ticketMedio > minimo
+              ? " (lo que estás cerrando últimamente, por encima de tu mínimo)."
+              : ` (tu ticket mínimo). `}
           </p>
           <p className="text-[13px] text-ink-muted mt-1">
             {diasRestantes > 0
