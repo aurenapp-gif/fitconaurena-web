@@ -42,7 +42,10 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [measures, setMeasures] = useState<Record<string, string>>({});
-  const [showMeasures, setShowMeasures] = useState(false);
+  // Abiertas de entrada. Estaban detrás de un «Añadir» que nadie veía, y más
+  // de una clienta ha acabado pensando que la app no la dejaba poner los
+  // centímetros. Un campo opcional que no se ve es un campo que no existe.
+  const [showMeasures, setShowMeasures] = useState(true);
   const [entreno, setEntreno] = useState<{ name: string; weight: string; reps: string }[]>(
     ejercicios.map((e) => ({ name: e.name, weight: e.weight != null ? String(e.weight) : "", reps: e.reps != null ? String(e.reps) : "" }))
   );

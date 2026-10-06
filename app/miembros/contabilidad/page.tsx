@@ -48,8 +48,15 @@ export default async function ContabilidadPage() {
   // El objetivo del mes y cómo va. El ticket medio sale de lo vendido en los
   // últimos 90 días, que es lo que de verdad se está cobrando ahora.
   const objetivo = await objetivoDelMes(mes);
+  // Lo del mes pasado: el listón que no se puede perder.
+  const mesAnterior = (() => {
+    const [a, m] = mes.split("-").map(Number);
+    const d = new Date(Date.UTC(a, m - 2, 1));
+    return d.toISOString().slice(0, 7);
+  })();
+  const facturadoAnterior = resumen(ventas, cobros, gastos, mesAnterior).facturado;
   const progreso = objetivo
-    ? progresoDelObjetivo(objetivo, esteMes.facturado, ticketMedioReciente(ventas, hoy), mes, hoy)
+    ? progresoDelObjetivo(objetivo, esteMes.facturado, ticketMedioReciente(ventas, hoy), mes, hoy, facturadoAnterior)
     : null;
 
   // Sin tabla todavía, las consultas devuelven vacío y la página sale en
