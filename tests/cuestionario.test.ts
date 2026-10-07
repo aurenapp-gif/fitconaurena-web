@@ -52,3 +52,28 @@ test("sin ficha no se avisa: la consulta pudo fallar y avisar en falso es peor",
   assert.equal(cuestionarioPendiente(null), false);
   assert.equal(cuestionarioPendiente(undefined), false);
 });
+
+/* ---- Cambiar el cuestionario después de enviarlo -------------------------- */
+
+import { readFileSync as leerArchivo } from "node:fs";
+import { join as unir } from "node:path";
+const fuente = (p: string) => leerArchivo(unir(import.meta.dirname ?? ".", "..", p), "utf8");
+
+test("cambiar el cuestionario ya enviado avisa a la coach, el primer envío no", () => {
+  const api = fuente("app/api/miembros/perfil/route.ts");
+  // Solo avisa si YA estaba enviado y además ha cambiado algo.
+  assert.match(api, /const yaEstaba = [^\n]*questionnaire_completed_at[^\n]*!questionnaire_completed_at/);
+  assert.match(api, /const cambio = JSON\.stringify/);
+  assert.match(api, /if \(yaEstaba && cambio && rateLimit\(/);
+});
+
+test("no se avisa dos veces por hora mientras edita", () => {
+  const api = fuente("app/api/miembros/perfil/route.ts");
+  assert.match(api, /rateLimit\(`cuestionario-aviso:\$\{email\}`, 1, 3600_000\)/);
+});
+
+test("el aviso del cuestionario no lo puede mandar el navegador", () => {
+  const act = fuente("lib/activity.ts");
+  const solo = act.slice(act.indexOf("const SOLO_SERVIDOR"), act.indexOf("/** ¿Es una acción"));
+  assert.match(solo, /cuestionario_actualizado/);
+});

@@ -3,6 +3,10 @@ import { SESSION_COOKIE, verifySession } from "@/lib/members";
 import { isAccessRevoked } from "@/lib/guard";
 import { sanitizeQuestionnaire, questionnaireComplete, errorNacimiento } from "@/lib/profile";
 import { sbUpsert, sbSelect } from "@/lib/supabase";
+import { adminEmails } from "@/lib/members";
+import { sendPushToEmail } from "@/lib/push";
+import { logActivity } from "@/lib/activity";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -32,6 +36,19 @@ export async function POST(req: NextRequest) {
   // El ciclo de avisos del plan SOLO arranca cuando la clienta pulsa
   // "Enviar cuestionario" (submitted: true) y está completo. Guardar sin enviar
   // no lo activa. Se marca una sola vez (no se reinicia en envíos posteriores).
+  // Lo que tenía guardado antes, para saber si de verdad ha cambiado algo y
+  // si el cuestionario ya estaba enviado.
+  let anterior: { questionnaire: unknown; questionnaire_completed_at: string | null } | null = null;
+  try {
+    const rows = await sbSelect<{ questionnaire: unknown; questionnaire_completed_at: string | null }>(
+      "profiles",
+      `select=questionnaire,questionnaire_completed_at&email=eq.${encodeURIComponent(email)}`
+    );
+    anterior = rows[0] ?? null;
+  } catch (e) {
+    console.error("[api/miembros/perfil] leer anterior", e);
+  }
+
   let questionnaire_completed_at: string | undefined;
   if (submitted) {
     if (!questionnaireComplete(questionnaire)) {
@@ -40,15 +57,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    try {
-      const rows = await sbSelect<{ questionnaire_completed_at: string | null }>(
-        "profiles",
-        `select=questionnaire_completed_at&email=eq.${encodeURIComponent(email)}`
-      );
-      if (!rows[0]?.questionnaire_completed_at) questionnaire_completed_at = new Date().toISOString();
-    } catch (e) {
-      console.error("[api/miembros/perfil] check completed", e);
-    }
+    if (!anterior?.questionnaire_completed_at) questionnaire_completed_at = new Date().toISOString();
   }
 
   try {
@@ -63,5 +72,31 @@ export async function POST(req: NextRequest) {
     console.error("[api/miembros/perfil]", err);
     return NextResponse.json({ error: "No se pudo guardar el perfil." }, { status: 500 });
   }
+
+  /*
+   * Si CAMBIA algo de un cuestionario que ya estaba enviado, la coach se
+   * entera. Es el caso de «se me olvidó decir que no como pescado»: el dato
+   * llega semanas después de que nadie esté mirando ese formulario, y sin
+   * aviso se queda escrito donde no lo lee nadie.
+   *
+   * No se avisa del primer envío (ahí ya hay su propio aviso), ni si no ha
+   * cambiado nada, ni más de una vez por hora: mientras edita, guarda varias
+   * veces seguidas.
+   */
+  const yaEstaba = !!anterior?.questionnaire_completed_at && !questionnaire_completed_at;
+  const cambio = JSON.stringify(anterior?.questionnaire ?? {}) !== JSON.stringify(questionnaire);
+  if (yaEstaba && cambio && rateLimit(`cuestionario-aviso:${email}`, 1, 3600_000)) {
+    const quien = display_name || email;
+    logActivity(email, "cuestionario_actualizado").catch(() => {});
+    const coach = adminEmails()[0];
+    if (coach) {
+      sendPushToEmail(coach, {
+        title: "Cuestionario actualizado",
+        body: `${quien} ha cambiado algo en su cuestionario.`,
+        url: `/miembros/clientas/${encodeURIComponent(email)}`,
+      }).catch(() => {});
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }
