@@ -1,5 +1,5 @@
 import { leerAjuste } from "./ajustes";
-import { adminEmails, isAdmin } from "./members";
+import { esCorreoDePrueba, isAdmin } from "./members";
 
 /**
  * El programa de recomendación.
@@ -27,21 +27,6 @@ export async function afiliadosVisible(): Promise<boolean> {
 }
 
 /**
- * ¿Es un perfil de prueba de la coach?
- *
- * `aurenapp+loquesea@gmail.com` llega al mismo buzón que `aurenapp@gmail.com`:
- * así se dan de alta las clientas de prueba. Se compara contra ADMIN_EMAILS,
- * o sea que solo valen los alias de su propio correo; el `+` de otra persona
- * no abre nada.
- */
-export function esPerfilDePrueba(email: string | null, jefes: string[]): boolean {
-  if (!email) return false;
-  const [local, dominio] = email.trim().toLowerCase().split("@");
-  if (!local || !dominio || !local.includes("+")) return false;
-  return jefes.includes(`${local.slice(0, local.indexOf("+"))}@${dominio}`);
-}
-
-/**
  * ¿Esta persona ve el apartado de recomendación?
  *
  * Con el interruptor apagado lo ven la coach y sus perfiles de prueba, y
@@ -51,7 +36,7 @@ export function esPerfilDePrueba(email: string | null, jefes: string[]): boolean
  * ella misma.
  */
 export function puedeVerAfiliados(visible: boolean, email: string | null): boolean {
-  return visible || isAdmin(email) || esPerfilDePrueba(email, adminEmails());
+  return visible || isAdmin(email) || esCorreoDePrueba(email);
 }
 
 export async function veAfiliados(email: string | null): Promise<boolean> {

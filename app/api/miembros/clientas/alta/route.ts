@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken } from "@/lib/members";
+import { SESSION_COOKIE, verifySession, isAdmin, createMagicToken, esCorreoDePrueba } from "@/lib/members";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/mailer";
 import { sbUpsert, sbSelect, sbInsertIgnore } from "@/lib/supabase";
@@ -111,21 +111,32 @@ export async function POST(req: NextRequest) {
   }
 
   // 2) Email de bienvenida con acceso directo (enlace válido 7 días).
+  //
+  // A un perfil de PRUEBA no se le manda nada: su correo es un alias del de la
+  // coach, así que cada alta de prueba le aterrizaba una bienvenida en su
+  // bandeja. El enlace se devuelve aquí mismo, que es donde hace falta para
+  // comprobar las cosas, y no pasa por ningún buzón.
+  const token = createMagicToken(email, WELCOME_TTL);
+  const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
+  const dePrueba = esCorreoDePrueba(email);
+
   let emailEnviado = false;
-  try {
-    const token = createMagicToken(email, WELCOME_TTL);
-    const url = `${siteOrigin(req)}/api/miembros/verificar?token=${encodeURIComponent(token)}`;
-    await sendWelcomeEmail(email, url);
-    emailEnviado = true;
-  } catch (err) {
-    console.error("[alta] welcome email", err);
-    avisos.push("el email de acceso NO se ha enviado, vuelve a intentarlo");
+  if (!dePrueba) {
+    try {
+      await sendWelcomeEmail(email, url);
+      emailEnviado = true;
+    } catch (err) {
+      console.error("[alta] welcome email", err);
+      avisos.push("el email de acceso NO se ha enviado, vuelve a intentarlo");
+    }
   }
 
   return NextResponse.json({
     ok: true,
     email,
     emailEnviado,
+    // Solo para las pruebas de la coach, y solo a ella: es su propio alias.
+    ...(dePrueba ? { acceso: url, aviso: "Perfil de prueba: no se ha enviado ningún correo." } : {}),
     ...(avisos.length ? { warning: `Alta hecha, pero ${avisos.join("; ")}.` } : {}),
   });
 }
