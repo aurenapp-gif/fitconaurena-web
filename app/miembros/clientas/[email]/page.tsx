@@ -24,6 +24,7 @@ import { type Supplement } from "@/lib/suplementos";
 import { PROFILE_FIELDS, renewalInfo, serviceEndInfo, SERVICE_MONTHS, edadDe, fechaLarga, type Questionnaire } from "@/lib/profile";
 import { isValidEmail, normalizeEmail } from "@/lib/email";
 import { puedeGestionarClientas } from "@/lib/equipo";
+import { ACTIONS } from "@/lib/activity";
 import { sbSelect, sbSignedUrl, isMissingTable } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate, type ContractSignature, type ContractAssignment } from "@/lib/contract";
 import { servicePct } from "@/lib/company";
@@ -79,6 +80,13 @@ function nacimientoTexto(q: Questionnaire): string {
   return "—";
 }
 
+/*
+ * Aquí el historial se lee en pasado («Entró»), que es como se cuenta algo que
+ * ya ha ocurrido. Para todo lo que no esté en esta lista se usa el texto de
+ * `lib/activity.ts`, que es la lista de verdad: así una acción nueva aparece
+ * escrita en castellano desde el primer día en vez de salir su clave suelta,
+ * que es lo que pasaba con el onboarding y los recordatorios.
+ */
 const ACTION_LABEL: Record<string, string> = {
   acceso: "Entró en la plataforma",
   plan_abierto: "Abrió un documento",
@@ -86,6 +94,8 @@ const ACTION_LABEL: Record<string, string> = {
   contrato_abierto: "Abrió el contrato",
   herramienta_abierta: "Usó una herramienta",
   llamada_abierta: "Vio su llamada estratégica",
+  onboarding_visto: "Vio un vídeo del onboarding",
+  cuestionario_actualizado: "Cambió algo de su cuestionario",
 };
 
 export default async function ClientaPage({ params }: { params: { email: string } }) {
@@ -723,7 +733,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
                 {activity.slice(0, 60).map((a, i) => (
                   <div key={i} className="flex items-start justify-between gap-3 text-sm border-b border-line pb-1.5">
                     <span className="text-ink-muted">
-                      {ACTION_LABEL[a.action] ?? a.action}
+                      {ACTION_LABEL[a.action] ?? ACTIONS[a.action as keyof typeof ACTIONS] ?? a.action}
                       {a.detail ? <span className="text-ink-subtle"> · {a.detail}</span> : ""}
                     </span>
                     <span className="text-ink text-xs shrink-0 text-right">{fmtFull(a.created_at)}</span>

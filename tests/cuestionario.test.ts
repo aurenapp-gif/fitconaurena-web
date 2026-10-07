@@ -77,3 +77,10 @@ test("el aviso del cuestionario no lo puede mandar el navegador", () => {
   const solo = act.slice(act.indexOf("const SOLO_SERVIDOR"), act.indexOf("/** ¿Es una acción"));
   assert.match(solo, /cuestionario_actualizado/);
 });
+
+test("ninguna acción del historial se queda sin texto en castellano", () => {
+  // La ficha de la clienta tenía su propia lista de etiquetas y se quedaba
+  // atrás: las acciones nuevas salían con su clave suelta («onboarding_visto»).
+  const page = fuente("app/miembros/clientas/[email]/page.tsx");
+  assert.match(page, /ACTIONS\[a\.action as keyof typeof ACTIONS\]/);
+});
