@@ -9,9 +9,9 @@ process.env.ADMIN_EMAILS = "aurenapp@gmail.com";
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esPerfilDePrueba, puedeVerAfiliados } from "../lib/afiliados";
+import { puedeVerAfiliados } from "../lib/afiliados";
+import { esCorreoDePrueba } from "../lib/members";
 
-const JEFES = ["aurenapp@gmail.com"];
 const CLIENTA = "laura@gmail.com";
 
 test("apagado: ninguna clienta lo ve", () => {
@@ -32,11 +32,11 @@ test("encendido lo ven todas", () => {
 });
 
 test("el alias tiene que ser del correo de la coach, no de cualquiera", () => {
-  assert.equal(esPerfilDePrueba("aurenapp+loquesea@gmail.com", JEFES), true);
-  assert.equal(esPerfilDePrueba("AurenApp+Loquesea@Gmail.com", JEFES), true);
+  assert.equal(esCorreoDePrueba("aurenapp+loquesea@gmail.com"), true);
+  assert.equal(esCorreoDePrueba("AurenApp+Loquesea@Gmail.com"), true);
   // Sin «+» no es un alias: es otra persona con un correo parecido.
-  assert.equal(esPerfilDePrueba("aurenapp@gmail.com", JEFES), false);
-  assert.equal(esPerfilDePrueba("aurenappp+x@gmail.com", JEFES), false);
-  assert.equal(esPerfilDePrueba("aurenapp+x@otrodominio.com", JEFES), false);
-  assert.equal(esPerfilDePrueba(null, JEFES), false);
+  assert.equal(esCorreoDePrueba("aurenapp@gmail.com"), false);
+  assert.equal(esCorreoDePrueba("aurenappp+x@gmail.com"), false);
+  assert.equal(esCorreoDePrueba("aurenapp+x@otrodominio.com"), false);
+  assert.equal(esCorreoDePrueba(null), false);
 });

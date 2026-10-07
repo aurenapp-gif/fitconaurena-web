@@ -82,6 +82,25 @@ export function adminEmails(): string[] {
     .filter(Boolean);
 }
 
+/**
+ * ¿Es un perfil de PRUEBA de la coach?
+ *
+ * `aurenapp+loquesea@gmail.com` llega al mismo buzón que
+ * `aurenapp@gmail.com`: así se dan de alta las clientas de prueba con las que
+ * se comprueba que algo funciona de verdad en producción. No son personas, así
+ * que no reciben ni bienvenidas ni recordatorios: esos correos acabarían todos
+ * en el buzón de la coach, que es justo lo que pasó.
+ *
+ * Se compara contra ADMIN_EMAILS, o sea que solo valen los alias de su propio
+ * correo; el «+» de otra persona no convierte a nadie en prueba.
+ */
+export function esCorreoDePrueba(email: string | null): boolean {
+  if (!email) return false;
+  const [local, dominio] = email.trim().toLowerCase().split("@");
+  if (!local || !dominio || !local.includes("+")) return false;
+  return adminEmails().includes(`${local.slice(0, local.indexOf("+"))}@${dominio}`);
+}
+
 /** ¿Es el email un administrador (la coach)? Lista en ADMIN_EMAILS. */
 export function isAdmin(email: string | null): boolean {
   if (!email) return false;

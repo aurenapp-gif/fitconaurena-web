@@ -17,7 +17,7 @@
  * que añadir una pantalla nueva mañana no la exponga sin querer.
  */
 
-import { isAdmin } from "./members";
+import { esCorreoDePrueba, isAdmin } from "./members";
 import { sbSelect } from "./supabase";
 
 export type DelEquipo = {
@@ -124,6 +124,6 @@ export async function soloClientas<T>(filas: T[], email: (f: T) => string): Prom
   const equipo = await emailsDelEquipo();
   return filas.filter((f) => {
     const e = (email(f) ?? "").trim().toLowerCase();
-    return !!e && !isAdmin(e) && !equipo.has(e);
+    return !!e && !isAdmin(e) && !esCorreoDePrueba(e) && !equipo.has(e);
   });
 }

@@ -11,14 +11,15 @@
  * Nunca lanza: un correo no puede tumbar una firma.
  */
 
-import { isAdmin, adminEmails } from "@/lib/members";
+import { esCorreoDePrueba, isAdmin, adminEmails } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity";
 import { sendBienvenidaFirmada } from "@/lib/mailer";
 
 export async function bienvenidaSiProcede(email: string): Promise<void> {
   try {
-    if (isAdmin(email)) return;
+    // Ni la coach ni sus perfiles de prueba: los dos buzones son el suyo.
+    if (isAdmin(email) || esCorreoDePrueba(email)) return;
 
     const [pendientes, perfil, yaMandada] = await Promise.all([
       sbSelect<{ id: string }>(

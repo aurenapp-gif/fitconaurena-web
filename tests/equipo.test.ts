@@ -120,3 +120,29 @@ test("el filtro deja fuera al CEO aunque la lista del equipo falle", () => {
   assert.match(fn, /!isAdmin\(e\)/, "tiene que excluir también al CEO");
   assert.match(fn, /equipo\.has\(e\)/);
 });
+
+/* ---- Los perfiles de prueba no son personas ------------------------------ */
+
+test("una clienta de prueba no recibe ningún correo de bienvenida", () => {
+  // Su correo es un alias del de la coach: cada bienvenida de prueba le
+  // aterrizaba en su propia bandeja, y parecía que la app mandaba correos
+  // sola en cada despliegue.
+  const alta = leer("app/api/miembros/clientas/alta/route.ts");
+  assert.match(alta, /const dePrueba = esCorreoDePrueba\(email\);/);
+  assert.match(alta, /if \(!dePrueba\) \{[\s\S]{0,200}sendWelcomeEmail/);
+
+  const bienvenida = leer("lib/bienvenida.ts");
+  assert.match(bienvenida, /isAdmin\(email\) \|\| esCorreoDePrueba\(email\)/);
+});
+
+test("las listas de clientas tampoco incluyen las pruebas", () => {
+  const s = leer("lib/equipo.ts");
+  const fn = s.slice(s.indexOf("export async function soloClientas"));
+  assert.match(fn, /!esCorreoDePrueba\(e\)/);
+});
+
+test("un «+» de otra persona no la convierte en prueba", () => {
+  const s = leer("lib/members.ts");
+  const fn = s.slice(s.indexOf("export function esCorreoDePrueba"));
+  assert.match(fn, /adminEmails\(\)\.includes/);
+});
