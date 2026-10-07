@@ -12,6 +12,7 @@ export const ACTIONS = {
   onboarding_visto: "Ha visto un vídeo del onboarding",
   bienvenida: "Se le ha dado la bienvenida",
   recordatorio_revision: "Se le ha recordado la revisión",
+  cuestionario_actualizado: "Ha cambiado algo de su cuestionario",
 } as const;
 
 export type Action = keyof typeof ACTIONS;
@@ -24,7 +25,9 @@ export type Action = keyof typeof ACTIONS;
  * admitiera desde fuera, cualquiera podría apuntarla antes de tiempo y dejar
  * a una clienta sin su bienvenida.
  */
-const SOLO_SERVIDOR: ReadonlySet<string> = new Set<Action>(["bienvenida", "recordatorio_revision"]);
+const SOLO_SERVIDOR: ReadonlySet<string> = new Set<Action>([
+  "bienvenida", "recordatorio_revision", "cuestionario_actualizado",
+]);
 
 /** ¿Es una acción que puede apuntar la propia clienta desde su navegador? */
 export function isAction(v: unknown): v is Action {

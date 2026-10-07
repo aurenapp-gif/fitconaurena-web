@@ -134,8 +134,18 @@ export default function ProfileForm({
       <div className="card-dark p-6 !transform-none">
         <h3 className="font-bold text-ink mb-1">Tu cuestionario</h3>
         <p className="text-sm text-ink-muted mb-5">
-          Rellena tus datos y pulsa <strong className="text-ink">Enviar cuestionario</strong>. Así tu coach
-          empieza a preparar tu plan personalizado.
+          {sent ? (
+            <>
+              Ya lo enviaste, pero <strong className="text-ink">puedes cambiarlo cuando quieras</strong>: si se te
+              olvidó un alimento que no te gusta, te sale una molestia nueva o cambias de gimnasio, escríbelo aquí
+              y pulsa «Guardar cambios». Tu coach se entera.
+            </>
+          ) : (
+            <>
+              Rellena tus datos y pulsa <strong className="text-ink">Enviar cuestionario</strong>. Así tu coach
+              empieza a preparar tu plan personalizado.
+            </>
+          )}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {PROFILE_FIELDS.map((f) => (
@@ -176,7 +186,7 @@ export default function ProfileForm({
           <div className="mt-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3">
             <p className="text-sm font-bold text-brand">✓ Cuestionario enviado</p>
             <p className="text-xs text-ink-muted mt-0.5">
-              Tu coach ya está preparando tu plan. Puedes seguir actualizando tus datos cuando quieras.
+              Cambia lo que quieras ahí arriba y guarda: se queda actualizado para tu coach.
             </p>
             <div className="flex items-center gap-3 mt-3">
               <button type="button" onClick={() => save(false)} disabled={status === "saving"} className="btn-outline text-sm px-5 py-2.5 disabled:opacity-60">
