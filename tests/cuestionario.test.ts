@@ -84,3 +84,28 @@ test("ninguna acción del historial se queda sin texto en castellano", () => {
   const page = fuente("app/miembros/clientas/[email]/page.tsx");
   assert.match(page, /ACTIONS\[a\.action as keyof typeof ACTIONS\]/);
 });
+
+/* ---- El cajón de texto libre --------------------------------------------- */
+
+import { PROFILE_FIELDS, sanitizeQuestionnaire } from "../lib/profile";
+
+test("hay un sitio para escribir largo, y de verdad cabe", () => {
+  const libre = PROFILE_FIELDS.find((f) => f.id === "notas");
+  assert.ok(libre, "falta el campo de texto libre");
+  assert.ok((libre!.filas ?? 2) >= 6, "tiene que verse grande, no de dos líneas");
+  assert.ok((libre!.limite ?? 1000) >= 4000, "tiene que caber mucho texto");
+  assert.match(libre!.hint ?? "", /sienta mal/);
+});
+
+test("lo escrito largo no se corta a mitad al guardarlo", () => {
+  const largo = "a".repeat(3500);
+  const out = sanitizeQuestionnaire({ notas: largo, lesiones: "b".repeat(3500) });
+  assert.equal(out.notas.length, 3500, "el cajón libre se guarda entero");
+  // Los demás campos siguen con su tope de siempre.
+  assert.equal(out.lesiones.length, 1000);
+});
+
+test("tampoco cabe un texto infinito: hay tope", () => {
+  const out = sanitizeQuestionnaire({ notas: "a".repeat(9000) });
+  assert.equal(out.notas.length, 4000);
+});
