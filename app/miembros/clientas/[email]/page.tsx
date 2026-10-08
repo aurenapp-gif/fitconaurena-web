@@ -751,7 +751,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {PROFILE_FIELDS.map((f) => (
-                  <div key={f.id}>
+                  <div key={f.id} className={f.filas && f.filas > 2 ? "sm:col-span-2" : ""}>
                     <p className="text-xs text-ink-subtle">{f.label}</p>
                     {f.id === "fecha_nacimiento" ? (
                       <p className="text-sm text-ink">{nacimientoTexto(q)}</p>

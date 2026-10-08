@@ -6,6 +6,10 @@ export type Field = {
   type: "number" | "text" | "textarea" | "select" | "date";
   options?: string[];
   hint?: string;
+  /** Alto del cuadro de texto. Por omisión, dos líneas. */
+  filas?: number;
+  /** Tope de caracteres. Por omisión, 1.000. */
+  limite?: number;
 };
 
 export const PROFILE_FIELDS: Field[] = [
@@ -29,7 +33,27 @@ export const PROFILE_FIELDS: Field[] = [
   { id: "alergias", label: "Alergias o intolerancias", type: "textarea" },
   { id: "alimentos_evitar", label: "Alimentos que no te gustan o quieres evitar", type: "textarea" },
   { id: "ciclo", label: "Ciclo menstrual", type: "select", options: ["Regular", "Irregular", "No aplica"] },
-  { id: "notas", label: "Algo más que tu coach deba saber", type: "textarea" },
+  /*
+   * El cajón grande, y a propósito el último.
+   *
+   * Un cuestionario con casillas solo recoge lo que a uno se le ocurrió
+   * preguntar. Lo que de verdad cambia un plan —que la cena le sienta mal, que
+   * no tiene hambre hasta las doce, que trabaja a turnos— no cabe en ninguna
+   * casilla porque nadie pensó en ella. Aquí se escribe sin tope práctico:
+   * cuatro mil caracteres son unas seiscientas palabras.
+   */
+  {
+    id: "notas",
+    label: "Cuéntame todo lo que necesito saber y no te he preguntado",
+    type: "textarea",
+    filas: 8,
+    limite: 4000,
+    hint:
+      "Escribe con toda la libertad del mundo y sin prisa: si hay algún alimento que te sienta mal, "
+      + "si no tienes hambre por la mañana o te entra de noche, a qué hora comes de verdad, si trabajas "
+      + "a turnos, si duermes mal, si hay un ejercicio que no soportas, qué has probado antes y no te "
+      + "funcionó… Cuanto más me cuentes, más fino va tu plan. Puedes volver a editarlo cuando quieras.",
+  },
 ];
 
 export type Questionnaire = Record<string, string>;
@@ -174,12 +198,12 @@ export function sanitizeQuestionnaire(input: unknown): Questionnaire {
   const out: Questionnaire = {};
   if (input && typeof input === "object") {
     const datos = input as Record<string, unknown>;
-    const copiar = (id: string) => {
+    const copiar = (id: string, limite = 1000) => {
       const v = datos[id];
-      if (typeof v === "string") out[id] = v.slice(0, 1000);
+      if (typeof v === "string") out[id] = v.slice(0, limite);
       else if (typeof v === "number") out[id] = String(v);
     };
-    for (const f of PROFILE_FIELDS) copiar(f.id);
+    for (const f of PROFILE_FIELDS) copiar(f.id, f.limite ?? 1000);
     for (const id of CAMPOS_HEREDADOS) copiar(id);
   }
   return out;

@@ -150,14 +150,22 @@ export default function ProfileForm({
         <div className="grid gap-4 sm:grid-cols-2">
           {PROFILE_FIELDS.map((f) => (
             <div key={f.id} className={f.type === "textarea" ? "sm:col-span-2" : ""}>
-              <label className="block text-xs text-ink-muted mb-1">{f.label}</label>
+              <label className={`block mb-1 ${f.filas && f.filas > 2 ? "text-sm font-semibold text-ink" : "text-xs text-ink-muted"}`}>
+                {f.label}
+              </label>
               {f.type === "select" ? (
                 <select value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} className={inputCls}>
                   <option value="">Selecciona…</option>
                   {f.options!.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               ) : f.type === "textarea" ? (
-                <textarea value={q[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value)} rows={2} className={`${inputCls} resize-none`} />
+                <textarea
+                  value={q[f.id] ?? ""}
+                  onChange={(e) => set(f.id, e.target.value.slice(0, f.limite ?? 1000))}
+                  rows={f.filas ?? 2}
+                  maxLength={f.limite ?? 1000}
+                  className={`${inputCls} ${f.filas && f.filas > 2 ? "" : "resize-none"}`}
+                />
               ) : f.type === "date" ? (
                 <input
                   type="date"
