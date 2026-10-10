@@ -215,11 +215,11 @@ export default async function MiembrosPage() {
 
   // Una sola acción principal. Lo más urgente primero: la revisión que falta;
   // si está, apuntar el día; si también, mirar cómo va.
+  // Apuntar el día ya se hace arriba, en la tarjeta, sin salir de aquí: el
+  // botón grande se reserva para lo que de verdad lleva a otro sitio.
   const accion = prox.pendiente
     ? { href: "/miembros/checkins", label: "Subir mi revisión" }
-    : !hoyApuntado
-      ? { href: "/miembros/perfil?tab=habitos", label: "Apuntar mi día" }
-      : { href: "/miembros/checkins", label: "Ver cómo voy" };
+    : { href: "/miembros/checkins", label: "Ver cómo voy" };
 
   const cabecera = (
     <div className="flex items-end justify-between gap-3 mb-5">
