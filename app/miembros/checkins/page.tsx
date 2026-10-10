@@ -290,6 +290,25 @@ export default async function CheckinsPage({
   // tiempo, no en pantalla.
   const cronologicas = admin ? (filtrada ? rows : []) : rows;
   const items = await withPhoto(admin ? (filtrada ? [...rows].reverse() : rows) : [...rows].reverse());
+
+  /*
+   * La cola de respuesta.
+   *
+   * En la auditoría de octubre había 15 revisiones esperando respuesta, y no
+   * había forma de verlas juntas: estaban repartidas en una lista por fecha
+   * entre las ya contestadas. Una mujer que sube tres fotos y un peso y no
+   * recibe nada sube la siguiente peor, y la tercera no la sube.
+   *
+   * Sin filtrar, la coach ve primero lo que le espera, lo más viejo arriba:
+   * una revisión de hace nueve días urge más que la de ayer.
+   */
+  const enCola = admin && !filtrada;
+  const porResponder = enCola
+    ? items.filter((i) => !i.coach_reply).sort((a, b) => a.created_at.localeCompare(b.created_at))
+    : [];
+  const yaRespondidas = enCola ? items.filter((i) => i.coach_reply) : items;
+  const diasEsperando = (iso: string) =>
+    Math.max(0, Math.floor((Date.parse(hoy + "T12:00:00Z") - Date.parse(iso)) / 86400000));
   const posicion = new Map(cronologicas.map((r, i) => [r.id, i]));
 
   // Entrenamiento: progreso de cada revisión frente a la anterior que tenga
@@ -437,7 +456,7 @@ export default async function CheckinsPage({
                 </p>
                 <p className="text-[15px] text-ink-muted mt-0.5">
                   {hechaEstaQuincena
-                    ? `La siguiente, el ${fechaCorta(prox.fecha)}. Las revisiones son el 1 y el 15, pero puedes subir otra cuando quieras.`
+                    ? `Tu coach te responde en menos de 48 h. La siguiente revisión, el ${fechaCorta(prox.fecha)}, aunque puedes subir otra cuando quieras.`
                     : periodo.dia === 0
                       ? "Hoy toca. Peso, medidas y tres fotos: frente, perfil y espaldas."
                       : `Sigue sin subir. Súbela igual aunque se te haya pasado el día: peso, medidas y tres fotos.`}
@@ -586,12 +605,24 @@ export default async function CheckinsPage({
 
           {!admin && items.length > 0 && <span className="group-label">Anteriores</span>}
 
+          {enCola && porResponder.length > 0 && (
+            <div className="flex items-baseline justify-between gap-3 flex-wrap mb-2">
+              <span className="group-label !mb-0">Por responder ({porResponder.length})</span>
+              <span className="text-[13px] text-ink-muted">
+                Lo más antiguo arriba. Subió y está esperando.
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col gap-3">
             {items.length === 0 ? (
               <p className="text-[15px] text-ink-muted px-4">{admin ? "Aún no hay revisiones." : "Tu primera revisión aparecerá aquí."}</p>
             ) : (
-              items.map((it) => (
-                <div key={it.id} className={admin ? "card-dark !p-4 !transform-none" : "bg-surface rounded-[14px] p-4"}>
+              [...porResponder, ...yaRespondidas].map((it) => (
+                <div key={it.id}
+                  className={`${admin ? "card-dark !p-4 !transform-none" : "bg-surface rounded-[14px] p-4"} ${
+                    enCola && !it.coach_reply ? "ring-2 ring-warn/30" : ""
+                  }`}>
                   <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
                     <div className="flex items-center gap-3 min-w-0">
                       {admin && !filtrada && (
@@ -610,7 +641,20 @@ export default async function CheckinsPage({
                         <span className={admin ? "text-sm font-semibold text-brand" : "text-[15px] text-ink-muted"}>{kilos(it.weight)}</span>
                       )}
                     </div>
-                    <span className="text-[13px] text-ink-muted">{admin ? fmt(it.created_at) : ""}</span>
+                    <span className="text-[13px] text-ink-muted flex items-center gap-2">
+                      {enCola && !it.coach_reply && (
+                        <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full ${
+                          diasEsperando(it.created_at) >= 2 ? "bg-warn-soft text-warn" : "bg-surface-2 text-ink-muted"
+                        }`}>
+                          {diasEsperando(it.created_at) === 0
+                            ? "hoy"
+                            : diasEsperando(it.created_at) === 1
+                              ? "espera 1 día"
+                              : `espera ${diasEsperando(it.created_at)} días`}
+                        </span>
+                      )}
+                      {admin ? fmt(it.created_at) : ""}
+                    </span>
                   </div>
                   {it.note && <p className="text-[15px] text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
                   {admin && filtrada && (
