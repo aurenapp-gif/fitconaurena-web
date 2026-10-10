@@ -12,6 +12,7 @@ import { afiliadosVisible, COMISION_EUROS } from "@/lib/afiliados";
 import { TEXTO_DIA_LLAMADA, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { SESSION_COOKIE, verifySession, isAdmin, getMembers } from "@/lib/members";
 import { renewalInfo } from "@/lib/profile";
+import { diasEntre, enRiesgo, riesgoDe } from "@/lib/riesgo";
 import { sbSelect, sbSignedUrl } from "@/lib/supabase";
 import { CONTRACT_BUCKET, type ContractTemplate } from "@/lib/contract";
 
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 type CheckIn = { id: string; member_email: string; weight: number | null; created_at: string; coach_reply: string | null };
 
-type Prof = { email: string; display_name: string | null; renewal_date: string | null };
+type Prof = { email: string; display_name: string | null; renewal_date: string | null; created_at?: string | null };
 
 function fmt(d: string) {
   return new Date(d).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -44,12 +45,12 @@ export default async function AdminPage() {
   const since = isoDaysAgo(15);
 
   // Todas las lecturas independientes del panel, en paralelo (antes iban en cascada).
-  const [checkins, members, profiles, recentList, pending, templates, totalSigned, tecnicasPendientes, habitos30] = await Promise.all([
+  const [checkins, members, profiles, recentList, pending, templates, totalSigned, tecnicasPendientes, habitos30, uso] = await Promise.all([
     sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10")
       .catch((e) => { console.error("[admin] checkins", e); return [] as CheckIn[]; }),
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email)))
       .catch((e) => { console.error("[admin] members", e); return [] as { email: string; name: string }[]; }),
-    sbSelect<Prof>("profiles", "select=email,display_name,renewal_date")
+    sbSelect<Prof>("profiles", "select=email,display_name,renewal_date,created_at")
       .catch((e) => { console.error("[admin] profiles", e); return [] as Prof[]; }),
     sbSelect<{ member_email: string }>("check_ins", `select=member_email&created_at=gte.${since}`)
       .catch((e) => { console.error("[admin] recent", e); return [] as { member_email: string }[]; }),
@@ -67,6 +68,11 @@ export default async function AdminPage() {
     sbSelect<{ member_email: string; day: string }>(
       "habit_logs", `select=member_email,day&day=gte.${isoDaysAgo(30)}`
     ).catch(() => [] as { member_email: string; day: string }[]),
+    // Una fila por clienta: planes, revisiones y la última. Lo calcula la base
+    // de datos, que es la única forma de que no la corte el tope de 1.000.
+    sbSelect<{ member_email: string; checkins: number; ultimo_checkin: string | null; planes: number }>(
+      "member_usage", "select=member_email,checkins,ultimo_checkin,planes"
+    ).catch((e) => { console.error("[admin] uso", e); return [] as { member_email: string; checkins: number; ultimo_checkin: string | null; planes: number }[]; }),
   ]);
 
   // Cada plantilla, con un enlace firmado para poder leerla. Hasta ahora solo
@@ -103,12 +109,33 @@ export default async function AdminPage() {
   }
   const hoyStr = new Date().toISOString().slice(0, 10);
   const diasSin = (d: string) => Math.round((Date.parse(`${hoyStr}T00:00:00Z`) - Date.parse(`${d}T00:00:00Z`)) / 86400000);
-  const descolgadas = members
-    .map((m) => ({ m, dia: ultimoDia.get(m.email) }))
-    .filter((x): x is { m: { email: string; name: string }; dia: string } => !!x.dia)
-    .map((x) => ({ ...x, dias: diasSin(x.dia) }))
-    .filter((x) => x.dias >= 6)
-    .sort((a, b) => b.dias - a.dias);
+  /*
+   * QUIÉN ESTÁ EN RIESGO. Las señales de `lib/riesgo.ts` sobre los datos de
+   * cada clienta: sin plan, sin revisiones, sin apuntar. Sustituye a la lista
+   * de «descolgadas», que solo miraba los hábitos y dejaba fuera lo más grave
+   * —una clienta que ha pagado y lleva días sin plan.
+   */
+  const usoDe = new Map(uso.map((u) => [u.member_email, u]));
+  const riesgos = enRiesgo(
+    members.map((m) => {
+      const u = usoDe.get(m.email);
+      const ultimoApunte = ultimoDia.get(m.email) ?? null;
+      const alta = byEmail.get(m.email)?.created_at ?? null;
+      return {
+        email: m.email,
+        nombre: nameOf(m.email),
+        riesgo: riesgoDe({
+          planes: u?.planes ?? 0,
+          revisiones: u?.checkins ?? 0,
+          diasSinApuntar: ultimoApunte ? diasEntre(ultimoApunte, hoyStr) : null,
+          diasSinRevision: u?.ultimo_checkin ? diasEntre(u.ultimo_checkin.slice(0, 10), hoyStr) : null,
+          // Sin fecha de alta se asume veterana: es lo prudente, porque el
+          // margen de cortesía solo sirve para no marcar a una recién llegada.
+          diasDeAlta: alta ? diasEntre(alta.slice(0, 10), hoyStr) : 365,
+        }),
+      };
+    })
+  );
 
   /** Lo que la coach tiene esperando, de lo más antiguo a lo más nuevo. */
   const esperando = [
@@ -159,7 +186,7 @@ export default async function AdminPage() {
 
           {/* LO PRIMERO: lo que te está esperando. El panel enseñaba datos; lo
               que hace falta al abrirlo es saber qué hay que hacer. */}
-          {(esperando.length > 0 || descolgadas.length > 0) && (
+          {(esperando.length > 0 || riesgos.length > 0) && (
             <section className="mb-8">
               <h2 className="font-bold text-ink mb-1">
                 {esperando.length > 0
@@ -198,16 +225,25 @@ export default async function AdminPage() {
                 </div>
               )}
 
-              {/* Quien se está descolgando. No se va de golpe: deja de apuntar,
-                  deja de subir la revisión, y un mes después no renueva. */}
-              {descolgadas.slice(0, 4).map((d) => (
-                <Link key={d.m.email} href={`/miembros/clientas/${encodeURIComponent(d.m.email)}`}
-                  className="flex items-center gap-3 bg-danger-soft rounded-[14px] px-4 py-3.5 mb-2">
-                  <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-danger shrink-0" />
-                  <span className="flex-1 min-w-0 text-[16px] text-danger truncate">
-                    {nameOf(d.m.email)} lleva {d.dias} días sin apuntar nada
+              {/* Quién está en riesgo. No se van de golpe: se quedan sin plan,
+                  dejan de apuntar, dejan de subir la revisión, y un mes
+                  después no renuevan. Cada aviso dice por qué salta. */}
+              {riesgos.map((r) => (
+                <Link key={r.email} href={`/miembros/clientas/${encodeURIComponent(r.email)}`}
+                  className={`flex items-center gap-3 rounded-[14px] px-4 py-3.5 mb-2 ${
+                    r.riesgo.nivel === "alto" ? "bg-danger-soft" : "bg-warn-soft"
+                  }`}>
+                  <span aria-hidden="true"
+                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${r.riesgo.nivel === "alto" ? "bg-danger" : "bg-warn"}`} />
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-[16px] truncate ${r.riesgo.nivel === "alto" ? "text-danger" : "text-warn"}`}>
+                      {r.nombre}
+                    </span>
+                    <span className={`block text-[13px] truncate ${r.riesgo.nivel === "alto" ? "text-danger/80" : "text-warn/90"}`}>
+                      {r.riesgo.motivos.join(" · ")}
+                    </span>
                   </span>
-                  <span className="text-[15px] font-semibold text-danger shrink-0">Ver</span>
+                  <span className={`text-[15px] font-semibold shrink-0 ${r.riesgo.nivel === "alto" ? "text-danger" : "text-warn"}`}>Ver</span>
                 </Link>
               ))}
             </section>
