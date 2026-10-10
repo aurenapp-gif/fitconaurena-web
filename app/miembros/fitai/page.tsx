@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import FitAI from "@/components/FitAI";
 import { requireMember } from "@/lib/guard";
@@ -42,6 +43,22 @@ export default async function FitAIPage() {
           <h1 className="page-title mb-1">FitAI</h1>
           <p className="text-[15px] text-ink-muted mb-5">Tus dudas del programa, resueltas al momento y a cualquier hora.</p>
           <FitAI nombre={nombre} sugerencias={sugerencias} />
+
+          {/* La salida cuando la IA no llega. Antes «Dudas» era otra pestaña
+              del menú y se escribieron tres en toda la historia del programa;
+              aquí está en el momento en que de verdad hace falta. */}
+          {!admin && (
+            <Link href="/miembros/dudas"
+              className="mt-5 flex items-center justify-between gap-3 rounded-[14px] bg-surface px-4 py-3.5">
+              <span className="min-w-0">
+                <span className="block text-[15px] text-ink">¿No te lo resuelve?</span>
+                <span className="block text-[13px] text-ink-muted">
+                  Pregúntaselo a tu coach sin dar la cara: nadie sabe quién ha escrito cada duda.
+                </span>
+              </span>
+              <span className="text-ink-subtle shrink-0">›</span>
+            </Link>
+          )}
         </div>
       </main>
     </>

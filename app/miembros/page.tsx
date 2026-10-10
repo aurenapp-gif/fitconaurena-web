@@ -17,6 +17,7 @@ import { periodoDe, proximaRevision, todayMadrid } from "@/lib/revisiones";
 import { diaDe, fechaCorta, renovacionAlimentacion, renovacionEntrenamiento } from "@/lib/renovaciones";
 import { miles } from "@/lib/suplementos";
 import { LITROS_POR_VASO, litrosDeVasos, rachaDias, semanaDe, textoLitros } from "@/lib/habitos";
+import ApuntarHoy from "@/components/ApuntarHoy";
 import { HERRAMIENTAS_ACTIVAS } from "@/lib/tools";
 import { enlaceSala } from "@/lib/ajustes";
 import { leerPlan } from "@/lib/planes";
@@ -40,7 +41,7 @@ type Profile = {
 };
 type Plan = { id: string; type: "nutricion" | "entrenamiento"; title: string | null; note: string | null; created_at: string; semanas?: number | null; contenido?: string | null; contenido_at?: string | null; estructura?: unknown };
 type Revision = { created_at: string; coach_reply: string | null; coach_reply_at: string | null };
-type Habito = { day: string; steps: number | null; water: number | null };
+type Habito = { day: string; steps: number | null; water: number | null; sleep?: number | null; cycle_day?: number | null; energy?: number | null; trained?: boolean | null };
 
 /** «Viernes, 4 de septiembre», en horario de Madrid. */
 function hoyLargo(): string {
@@ -95,7 +96,7 @@ export default async function MiembrosPage() {
           .catch((err) => { console.error("[inicio] check_ins", err); return null; }),
     admin
       ? Promise.resolve([] as Habito[])
-      : sbSelect<Habito>("habit_logs", `select=day,steps,water&member_email=eq.${e}&day=gte.${desde}&order=day.asc`)
+      : sbSelect<Habito>("habit_logs", `select=*&member_email=eq.${e}&day=gte.${desde}&order=day.asc`)
           .catch((err) => { console.error("[inicio] habits", err); return [] as Habito[]; }),
     // Las clientas exentas (las de antes) no quedan bloqueadas, así que si la
     // coach les asigna un contrato hay que avisarlas aquí de forma visible.
@@ -304,6 +305,21 @@ export default async function MiembrosPage() {
                 </div>
               </Link>
 
+              {/* Apuntar el día de un toque. Va aquí arriba a propósito: es lo
+                  que alimenta el analizador y lo que sostiene la constancia. */}
+              <ApuntarHoy
+                hoy={{
+                  water: deHoy?.water ?? null,
+                  steps: deHoy?.steps ?? null,
+                  sleep: deHoy?.sleep ?? null,
+                  cycle_day: deHoy?.cycle_day ?? null,
+                  energy: deHoy?.energy ?? null,
+                  trained: deHoy?.trained ?? null,
+                }}
+                aguaObjetivo={aguaObjetivo}
+                racha={racha}
+              />
+
               {/* Lo que come hoy, que es la pregunta de cada día */}
               {filasComida.length > 0 && (
                 <div>
@@ -388,8 +404,6 @@ export default async function MiembrosPage() {
               <Grupo label="Más">
                 <Fila href="/miembros/entreno" titulo="Mi entreno" sub={ent ? "Apunta tus pesos mientras entrenas" : "Cuando tengas plan de entrenamiento"} />
                 <Fila href="/miembros/fitai" titulo="FitAI" sub="Tus dudas del programa, al momento" />
-                <Fila href="/miembros/tecnica" titulo="Revisión de técnica" sub="Sube un vídeo y tu coach te corrige" />
-                <Fila href="/miembros/dudas" titulo="Dudas" sub="Pregunta sin dar la cara" />
                 <Fila href="/miembros/herramientas" titulo="Herramientas" sub={HERRAMIENTAS_ACTIVAS ? "Qué pedir fuera, cómo hacer un ejercicio…" : "En mantenimiento temporal"} />
               </Grupo>
             </div>

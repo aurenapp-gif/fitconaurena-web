@@ -70,17 +70,27 @@ function Icono({ nombre, on = false, tamano = 26 }: { nombre: Icono; on?: boolea
 // dicen ellas.
 const PESTANAS: Item[] = [
   { href: "/miembros", label: "Inicio", icon: "inicio" },
-  { href: "/miembros/perfil", label: "Perfil", icon: "perfil" },
-  { href: "/miembros/checkins", label: "Revisiones", icon: "revisiones" },
+  { href: "/miembros/perfil", label: "Mi plan", icon: "perfil" },
+  { href: "/miembros/checkins", label: "Revisión", icon: "revisiones" },
   { href: "/miembros/comunicados", label: "Avisos", icon: "avisos" },
 ];
 
-// Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
+/*
+ * Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
+ *
+ * Aquí NO están Dudas ni Técnica, y es a propósito. En 28 clientas y toda la
+ * historia del programa se han escrito 3 dudas y no se ha subido UN solo
+ * vídeo de técnica. Un apartado que no usa nadie no es neutro: ocupa sitio en
+ * el menú y le quita atención a lo único que mueve el resultado, que es
+ * apuntar el día y subir la revisión.
+ *
+ * Las dos pantallas siguen existiendo y se llega a ellas desde donde tienen
+ * sentido: la técnica, cuando la coach pide un vídeo en su respuesta; las
+ * dudas, desde FitAI cuando la IA no sabe contestar.
+ */
 const RESTO: Item[] = [
-  { href: "/miembros/entreno", label: "Entreno", icon: "entreno" },
+  { href: "/miembros/entreno", label: "Mi entreno", icon: "entreno" },
   { href: "/miembros/fitai", label: "FitAI", icon: "fitai" },
-  { href: "/miembros/dudas", label: "Dudas", icon: "dudas" },
-  { href: "/miembros/tecnica", label: "Técnica", icon: "tecnica" },
   { href: "/miembros/herramientas", label: "Herramientas", icon: "herramientas" },
 ];
 

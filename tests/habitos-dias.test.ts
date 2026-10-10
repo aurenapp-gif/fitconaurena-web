@@ -85,3 +85,27 @@ test("si ya apuntó pesos ese día, no se le pregunta dos veces", () => {
   assert.match(tracker, /entrenosApuntados/);
   assert.match(tracker, /deMiEntreno\.has\(fecha\)/);
 });
+
+/* ---- Apuntar desde la portada -------------------------------------------- */
+
+test("apuntar desde la portada manda el día ENTERO, no solo lo que se toca", () => {
+  // La API reescribe la fila completa: si la tarjeta mandara solo el agua,
+  // el sueño y los pasos de ese día se irían a null sin que nadie lo note.
+  const c = leer("components/ApuntarHoy.tsx");
+  assert.match(c, /const nuevo = \{ \.\.\.dia, \.\.\.cambio \}/);
+  assert.match(c, /body: JSON\.stringify\(nuevo\)/);
+});
+
+test("si falla al guardar, la pantalla no se queda con un dato que no existe", () => {
+  const c = leer("components/ApuntarHoy.tsx");
+  assert.match(c, /setFallo\(true\); setDia\(dia\);/);
+});
+
+test("el menú de la clienta no lleva lo que no usa nadie", () => {
+  const shell = leer("components/AppShell.tsx");
+  const resto = shell.slice(shell.indexOf("const RESTO"), shell.indexOf("// Solo la coach"));
+  assert.ok(!/miembros\/tecnica/.test(resto), "técnica fuera del menú");
+  assert.ok(!/miembros\/dudas/.test(resto), "dudas fuera del menú");
+  // Pero se sigue llegando a dudas desde FitAI, que es donde hace falta.
+  assert.match(leer("app/miembros/fitai/page.tsx"), /href="\/miembros\/dudas"/);
+});

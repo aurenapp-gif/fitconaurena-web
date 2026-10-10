@@ -150,8 +150,14 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       setStatus("idle");
       // La revisión ya está enviada: el borrador de este móvil sobra.
       try { window.localStorage.removeItem(BORRADOR); } catch { /* da igual */ }
-      // Celebración de hito si el servidor la indica.
-      if (typeof data.celebrate === "string" && data.celebrate) setCelebrate(data.celebrate);
+      // Celebración de hito si el servidor la indica; si no, la promesa.
+      // Que sepa cuándo le van a contestar es lo que hace que vuelva a subir
+      // la siguiente: subir y que no pase nada es lo que mata el hábito.
+      setCelebrate(
+        typeof data.celebrate === "string" && data.celebrate
+          ? data.celebrate
+          : "Revisión enviada. Tu coach te responde en menos de 48 h."
+      );
       router.refresh();
     } catch {
       setStatus("error");
