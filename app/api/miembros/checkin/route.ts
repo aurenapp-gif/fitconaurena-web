@@ -101,6 +101,11 @@ export async function POST(req: NextRequest) {
   if (weight === null && !note && !hasPhoto && !hasMeasure && exercises.length === 0) {
     return NextResponse.json({ error: "Añade al menos peso, medidas, entrenamiento, nota o foto." }, { status: 400 });
   }
+  // Las estrellas: un entero de 1 a 5, o nada. Cualquier otra cosa se ignora
+  // en vez de rechazar la revisión entera.
+  const ratingRaw = Number(String(form.get("rating") ?? "").trim());
+  const rating = Number.isInteger(ratingRaw) && ratingRaw >= 1 && ratingRaw <= 5 ? ratingRaw : null;
+
   const badPhoto = validatePhotos(form);
   if (badPhoto) return NextResponse.json({ error: badPhoto }, { status: 400 });
 
@@ -119,13 +124,17 @@ export async function POST(req: NextRequest) {
       photo_back,
     };
     const conEjercicios = exercises.length ? { exercises } : {};
+    // De 1 a 5 estrellas: cómo de contenta está este mes. Va con lo opcional
+    // porque la columna puede no existir todavía, y perder una revisión
+    // entera por una estrella sería absurdo.
+    const conEstrellas = rating != null ? { rating } : {};
     try {
-      await sbInsert("check_ins", { ...row, ...measures, ...conEjercicios });
+      await sbInsert("check_ins", { ...row, ...measures, ...conEjercicios, ...conEstrellas });
     } catch (e) {
       // Reintento sin las columnas nuevas (medidas recientes, ejercicios) por
       // si aún no existen. Nunca perdemos la revisión por un dato opcional.
       const safe = { ...measures };
-      let dropped = exercises.length > 0;
+      let dropped = exercises.length > 0 || rating != null;
       for (const m of NEW_MEASURES) {
         if (m in safe) { delete safe[m]; dropped = true; }
       }

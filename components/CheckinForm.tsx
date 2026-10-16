@@ -46,6 +46,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
   // de una clienta ha acabado pensando que la app no la dejaba poner los
   // centímetros. Un campo opcional que no se ve es un campo que no existe.
   const [showMeasures, setShowMeasures] = useState(true);
+  const [estrellas, setEstrellas] = useState<number | null>(null);
   const [entreno, setEntreno] = useState<{ name: string; weight: string; reps: string }[]>(
     ejercicios.map((e) => ({ name: e.name, weight: e.weight != null ? String(e.weight) : "", reps: e.reps != null ? String(e.reps) : "" }))
   );
@@ -106,7 +107,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
     const anyPhoto = Object.values(files).some(Boolean);
     const anyMeasure = Object.values(measures).some((v) => v.trim() !== "");
     const entrenoLleno = entreno.filter((x) => x.weight.trim() !== "" || x.reps.trim() !== "");
-    if (!weight && !note && !anyPhoto && !anyMeasure && entrenoLleno.length === 0) {
+    if (!weight && !note && !anyPhoto && !anyMeasure && entrenoLleno.length === 0 && estrellas == null) {
       setStatus("error");
       setMessage("Añade al menos peso, medidas, entrenamiento, nota o foto.");
       return;
@@ -120,6 +121,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       // escrito, y el servidor recibe un número que entiende.
       fd.append("weight", aPunto(weight));
       fd.append("note", note);
+      if (estrellas != null) fd.append("rating", String(estrellas));
       for (const m of MEASURES) {
         const v = aPunto(measures[m.field] ?? "");
         if (v) fd.append(m.field, v);
@@ -146,6 +148,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       setNote("");
       setFiles({});
       setMeasures({});
+      setEstrellas(null);
       formRef.current?.reset();
       setStatus("idle");
       // La revisión ya está enviada: el borrador de este móvil sobra.
@@ -209,6 +212,42 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       </p>
 
       <div className="flex flex-col gap-3">
+        <div className="rounded-[11px] bg-page p-4">
+          <p className="text-[17px] font-bold text-ink leading-tight">¿Cómo de contenta estás este mes?</p>
+          <p className="text-[14px] text-ink-muted mt-0.5 mb-3">
+            Con tu progreso, con cómo te sientes, con el plan. Lo ve solo tu coach.
+          </p>
+          <div className="flex gap-1.5" role="radiogroup" aria-label="Cómo de contenta estás este mes, de 1 a 5 estrellas">
+            {[1, 2, 3, 4, 5].map((n) => {
+              const activa = estrellas != null && n <= estrellas;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={estrellas === n}
+                  aria-label={`${n} ${n === 1 ? "estrella" : "estrellas"}`}
+                  onClick={() => setEstrellas(estrellas === n ? null : n)}
+                  className="flex-1 min-h-[52px] rounded-[10px] bg-surface flex items-center justify-center"
+                >
+                  <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"
+                    fill={activa ? "rgb(var(--c-warn))" : "none"}
+                    stroke={activa ? "rgb(var(--c-warn))" : "rgb(var(--c-line-strong))"}
+                    strokeWidth="1.6" strokeLinejoin="round">
+                    <path d="M12 3.3l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.7 6.7 19.5l1.1-5.9L3.5 9.5l5.9-.8L12 3.3z" />
+                  </svg>
+                </button>
+              );
+            })}
+          </div>
+          {estrellas != null && (
+            <p className="text-[13px] text-ink-muted mt-2">
+              {["Nada contenta", "Poco contenta", "Normal", "Contenta", "Muy contenta"][estrellas - 1]}
+              {estrellas <= 2 ? " · cuéntame abajo qué está fallando y lo cambiamos" : ""}
+            </p>
+          )}
+        </div>
+
         <Titulo de="fotos" />
         <div className="rounded-[11px] bg-page p-4">
           <div className="grid grid-cols-3 gap-2">
