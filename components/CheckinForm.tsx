@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { resizeImage } from "@/lib/image";
 import type { Ejercicio } from "@/lib/entreno";
 import { aPunto, filtraDecimal, filtraEntero } from "@/lib/numeros";
+import { CAMPOS_QUINCENA } from "@/lib/quincena";
 
 const PHOTOS = [
   { field: "photo_front", label: "Frente" },
@@ -47,6 +48,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
   // centímetros. Un campo opcional que no se ve es un campo que no existe.
   const [showMeasures, setShowMeasures] = useState(true);
   const [estrellas, setEstrellas] = useState<number | null>(null);
+  const [quincena, setQuincena] = useState<Record<string, number>>({});
   const [entreno, setEntreno] = useState<{ name: string; weight: string; reps: string }[]>(
     ejercicios.map((e) => ({ name: e.name, weight: e.weight != null ? String(e.weight) : "", reps: e.reps != null ? String(e.reps) : "" }))
   );
@@ -107,7 +109,8 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
     const anyPhoto = Object.values(files).some(Boolean);
     const anyMeasure = Object.values(measures).some((v) => v.trim() !== "");
     const entrenoLleno = entreno.filter((x) => x.weight.trim() !== "" || x.reps.trim() !== "");
-    if (!weight && !note && !anyPhoto && !anyMeasure && entrenoLleno.length === 0 && estrellas == null) {
+    const algoDeLaQuincena = Object.keys(quincena).length > 0;
+    if (!weight && !note && !anyPhoto && !anyMeasure && entrenoLleno.length === 0 && estrellas == null && !algoDeLaQuincena) {
       setStatus("error");
       setMessage("Añade al menos peso, medidas, entrenamiento, nota o foto.");
       return;
@@ -122,6 +125,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       fd.append("weight", aPunto(weight));
       fd.append("note", note);
       if (estrellas != null) fd.append("rating", String(estrellas));
+      for (const [k, v] of Object.entries(quincena)) fd.append(k, String(v));
       for (const m of MEASURES) {
         const v = aPunto(measures[m.field] ?? "");
         if (v) fd.append(m.field, v);
@@ -149,6 +153,7 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
       setFiles({});
       setMeasures({});
       setEstrellas(null);
+      setQuincena({});
       formRef.current?.reset();
       setStatus("idle");
       // La revisión ya está enviada: el borrador de este móvil sobra.
@@ -246,6 +251,45 @@ export default function CheckinForm({ plegado = false, ejercicios = [], deEntren
               {estrellas <= 2 ? " · cuéntame abajo qué está fallando y lo cambiamos" : ""}
             </p>
           )}
+        </div>
+
+        <div className="rounded-[11px] bg-page p-4 flex flex-col gap-4">
+          <div>
+            <p className="text-[17px] font-bold text-ink leading-tight">Estos 15 días, más o menos</p>
+            <p className="text-[14px] text-ink-muted mt-0.5">
+              A ojo, sin calcular nada. Marca lo que más se parezca.
+            </p>
+          </div>
+          {CAMPOS_QUINCENA.map((campo) => (
+            <div key={campo.id}>
+              <p className="text-[15px] font-semibold text-ink mb-0.5">{campo.label}</p>
+              {campo.pista && <p className="text-[13px] text-ink-muted mb-2">{campo.pista}</p>}
+              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={campo.label}>
+                {campo.opciones.map((o) => {
+                  const puesto = quincena[campo.id] === o.valor;
+                  return (
+                    <button
+                      key={o.valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={puesto}
+                      onClick={() =>
+                        setQuincena((q) => {
+                          const { [campo.id]: actual, ...resto } = q;
+                          return actual === o.valor ? resto : { ...q, [campo.id]: o.valor };
+                        })
+                      }
+                      className={`min-h-[44px] px-4 rounded-[10px] text-[15px] font-semibold transition-colors ${
+                        puesto ? "bg-ink text-page" : "bg-surface text-ink-muted"
+                      }`}
+                    >
+                      {o.texto}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         <Titulo de="fotos" />

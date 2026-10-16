@@ -234,3 +234,13 @@ alter table public.habit_logs add column if not exists trained boolean;
 -- LAS ESTRELLAS DE LA REVISIÓN: de 1 a 5, cómo de contenta está
 -- =====================================================================
 alter table public.check_ins add column if not exists rating smallint;
+
+-- =====================================================================
+-- LA QUINCENA EN CASILLAS: pasos, agua, entrenos, cumplimiento y comidas fuera
+-- (el agua va en décimas de litro: 15 = 1,5 L)
+-- =====================================================================
+alter table public.check_ins add column if not exists pasos_media   smallint;
+alter table public.check_ins add column if not exists agua_media    smallint;
+alter table public.check_ins add column if not exists dias_entreno  smallint;
+alter table public.check_ins add column if not exists cumplimiento  smallint;
+alter table public.check_ins add column if not exists comidas_fuera smallint;

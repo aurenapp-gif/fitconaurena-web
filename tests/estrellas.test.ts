@@ -26,8 +26,11 @@ test("un valor raro no rechaza la revisión: simplemente no hay estrellas", () =
 });
 
 test("si la columna no existe todavía, la revisión se guarda igual", () => {
+  // Las estrellas viajan con el resto de lo opcional, y si el guardado falla
+  // se reintenta sin nada de eso.
   assert.match(api, /const conEstrellas = rating != null \? \{ rating \} : \{\}/);
-  assert.match(api, /let dropped = exercises\.length > 0 \|\| rating != null;/);
+  assert.match(api, /const opcionales = \{[^}]*conEstrellas/);
+  assert.match(api, /let dropped = Object\.keys\(opcionales\)\.length > 0;/);
 });
 
 test("con las estrellas solas ya se puede enviar la revisión", () => {
