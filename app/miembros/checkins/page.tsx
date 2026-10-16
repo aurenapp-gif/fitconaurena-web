@@ -15,6 +15,7 @@ import { requireMember } from "@/lib/guard";
 import { puedeGestionarClientas, soloClientas } from "@/lib/equipo";
 import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
+import { resumenQuincena } from "@/lib/quincena";
 import RecordarRevision, { type SinSubir } from "@/components/RecordarRevision";
 import { diaDe, fechaCorta } from "@/lib/renovaciones";
 import { comparacionDeFotos } from "@/lib/comparativa-fotos";
@@ -51,6 +52,12 @@ type CheckIn = {
   exercises?: unknown;
   /** De 1 a 5: cómo de contenta estaba ese mes. */
   rating?: number | null;
+  /** Lo que contestó de su quincena, en casillas. */
+  pasos_media?: number | null;
+  agua_media?: number | null;
+  dias_entreno?: number | null;
+  cumplimiento?: number | null;
+  comidas_fuera?: number | null;
 };
 
 /** Las estrellas, para leerlas de un vistazo en la lista. */
@@ -679,6 +686,11 @@ export default async function CheckinsPage({
                     </span>
                   </div>
                   {it.note && <p className="text-[15px] text-ink-muted whitespace-pre-wrap mb-3">{it.note}</p>}
+                  {resumenQuincena(it) && (
+                    <p className="text-[14px] text-ink-muted bg-page rounded-[10px] px-3 py-2 mb-3">
+                      {resumenQuincena(it)}
+                    </p>
+                  )}
                   {admin && filtrada && (
                     <ComparativaRevision
                       cambios={comparar(

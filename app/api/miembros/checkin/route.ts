@@ -8,6 +8,7 @@ import { sendPushToEmail } from "@/lib/push";
 import { sendCheckinDoneNotice } from "@/lib/mailer";
 import { avisosPorEmail } from "@/lib/ajustes";
 import { periodoDe, todayMadrid } from "@/lib/revisiones";
+import { CAMPOS_QUINCENA, valorValido } from "@/lib/quincena";
 import { limpiarEjercicios } from "@/lib/entreno";
 
 export const runtime = "nodejs";
@@ -106,6 +107,14 @@ export async function POST(req: NextRequest) {
   const ratingRaw = Number(String(form.get("rating") ?? "").trim());
   const rating = Number.isInteger(ratingRaw) && ratingRaw >= 1 && ratingRaw <= 5 ? ratingRaw : null;
 
+  // Las casillas de la quincena. Solo entran valores que son una opción de
+  // verdad: del navegador no se acepta un número cualquiera.
+  const quincena: Record<string, number> = {};
+  for (const campo of CAMPOS_QUINCENA) {
+    const v = valorValido(campo.id, form.get(campo.id));
+    if (v != null) quincena[campo.id] = v;
+  }
+
   const badPhoto = validatePhotos(form);
   if (badPhoto) return NextResponse.json({ error: badPhoto }, { status: 400 });
 
@@ -124,17 +133,20 @@ export async function POST(req: NextRequest) {
       photo_back,
     };
     const conEjercicios = exercises.length ? { exercises } : {};
-    // De 1 a 5 estrellas: cómo de contenta está este mes. Va con lo opcional
-    // porque la columna puede no existir todavía, y perder una revisión
-    // entera por una estrella sería absurdo.
+    /*
+     * Todo lo que puede no existir todavía como columna va junto, y si el
+     * guardado falla se reintenta sin ello. Perder las fotos y el peso de una
+     * clienta por un dato opcional sería el peor fallo posible.
+     */
     const conEstrellas = rating != null ? { rating } : {};
+    const opcionales = { ...conEjercicios, ...conEstrellas, ...quincena };
     try {
-      await sbInsert("check_ins", { ...row, ...measures, ...conEjercicios, ...conEstrellas });
+      await sbInsert("check_ins", { ...row, ...measures, ...opcionales });
     } catch (e) {
       // Reintento sin las columnas nuevas (medidas recientes, ejercicios) por
       // si aún no existen. Nunca perdemos la revisión por un dato opcional.
       const safe = { ...measures };
-      let dropped = exercises.length > 0 || rating != null;
+      let dropped = Object.keys(opcionales).length > 0;
       for (const m of NEW_MEASURES) {
         if (m in safe) { delete safe[m]; dropped = true; }
       }
