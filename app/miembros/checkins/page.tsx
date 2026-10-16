@@ -49,7 +49,25 @@ type CheckIn = {
   glute?: number | null;
   back?: number | null;
   exercises?: unknown;
+  /** De 1 a 5: cómo de contenta estaba ese mes. */
+  rating?: number | null;
 };
+
+/** Las estrellas, para leerlas de un vistazo en la lista. */
+function Estrellas({ n, titulo }: { n: number; titulo?: string }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" title={titulo} aria-label={`${n} de 5 estrellas`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg key={i} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"
+          fill={i <= n ? "rgb(var(--c-warn))" : "none"}
+          stroke={i <= n ? "rgb(var(--c-warn))" : "rgb(var(--c-line-strong))"}
+          strokeWidth="2" strokeLinejoin="round">
+          <path d="M12 3.3l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.7 6.7 19.5l1.1-5.9L3.5 9.5l5.9-.8L12 3.3z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
 
 // Mismo orden que el formulario (de arriba abajo del cuerpo).
 const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
@@ -639,6 +657,10 @@ export default async function CheckinsPage({
                       {!admin && <span className="text-[17px] font-semibold text-ink">{fechaLarga(it.created_at)}</span>}
                       {it.weight != null && (admin || !ocultarPeso) && (
                         <span className={admin ? "text-sm font-semibold text-brand" : "text-[15px] text-ink-muted"}>{kilos(it.weight)}</span>
+                      )}
+                      {it.rating != null && (
+                        <Estrellas n={it.rating}
+                          titulo={it.rating <= 2 ? "Poco contenta: míralo" : undefined} />
                       )}
                     </div>
                     <span className="text-[13px] text-ink-muted flex items-center gap-2">

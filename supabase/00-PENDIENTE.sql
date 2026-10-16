@@ -229,3 +229,8 @@ alter table public.exercise_media enable row level security;
 -- EL ENTRENO COMO HÁBITO: «¿hoy has entrenado?», junto al agua y el sueño
 -- =====================================================================
 alter table public.habit_logs add column if not exists trained boolean;
+
+-- =====================================================================
+-- LAS ESTRELLAS DE LA REVISIÓN: de 1 a 5, cómo de contenta está
+-- =====================================================================
+alter table public.check_ins add column if not exists rating smallint;
