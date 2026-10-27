@@ -188,7 +188,18 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   }));
 
   const planesFallo = plans === null;
-  const plansWithUrl = (plans ?? []).map((p, i) => ({ ...p, url: planUrls[i] }));
+  /*
+   * El enlace del plan NO es el firmado de Supabase, que caduca en una hora:
+   * es una dirección nuestra que firma al pulsarla. La app se queda abierta
+   * días en el móvil, y con el enlace firmado dentro de la página, al volver
+   * a ella «Abrir mi plan» llevaba a un error. El firmado se conserva solo
+   * para el visor incrustado del escritorio.
+   */
+  const plansWithUrl = (plans ?? []).map((p, i) => ({
+    ...p,
+    url: `/api/miembros/plan/${p.id}`,
+    urlFirmada: planUrls[i],
+  }));
   const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
   const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");
   const hoy = hoyMadrid();

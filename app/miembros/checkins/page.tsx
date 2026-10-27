@@ -21,6 +21,7 @@ import { diaDe, fechaCorta } from "@/lib/renovaciones";
 import { comparacionDeFotos } from "@/lib/comparativa-fotos";
 import { comparar, objetivoDe } from "@/lib/progreso";
 import { compararEntreno, ejerciciosDe, nombresDe, type Ejercicio, type Progreso } from "@/lib/entreno";
+import { leerPlan } from "@/lib/planes";
 import { claveEjercicio, ultimaVezPorEjercicio, type SerieGuardada } from "@/lib/entrenos";
 import { avancePorEjercicio, textoAvance } from "@/lib/progreso-entreno";
 import Comparador, { type FotoRevision } from "@/components/Comparador";
@@ -75,6 +76,18 @@ function Estrellas({ n, titulo }: { n: number; titulo?: string }) {
     </span>
   );
 }
+
+/** El plan de entrenamiento vigente, con lo que hace falta para leerlo. */
+type PlanEntreno = {
+  id: string;
+  type: string;
+  title: string | null;
+  file_path?: string | null;
+  contenido?: string | null;
+  contenido_at?: string | null;
+  estructura?: unknown;
+  exercises?: unknown;
+};
 
 // Mismo orden que el formulario (de arriba abajo del cuerpo).
 const MEASURE_LABELS: { key: keyof CheckIn; label: string }[] = [
@@ -211,8 +224,12 @@ export default async function CheckinsPage({
           "profiles", `select=questionnaire,hide_weight&email=eq.${encodeURIComponent(email)}`
         ).then((r) => r[0] ?? null).catch((e) => { console.error("[checkins] perfil", e); return null; }),
     quien
-      ? sbSelect<{ exercises: unknown; title: string | null }>("plans", `select=exercises,title&member_email=eq.${encodeURIComponent(quien)}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
-          .then((r) => r[0] ?? null).catch(() => null)
+      ? sbSelect<PlanEntreno>("plans", `select=id,type,title,file_path,contenido,contenido_at,estructura,exercises&member_email=eq.${encodeURIComponent(quien)}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
+          .then((r) => r[0] ?? null)
+          // Si faltan las columnas de la lectura (supabase/planes.sql), se
+          // sigue con la lista escrita a mano.
+          .catch(() => sbSelect<PlanEntreno>("plans", `select=id,type,title,exercises&member_email=eq.${encodeURIComponent(quien)}&type=eq.entrenamiento&order=created_at.desc&limit=1`)
+            .then((r) => r[0] ?? null).catch(() => null))
       : Promise.resolve(null),
     quien
       ? sbSelect<{ sleep: number | null }>("habit_logs", `select=sleep&member_email=eq.${encodeURIComponent(quien)}&day=gte.${desde30}&sleep=not.is.null`)
@@ -347,7 +364,27 @@ export default async function CheckinsPage({
     entrenoDe.set(r.id, compararEntreno(ej, ultimoConEjercicios));
     ultimoConEjercicios = ej;
   }
-  const nombresPlan = nombresDe(planEntreno?.exercises);
+  /*
+   * Los ejercicios que podrá apuntar en su revisión.
+   *
+   * Antes salían SOLO de la lista que la coach escribe a mano al subir el
+   * plan. Si no la escribía —y casi nunca se escribe— la clienta se
+   * encontraba la revisión sin un solo ejercicio que marcar, aunque su PDF
+   * los tuviera todos y la pantalla de «Mi entreno» se los enseñara. Es
+   * exactamente lo que le pasaba a una clienta en octubre.
+   *
+   * Ahora se usa el plan ya leído, que es el mismo que alimenta «Mi entreno»,
+   * y la lista a mano queda como respaldo para los planes que no se pueden
+   * leer (una foto de una hoja, por ejemplo).
+   */
+  const planLeido = planEntreno && !admin
+    ? await leerPlan({ ...planEntreno, file_path: planEntreno.file_path ?? null }).catch(() => null)
+    : null;
+  const delPdf: string[] = planLeido?.estructura?.tipo === "entrenamiento"
+    ? planLeido.estructura.dias.flatMap((d) => d.ejercicios.map((e) => e.nombre))
+    : [];
+  const aMano = nombresDe(planEntreno?.exercises);
+  const nombresPlan = Array.from(new Set(delPdf.length > 0 ? delPdf : aMano)).slice(0, 40);
   const previos = new Map((ultimoConEjercicios ?? []).map((e) => [e.name.toLowerCase(), e]));
   // Lo que apuntó entrenando manda sobre lo de la revisión anterior: es de
   // estas semanas y lo escribió con el peso en la mano. La revisión anterior
