@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import PlanUpload from "@/components/PlanUpload";
 import PlanDelete from "@/components/PlanDelete";
+import PlanReleer from "@/components/PlanReleer";
 import MacrosPlan from "@/components/MacrosPlan";
 import PlanTypeSwitch from "@/components/PlanTypeSwitch";
 import RenewalSetter from "@/components/RenewalSetter";
@@ -47,7 +48,7 @@ type Prof = {
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
   strategy_phase?: number | null;
 };
-type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null; kcal?: number | null; protein_g?: number | null; contenido?: string | null };
+type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null; kcal?: number | null; protein_g?: number | null; contenido?: string | null; contenido_at?: string | null; estructura?: unknown };
 type CheckIn = { weight: number | null; created_at: string; exercises?: unknown };
 type Activity = { action: string; detail: string | null; created_at: string };
 
@@ -516,6 +517,12 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         {esCeo && <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />}
                       </span>
                     </div>
+                    {/* Un plan de entrenamiento que no se pudo leer deja a la
+                        clienta sin ejercicios que apuntar, y hasta ahora solo
+                        lo sabía ella. */}
+                    {p.type === "entrenamiento" && !p.estructura && p.contenido_at && (
+                      <PlanReleer id={p.id} />
+                    )}
                     {p.type === "nutricion" && (
                       <div className="border-t border-line mt-1.5 pt-1.5">
                         <MacrosPlan
