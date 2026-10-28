@@ -185,8 +185,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
     new Set((sesiones ?? []).map((s) => diaDe(s.started_at)))
   );
 
-  const [planUrls, photoUrl, signedPdfUrls] = await Promise.all([
-    Promise.all((plans ?? []).map((p) => sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined))),
+  const [photoUrl, signedPdfUrls] = await Promise.all([
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
     Promise.all(signatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
@@ -203,13 +202,11 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
    * El enlace del plan NO es el firmado de Supabase, que caduca en una hora:
    * es una dirección nuestra que firma al pulsarla. La app se queda abierta
    * días en el móvil, y con el enlace firmado dentro de la página, al volver
-   * a ella «Abrir mi plan» llevaba a un error. El firmado se conserva solo
-   * para el visor incrustado del escritorio.
+   * a ella «Abrir mi plan» llevaba a un error.
    */
-  const plansWithUrl = (plans ?? []).map((p, i) => ({
+  const plansWithUrl = (plans ?? []).map((p) => ({
     ...p,
     url: `/api/miembros/plan/${p.id}`,
-    urlFirmada: planUrls[i],
   }));
   const nutPlans = plansWithUrl.filter((p) => p.type === "nutricion");
   const entPlans = plansWithUrl.filter((p) => p.type === "entrenamiento");

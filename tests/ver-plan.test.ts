@@ -13,6 +13,7 @@ import { join } from "node:path";
 const leer = (p: string) => readFileSync(join(import.meta.dirname ?? ".", "..", p), "utf8");
 const entreno = leer("components/Entreno.tsx");
 const perfil = leer("app/miembros/perfil/page.tsx");
+const ficha = leer("app/miembros/clientas/[email]/page.tsx");
 
 test("desde el entreno puede abrir el PDF de ESE plan", () => {
   assert.match(entreno, /function ComoVerlo\(\{ planId \}/);
@@ -55,4 +56,24 @@ test("eso solo sale en los planes de entrenamiento", () => {
 test("el selector de plan sigue estando aunque no se pueda leer", () => {
   // Para poder salir de un plan ilegible sin dar un rodeo.
   assert.match(entreno, /\{!sinPlan && <SelectorPlan planes=\{planes\} actual=\{planId\} \/>\}/);
+});
+
+test("en la ficha de la clienta el plan tampoco se enlaza firmado", () => {
+  // El firmado de Supabase caduca en una hora: una ficha abierta un rato y
+  // luego el plan pulsado daba el mismo error que tenían ellas.
+  assert.match(ficha, /url: `\/api\/miembros\/plan\/\$\{p\.id\}`/);
+  assert.doesNotMatch(ficha, /href=\{p\.url\}[\s\S]{0,80}>Ver<\/a>\s*\n\s*: <span className="text-danger"/);
+});
+
+test("pero se sigue avisando del plan cuyo archivo no está", () => {
+  // Firmar sigue siendo la forma de saber si el archivo existe; lo que cambia
+  // es que ya no es el enlace.
+  assert.match(ficha, /enElAlmacen: await sbSignedUrl\("planes"/);
+  assert.match(ficha, /\{p\.enElAlmacen/);
+  assert.match(ficha, /sin archivo/);
+});
+
+test("y no se firma nada que no se use", () => {
+  // Era una llamada a Supabase por plan y por visita que no pintaba nada.
+  assert.doesNotMatch(perfil, /urlFirmada/);
 });

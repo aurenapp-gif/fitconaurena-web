@@ -295,9 +295,21 @@ export default async function ClientaPage({ params }: { params: { email: string 
   // Positivo = kg bajados.
   const lost = firstWeight != null && lastWeight != null ? Math.round((firstWeight - lastWeight) * 10) / 10 : null;
 
-  // URLs firmadas en paralelo: planes + todos los PDFs de contratos/anexos firmados.
+  /*
+   * El enlace del plan no es el firmado de Supabase, que caduca en una hora:
+   * es una dirección nuestra que firma al pulsarla, y que ya deja pasar a
+   * quien gestiona clientas. Con el firmado dentro de la página, una ficha
+   * abierta un rato y el plan pulsado después llevaba a un error de Supabase
+   * —el mismo fallo que tenían ellas desde su app—.
+   *
+   * Se sigue firmando, pero solo para saber si el archivo está en el almacén.
+   */
   const [plansWithUrl, signedPdfUrls] = await Promise.all([
-    Promise.all(planes.map(async (p) => ({ ...p, url: await sbSignedUrl("planes", p.file_path, 3600).catch(() => undefined) }))),
+    Promise.all(planes.map(async (p) => ({
+      ...p,
+      url: `/api/miembros/plan/${p.id}`,
+      enElAlmacen: await sbSignedUrl("planes", p.file_path, 3600).then(() => true).catch(() => false),
+    }))),
     Promise.all(mySignatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
   ]);
   const contratosFirmadosLista = mySignatures.map((s, i) => ({
@@ -506,10 +518,10 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         <span className="text-ink-subtle text-xs"> · {new Date(p.created_at).toLocaleDateString("es-ES")}</span>
                       </span>
                       <span className="flex items-center gap-3 shrink-0">
-                        {/* Sin enlace = el archivo no está en el almacén. Antes
-                            simplemente no salía «Ver» y no había forma de saber
-                            que ese plan estaba roto para la clienta. */}
-                        {p.url
+                        {/* Si no está en el almacén, el plan está roto para la
+                            clienta. Antes simplemente no salía «Ver» y no había
+                            forma de saberlo desde aquí. */}
+                        {p.enElAlmacen
                           ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="min-h-[40px] inline-flex items-center text-brand text-sm">Ver</a>
                           : <span className="text-danger text-xs" title="El archivo no está disponible. Vuelve a subirlo.">⚠️ sin archivo</span>}
                         <PlanTypeSwitch id={p.id} type={p.type} />
