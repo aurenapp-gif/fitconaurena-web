@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { claveEjercicio, compara, duracion, segundosDescanso, textoPeso, textoUltimaVez, type UltimaVez } from "@/lib/entrenos";
 import { enCola } from "@/lib/cola";
+import { COOKIE_PLAN_ENTRENO } from "@/lib/entreno-planes";
 import type { DiaEntrenamiento, Ejercicio } from "@/lib/plan-estructura";
 
 type SerieApuntada = { ejercicio: string; serie: number; peso: number | null; reps: number | null };
@@ -13,6 +14,8 @@ type Props = {
   dias: DiaEntrenamiento[];
   planId: string | null;
   planTitulo: string | null;
+  /** Todos sus planes de entrenamiento, de la fase más antigua a la más nueva. */
+  planes: { id: string; nombre: string }[];
   sinPlan: boolean;
   ultimaVez: { clave: string; datos: UltimaVez }[];
   sesionAbierta: { id: string; dia: string | null; desde: string } | null;
@@ -42,6 +45,41 @@ function seriesDe(e: Ejercicio): number {
 }
 
 /**
+ * Elegir qué plan hacer (Fase 1, Fase 2…). Solo aparece si tiene más de uno y
+ * no hay un entreno en marcha: a mitad de sesión no se cambia de plan.
+ * La elección se recuerda en una cookie para no tener que repetirla cada día.
+ */
+function SelectorPlan({ planes, actual }: { planes: { id: string; nombre: string }[]; actual: string | null }) {
+  const router = useRouter();
+  const [yendo, setYendo] = useState<string | null>(null);
+  if (planes.length < 2) return null;
+  function elegir(id: string) {
+    if (id === actual || yendo) return;
+    setYendo(id);
+    document.cookie = `${COOKIE_PLAN_ENTRENO}=${id}; path=/miembros; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    router.push(`/miembros/entreno?plan=${id}`);
+  }
+  return (
+    <div className="mb-4">
+      <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Elige tu entreno</p>
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" role="radiogroup" aria-label="Plan de entrenamiento">
+        {planes.map((p) => {
+          const activo = p.id === actual;
+          return (
+            <button key={p.id} type="button" role="radio" aria-checked={activo} onClick={() => elegir(p.id)}
+              disabled={!!yendo}
+              className={`shrink-0 rounded-[12px] px-4 py-2 text-[15px] font-semibold min-h-[44px] border ${
+                activo ? "bg-ink text-white border-ink" : "bg-surface text-ink border-line"} ${yendo === p.id ? "opacity-60" : ""}`}>
+              {p.nombre}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * El entreno de hoy, apuntado mientras se entrena.
  *
  * Tres vistas en un solo componente y no tres páginas: todo pasa dentro de una
@@ -49,7 +87,7 @@ function seriesDe(e: Ejercicio): number {
  * atrás. Con páginas distintas, cada vuelta sería una recarga y la mitad del
  * gimnasio no tiene cobertura.
  */
-export default function Entreno({ dias, planId, planTitulo, sinPlan, ultimaVez, sesionAbierta, seriesDeHoy }: Props) {
+export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ultimaVez, sesionAbierta, seriesDeHoy }: Props) {
   const router = useRouter();
   const ultima = useMemo(() => new Map(ultimaVez.map((u) => [u.clave, u.datos])), [ultimaVez]);
 
@@ -122,6 +160,7 @@ export default function Entreno({ dias, planId, planTitulo, sinPlan, ultimaVez, 
       <>
         <h1 className="page-title mb-1">Entreno</h1>
         <p className="text-[15px] text-ink-muted mb-5">Apunta tus pesos mientras entrenas.</p>
+        {!sinPlan && <SelectorPlan planes={planes} actual={planId} />}
         <div className="bg-surface rounded-[14px] p-5">
           <p className="text-[17px] text-ink leading-snug">
             {sinPlan
@@ -236,6 +275,8 @@ export default function Entreno({ dias, planId, planTitulo, sinPlan, ultimaVez, 
         {dia.ejercicios.length} {dia.ejercicios.length === 1 ? "ejercicio" : "ejercicios"}
         {planTitulo ? ` · ${planTitulo}` : ""}
       </p>
+
+      {!sesion && <SelectorPlan planes={planes} actual={planId} />}
 
       {dias.length > 1 && !sesion && (
         <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4">
