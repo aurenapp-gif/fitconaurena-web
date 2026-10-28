@@ -91,22 +91,27 @@ function SelectorPlan({ planes, actual }: { planes: { id: string; nombre: string
 function ComoVerlo({ planId }: { planId: string | null }) {
   if (!planId) return null;
   return (
-    <div className="flex items-center gap-1.5 mb-4" role="group" aria-label="Cómo ver tu plan">
-      <span className="min-h-[38px] px-3.5 rounded-[10px] bg-ink text-page text-[14px] font-semibold inline-flex items-center">
-        Aquí
-      </span>
-      <a
-        href={`/api/miembros/plan/${planId}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="min-h-[38px] px-3.5 rounded-[10px] bg-surface text-ink-muted text-[14px] font-semibold inline-flex items-center gap-1.5"
-      >
-        Ver el PDF
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
-          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M7 17L17 7M9 7h8v8" />
-        </svg>
-      </a>
+    <div className="mb-4">
+      {/* Con su rótulo, como el selector de plan: sin él son dos filas de
+          botones oscuros seguidas y parecen lo mismo. */}
+      <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Cómo verlo</p>
+      <div className="flex items-center gap-1.5" role="group" aria-label="Cómo ver tu plan">
+        <span className="min-h-[38px] px-3.5 rounded-[10px] bg-ink text-page text-[14px] font-semibold inline-flex items-center">
+          Aquí
+        </span>
+        <a
+          href={`/api/miembros/plan/${planId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="min-h-[38px] px-3.5 rounded-[10px] bg-surface text-ink-muted text-[14px] font-semibold inline-flex items-center gap-1.5"
+        >
+          Ver el PDF
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M7 17L17 7M9 7h8v8" />
+          </svg>
+        </a>
+      </div>
     </div>
   );
 }
