@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import ProfileForm from "@/components/ProfileForm";
 import PushToggle from "@/components/PushToggle";
@@ -33,7 +34,7 @@ const fechaLarga = (iso: string) => new Date(iso).toLocaleDateString("es-ES", { 
  * Los planes de un tipo: el vigente con su fecha, hasta cuándo vale y la nota
  * de la coach; los anteriores plegados debajo.
  */
-function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion, inicialCoach }: {
+function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion, inicialCoach, entrenamiento = false }: {
   etiqueta: string;
   items: (Plan & { url?: string })[];
   label: string;
@@ -41,6 +42,9 @@ function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion, inicialC
   fallo?: boolean;
   renovacion: Renovacion;
   inicialCoach: string;
+  /** Los de entrenamiento se pueden abrir también dentro de la app, para
+   *  apuntar los pesos mientras entrena. */
+  entrenamiento?: boolean;
 }) {
   const actual = items[0];
   const anteriores = items.slice(1);
@@ -68,6 +72,10 @@ function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion, inicialC
               <p className="text-[15px] text-ink leading-5">{ejercicios.join(" · ")}</p>
             </div>
           )}
+          {entrenamiento && (
+            <Fila href={`/miembros/entreno?plan=${actual.id}`} titulo="Entrenar con este plan"
+              sub="Los ejercicios uno a uno, para apuntar los pesos" />
+          )}
           {actual.url ? (
             <FileViewer url={actual.url} label={label} buttonText="Abrir mi plan" fila />
           ) : (
@@ -88,7 +96,10 @@ function BloquePlan({ etiqueta, items, label, vacio, fallo, renovacion, inicialC
                     </div>
                     {p.url ? (
                       <div className="flex items-center gap-3 shrink-0">
-                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-brand text-[15px] min-h-[40px] inline-flex items-center">Ver</a>
+                        {entrenamiento && (
+                          <Link href={`/miembros/entreno?plan=${p.id}`} className="text-brand text-[15px] min-h-[40px] inline-flex items-center">Entrenar</Link>
+                        )}
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-brand text-[15px] min-h-[40px] inline-flex items-center">PDF</a>
                         <a href={`${p.url}${p.url.includes("?") ? "&" : "?"}download`} className="text-ink-muted text-[15px] min-h-[40px] inline-flex items-center">Descargar</a>
                       </div>
                     ) : (
@@ -223,7 +234,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
   const planesTab = (
     <div className="flex flex-col gap-5">
       <BloquePlan etiqueta="Tu alimentación" items={nutPlans} label="Plan de alimentación" vacio="Tu coach aún no ha subido tu plan de alimentación." fallo={planesFallo} renovacion={renNut} inicialCoach={inicialCoach} />
-      <BloquePlan etiqueta="Tu entrenamiento" items={entPlans} label="Plan de entrenamiento" vacio="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} renovacion={renEnt} inicialCoach={inicialCoach} />
+      <BloquePlan etiqueta="Tu entrenamiento" items={entPlans} label="Plan de entrenamiento" vacio="Tu coach aún no ha subido tu plan de entrenamiento." fallo={planesFallo} renovacion={renEnt} inicialCoach={inicialCoach} entrenamiento />
 
       {/* Pauta diaria: agua, pasos y suplementación. */}
       <Grupo label="Cada día" foot={supplements.length > 0 ? "Lo que te ha pautado tu coach. Si tienes dudas, pregúntale antes de cambiar nada." : undefined}>
