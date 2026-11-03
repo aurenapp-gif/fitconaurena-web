@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import PlanUpload from "@/components/PlanUpload";
+import VerComo from "@/components/VerComo";
 import PlanDelete from "@/components/PlanDelete";
 import PlanReleer from "@/components/PlanReleer";
 import MacrosPlan from "@/components/MacrosPlan";
@@ -348,6 +349,13 @@ export default async function ClientaPage({ params }: { params: { email: string 
               <span className="section-tag">Clienta</span>
               <h1 className="section-title text-2xl">{profile?.display_name || member}</h1>
               <p className="text-xs text-ink-subtle">{member}</p>
+              {/* Lo que no le funciona casi nunca se ve desde aquí: se ve
+                  desde su pantalla. Solo la coach. */}
+              {esCeo && (
+                <div className="mt-1.5">
+                  <VerComo email={member} nombre={(profile?.display_name || member).split(" ")[0]} />
+                </div>
+              )}
               {profile?.terms_accepted_at ? (
                 <>
                   <p className="text-xs text-brand mt-1">

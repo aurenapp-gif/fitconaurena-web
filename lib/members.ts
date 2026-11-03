@@ -34,7 +34,7 @@ function sign(payload: string): string {
   return b64url(createHmac("sha256", getSecret()).update(payload).digest());
 }
 
-type Payload = { email: string; typ: "magic" | "session"; exp: number };
+type Payload = { email: string; typ: "magic" | "session" | "vista"; exp: number };
 
 function createToken(p: Payload): string {
   const enc = b64url(JSON.stringify(p));
@@ -73,6 +73,25 @@ export const verifyMagicToken = (token?: string) => verify(token, "magic");
 export const createSessionToken = (email: string) =>
   createToken({ email, typ: "session", exp: Date.now() + SESSION_TTL });
 export const verifySession = (token?: string) => verify(token, "session");
+
+/**
+ * «Ver la app como ella»: mirar las pantallas de una clienta con sus datos,
+ * para entender lo que cuenta cuando algo no le funciona.
+ *
+ * NO es una sesión suya. Es un segundo testigo que viaja JUNTO a la sesión
+ * real, y solo sirve si esa sesión real es de administración: la cookie sola
+ * no vale para nada. Y como solo lo mira `requireMember` —que es lo que usan
+ * las PANTALLAS, nunca las rutas que guardan— lo que se pulse se sigue
+ * guardando a nombre de quien mira, jamás a nombre de ella.
+ *
+ * Media hora: lo justo para mirar algo, y se cae solo si se olvida.
+ */
+const VISTA_TTL = 30 * 60 * 1000;
+export const VISTA_COOKIE = "fca_ver_como";
+export const VISTA_MAX_AGE = VISTA_TTL / 1000;
+export const createVistaToken = (email: string) =>
+  createToken({ email, typ: "vista", exp: Date.now() + VISTA_TTL });
+export const verifyVistaToken = (token?: string) => verify(token, "vista");
 
 /** Lista de emails administradores (la coach). Configurable en ADMIN_EMAILS. */
 export function adminEmails(): string[] {
