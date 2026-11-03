@@ -106,3 +106,15 @@ test("su contrato firmado tampoco se enlaza firmado", () => {
   const ruta = leer("app/api/miembros/contrato/firmado/[id]/route.ts");
   assert.match(ruta, /fila\.member_email\.toLowerCase\(\) !== me\.toLowerCase\(\)/);
 });
+
+test("sus fotos de revisión tampoco caducan a la hora", () => {
+  // Las miniaturas son loading="lazy" (se piden al bajar) y la grande solo al
+  // tocarla, así que con enlaces de una hora la pantalla se quedaba en blanco.
+  const checkins = leer("app/miembros/checkins/page.tsx");
+  assert.match(checkins, /url: `\/api\/miembros\/checkin\/foto\/\$\{r\.id\}\?cual=\$\{cual\}`/);
+  assert.match(checkins, /thumb: `\/api\/miembros\/checkin\/foto\/\$\{r\.id\}\?cual=\$\{cual\}&w=500`/);
+  assert.match(checkins, /const fotoDe = \(r: CheckIn \| undefined, cual: string, w: number\)/);
+  const ruta = leer("app/api/miembros/checkin/foto/[id]/route.ts");
+  assert.match(ruta, /fila\.member_email\.toLowerCase\(\) !== me\.toLowerCase\(\)/);
+  assert.match(ruta, /status: 403/);
+});

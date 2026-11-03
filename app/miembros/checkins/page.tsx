@@ -160,25 +160,31 @@ const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch((
 const signThumb = (p: string | null, w = 500): Promise<string | undefined> =>
   p ? sbSignedThumb("checkins", p, w).catch(() => sbSignedUrl("checkins", p, 3600).catch(() => undefined)) : Promise.resolve(undefined);
 
-async function withPhoto(rows: CheckIn[]) {
-  return Promise.all(
-    rows.map(async (r) => {
-      const make = async (path: string | null, label: string) => {
-        if (!path) return null;
-        const [full, thumb] = await Promise.all([sign(path), signThumb(path)]);
-        return full ? { label, url: full, thumb: thumb || full } : null;
-      };
-      const photos = (
-        await Promise.all([
-          make(r.photo_front, "Frente"),
-          make(r.photo_side, "Perfil"),
-          make(r.photo_back, "Espaldas"),
-          make(r.photo_path, "Foto"),
-        ])
-      ).filter(Boolean) as { label: string; url: string; thumb: string }[];
-      return { ...r, photos };
-    })
-  );
+/**
+ * Las fotos NO van con el enlace firmado de Supabase, que caduca en una hora.
+ * No se piden al pintar la pantalla: las miniaturas llevan `loading="lazy"` y
+ * se piden al llegar con el scroll, y la grande solo al tocarla. Una pantalla
+ * abierta un rato se quedaba en blanco al bajar. Estas direcciones firman al
+ * pedirlas y no caducan nunca.
+ */
+function withPhoto(rows: CheckIn[]) {
+  return rows.map((r) => {
+    const make = (path: string | null, label: string, cual: string) =>
+      path
+        ? {
+            label,
+            url: `/api/miembros/checkin/foto/${r.id}?cual=${cual}`,
+            thumb: `/api/miembros/checkin/foto/${r.id}?cual=${cual}&w=500`,
+          }
+        : null;
+    const photos = [
+      make(r.photo_front, "Frente", "frente"),
+      make(r.photo_side, "Perfil", "perfil"),
+      make(r.photo_back, "Espaldas", "espaldas"),
+      make(r.photo_path, "Foto", "unica"),
+    ].filter(Boolean) as { label: string; url: string; thumb: string }[];
+    return { ...r, photos };
+  });
 }
 
 export default async function CheckinsPage({
@@ -444,20 +450,23 @@ export default async function CheckinsPage({
   const lastWaist = cinturas.length ? cinturas[cinturas.length - 1].value : null;
   const firstWithFront = mine.find((r) => r.photo_front);
   const lastWithFront = [...mine].reverse().find((r) => r.photo_front);
-  const [beforePhoto, afterPhoto] = await Promise.all([
-    signThumb(firstWithFront?.photo_front ?? null, 700),
-    signThumb(lastWithFront?.photo_front ?? null, 700),
-  ]);
+  // Por la ruta que no caduca, como el resto de SUS fotos.
+  const fotoDe = (r: CheckIn | undefined, cual: string, w: number) =>
+    r ? `/api/miembros/checkin/foto/${r.id}?cual=${cual}&w=${w}` : undefined;
+  const beforePhoto = firstWithFront?.photo_front ? fotoDe(firstWithFront, "frente", 700) : undefined;
+  const afterPhoto = lastWithFront?.photo_front ? fotoDe(lastWithFront, "frente", 700) : undefined;
 
   // Sus fotos para el comparador: todas las revisiones que tengan alguna, con
   // su cintura al lado para poder decirle cuántos centímetros van entre las dos.
-  const fotosComparador: FotoRevision[] = admin ? [] : await Promise.all(
+  // El comparador enseña una foto cada vez: las demás se piden al pasar de
+  // una a otra, así que con enlaces de una hora se quedaban en blanco.
+  const fotosComparador: FotoRevision[] = admin ? [] : (
     mine
       .filter((r) => r.photo_front || r.photo_side || r.photo_back)
-      .map(async (r) => {
-        const [frente, perfil, espaldas] = await Promise.all([
-          signThumb(r.photo_front, 700), signThumb(r.photo_side, 700), signThumb(r.photo_back, 700),
-        ]);
+      .map((r) => {
+        const frente = r.photo_front ? fotoDe(r, "frente", 700) : undefined;
+        const perfil = r.photo_side ? fotoDe(r, "perfil", 700) : undefined;
+        const espaldas = r.photo_back ? fotoDe(r, "espaldas", 700) : undefined;
         return {
           fecha: r.created_at,
           etiqueta: fechaCorta(diaDe(r.created_at)),
