@@ -7,7 +7,7 @@ import TechniqueDelete from "@/components/TechniqueDelete";
 import { isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { puedeGestionarClientas } from "@/lib/equipo";
-import { sbSelect, sbSignedUrl } from "@/lib/supabase";
+import { sbSelect } from "@/lib/supabase";
 
 export const metadata: Metadata = { title: "Revisión de técnica", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -51,13 +51,15 @@ export default async function TecnicaPage() {
     console.error("[tecnica] error", e);
   }
 
-  const items = await Promise.all(
-    rows.map(async (r) => ({
-      ...r,
-      videoUrl: r.video_path ? await sbSignedUrl("tecnica", r.video_path, 3600).catch(() => undefined) : undefined,
-      replyUrl: r.coach_reply_path ? await sbSignedUrl("tecnica", r.coach_reply_path, 3600).catch(() => undefined) : undefined,
-    }))
-  );
+  // Los enlaces NO son los firmados de Supabase, que caducan en una hora: el
+  // navegador pide el archivo al dar al play, no al pintar la pantalla, así
+  // que una pantalla abierta un rato dejaba la corrección muda. Estos firman
+  // al pulsarlos.
+  const items = rows.map((r) => ({
+    ...r,
+    videoUrl: r.video_path ? `/api/miembros/tecnica/${r.id}` : undefined,
+    replyUrl: r.coach_reply_path ? `/api/miembros/tecnica/${r.id}?de=respuesta` : undefined,
+  }));
 
   // Sin responder primero (para la coach).
   const pending = admin ? items.filter((i) => !i.coach_reply && !i.coach_reply_path).length : 0;

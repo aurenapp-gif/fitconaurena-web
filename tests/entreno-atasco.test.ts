@@ -80,3 +80,29 @@ test("el plan que mira se recuerda, entre también desde «Mi plan»", () => {
   assert.match(entreno, /useEffect\(\(\) => \{\n    if \(!planId\) return;/);
   assert.match(entreno, /\$\{COOKIE_PLAN_ENTRENO\}=\$\{planId\}/);
 });
+
+/* --- Lo mismo en el resto de lo que abre la clienta: nada que ella pulse
+       puede depender de un enlace firmado que caduca en una hora. --- */
+
+test("la corrección de la coach se abre por una ruta que no caduca", () => {
+  // El navegador pide el audio al dar al PLAY, no al pintar la pantalla
+  // (preload="none"), así que una pantalla abierta un rato la dejaba muda.
+  const tecnica = leer("app/miembros/tecnica/page.tsx");
+  assert.match(tecnica, /videoUrl: r\.video_path \? `\/api\/miembros\/tecnica\/\$\{r\.id\}`/);
+  assert.match(tecnica, /replyUrl: r\.coach_reply_path \? `\/api\/miembros\/tecnica\/\$\{r\.id\}\?de=respuesta`/);
+  assert.doesNotMatch(tecnica, /sbSignedUrl\("tecnica"/);
+});
+
+test("y la ruta solo deja ver lo suyo", () => {
+  const ruta = leer("app/api/miembros/tecnica/[id]/route.ts");
+  assert.match(ruta, /fila\.member_email\.toLowerCase\(\) !== me\.toLowerCase\(\) && !\(await puedeGestionarClientas\(me\)\)/);
+  assert.match(ruta, /status: 403/);
+});
+
+test("su contrato firmado tampoco se enlaza firmado", () => {
+  const perfil = leer("app/miembros/perfil/page.tsx");
+  assert.match(perfil, /url: `\/api\/miembros\/contrato\/firmado\/\$\{s\.id\}`/);
+  assert.doesNotMatch(perfil, /sbSignedUrl\(CONTRACT_BUCKET/);
+  const ruta = leer("app/api/miembros/contrato/firmado/[id]/route.ts");
+  assert.match(ruta, /fila\.member_email\.toLowerCase\(\) !== me\.toLowerCase\(\)/);
+});
