@@ -118,3 +118,12 @@ test("sus fotos de revisión tampoco caducan a la hora", () => {
   assert.match(ruta, /fila\.member_email\.toLowerCase\(\) !== me\.toLowerCase\(\)/);
   assert.match(ruta, /status: 403/);
 });
+
+test("se miran TODAS las sesiones abiertas, no solo la última", () => {
+  // Desde que puede cambiar de plan a media sesión puede tener una abierta en
+  // cada fase. Con limit=1 solo se veía la última y lo apuntado en la otra
+  // parecía haberse perdido al volver a ella.
+  assert.match(pagina, /finished_at=is\.null&order=started_at\.desc&limit=\$\{MAX_PLANES_ENTRENO\}/);
+  assert.match(pagina, /const frescas = abiertas\.filter/);
+  assert.match(pagina, /const enMarcha = \(elegido && frescas\.find\(\(a\) => a\.plan_id === elegido\.id\)\) \|\| frescas\[0\] \|\| null;/);
+});

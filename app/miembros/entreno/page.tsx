@@ -56,18 +56,24 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
     ).catch(() => [] as (SerieGuardada & { session_id: string })[]),
     sbSelect<Sesion>(
       "workout_sessions",
-      `select=id,plan_id,dia,started_at,finished_at&member_email=eq.${e}&finished_at=is.null&order=started_at.desc&limit=1`
+      // Más de una: desde que puede cambiar de plan a media sesión, puede
+      // tener una abierta en cada fase. Con limit=1 solo se veía la última y
+      // lo apuntado en la otra parecía haberse perdido.
+      `select=id,plan_id,dia,started_at,finished_at&member_email=eq.${e}&finished_at=is.null&order=started_at.desc&limit=${MAX_PLANES_ENTRENO}`
     ).catch(() => [] as Sesion[]),
   ]);
 
   // Una sesión abierta de hace más de ocho horas es una que se dejó sin cerrar,
   // no un entreno en marcha: no se le ofrece continuarla.
-  const enMarcha = abiertas[0] && Date.now() - new Date(abiertas[0].started_at).getTime() < 8 * 3600_000
-    ? abiertas[0] : null;
+  const frescas = abiertas.filter((a) => Date.now() - new Date(a.started_at).getTime() < 8 * 3600_000);
 
   const pedido = searchParams?.plan && UUID.test(searchParams.plan) ? searchParams.plan : null;
   const recordado = cookies().get(COOKIE_PLAN_ENTRENO)?.value ?? null;
-  const elegido = elegirPlan(planes, { sesion: enMarcha?.plan_id ?? null, pedido, recordado });
+  const elegido = elegirPlan(planes, { sesion: frescas[0]?.plan_id ?? null, pedido, recordado });
+
+  // De las abiertas, la de ESTE plan; si no hay, la más reciente (que es la
+  // que se le ofrecerá como «a medias en otra fase»).
+  const enMarcha = (elegido && frescas.find((a) => a.plan_id === elegido.id)) || frescas[0] || null;
 
   // El plan elegido, entero. Va filtrado también por su email: un id de otra
   // clienta en la URL no devuelve nada.
