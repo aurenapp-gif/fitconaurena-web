@@ -73,3 +73,10 @@ test("descartar ya no se calla los fallos", () => {
   assert.doesNotMatch(entreno, /accion: "descartar", sesion \}\)\.catch\(\(\) => \{\}\)/);
   assert.match(entreno, /No se ha podido descartar\./);
 });
+
+test("el plan que mira se recuerda, entre también desde «Mi plan»", () => {
+  // El selector ya guardaba su elección, pero entrar con ?plan= no tocaba la
+  // cookie: al volver desde el inicio le salía otra vez el de antes.
+  assert.match(entreno, /useEffect\(\(\) => \{\n    if \(!planId\) return;/);
+  assert.match(entreno, /\$\{COOKIE_PLAN_ENTRENO\}=\$\{planId\}/);
+});

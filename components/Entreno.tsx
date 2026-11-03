@@ -149,6 +149,17 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
 
   const dia = dias[diaIdx] ?? null;
 
+  // Recordar el plan que está mirando, venga de donde venga. El selector ya
+  // guardaba su elección, pero entrar desde «Mi plan» con ?plan= no tocaba la
+  // cookie: al volver a «Mi entreno» desde el inicio le salía otra vez el de
+  // antes, y parecía que el cambio no se había guardado.
+  useEffect(() => {
+    if (!planId) return;
+    try {
+      document.cookie = `${COOKIE_PLAN_ENTRENO}=${planId}; path=/miembros; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    } catch { /* en incógnito no se puede guardar; la pantalla funciona igual */ }
+  }, [planId]);
+
   async function llamar(cuerpo: Record<string, unknown>) {
     setError("");
     const res = await fetch("/api/miembros/entreno", {
