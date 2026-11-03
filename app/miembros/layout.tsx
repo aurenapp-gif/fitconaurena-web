@@ -15,7 +15,7 @@ export default function MiembrosLayout({ children }: { children: React.ReactNode
       {vista && (
         <div role="status" className="sticky top-0 z-50 bg-warn-soft text-ink border-b-2 border-warn px-4 py-2.5 flex items-center gap-3 text-[14px]">
           <span className="flex-1 min-w-0">
-            Estás viendo la app como <strong className="break-all">{vista.mirando}</strong>. Lo que pulses se guarda a tu nombre, no al suyo.
+            Estás viendo la app como <strong className="break-all">{vista.mirando}</strong>. Solo mirar: aquí no se guarda nada.
           </span>
           <a href="/api/miembros/ver-como" className="shrink-0 font-semibold underline">Salir</a>
         </div>

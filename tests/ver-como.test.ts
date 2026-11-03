@@ -67,10 +67,23 @@ test("MIRAR NO ES SER ELLA: ninguna ruta de API pasa por la suplantación", () =
   assert.deepEqual(culpables, [], `estas rutas guardarían a nombre de la clienta: ${culpables.join(", ")}`);
 });
 
+test("mirando como ella no se guarda NADA, ni a su nombre ni al tuyo", () => {
+  // Las rutas que guardan usan la sesión real, así que sin esto un entreno
+  // empezado desde la vista le quedaría a la coach como suyo, y la pantalla
+  // —que lee los datos de la clienta— no cambiaría: parecería no responder.
+  const mw = leer("middleware.ts");
+  assert.match(mw, /if \(req\.method === "GET" \|\| req\.method === "HEAD" \|\| req\.method === "OPTIONS"\) return NextResponse\.next\(\);/);
+  assert.match(mw, /if \(!req\.cookies\.get\(VISTA_COOKIE\)\?\.value\) return NextResponse\.next\(\);/);
+  assert.match(mw, /status: 409/);
+  // Y se puede salir de la vista, que si no sería una ratonera.
+  assert.match(mw, /req\.nextUrl\.pathname === "\/api\/miembros\/ver-como"/);
+  assert.match(mw, /matcher: "\/api\/miembros\/:path\*"/);
+});
+
 test("el aviso sale siempre y se puede salir desde cualquier pantalla", () => {
   const layout = leer("app/miembros/layout.tsx");
   assert.match(layout, /Estás viendo la app como/);
-  assert.match(layout, /Lo que pulses se guarda a tu nombre, no al suyo\./);
+  assert.match(layout, /Solo mirar: aquí no se guarda nada\./);
   // Enlace normal, no un botón: tiene que funcionar también donde no hay js
   // en marcha o adonde la app te haya llevado sola.
   assert.match(layout, /<a href="\/api\/miembros\/ver-como"/);
