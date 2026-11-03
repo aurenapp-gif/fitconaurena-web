@@ -19,6 +19,8 @@ type Props = {
   sinPlan: boolean;
   ultimaVez: { clave: string; datos: UltimaVez }[];
   sesionAbierta: { id: string; dia: string | null; desde: string } | null;
+  /** Un entreno dejado a medias en OTRO de sus planes, para poder volver a él. */
+  otroEntreno: { id: string; nombre: string } | null;
   seriesDeHoy: SerieApuntada[];
 };
 
@@ -45,13 +47,18 @@ function seriesDe(e: Ejercicio): number {
 }
 
 /**
- * Elegir qué plan hacer (Fase 1, Fase 2…). Solo aparece si tiene más de uno y
- * no hay un entreno en marcha: a mitad de sesión no se cambia de plan.
+ * Elegir qué plan hacer (Fase 1, Fase 2…). Sale siempre que tenga más de uno,
+ * también con un entreno a medias: cambiar de plan ya no pierde nada, porque
+ * la sesión se queda abierta en SU plan y sigue ahí al volver.
  * La elección se recuerda en una cookie para no tener que repetirla cada día.
  */
 function SelectorPlan({ planes, actual }: { planes: { id: string; nombre: string }[]; actual: string | null }) {
   const router = useRouter();
   const [yendo, setYendo] = useState<string | null>(null);
+  // Si la navegación no acaba cambiando de plan, el componente no se re-monta
+  // y «yendo» se quedaba puesto PARA SIEMPRE, con todos los botones apagados:
+  // eso era el «se queda pillado». Se suelta en cuanto cambia el plan pintado.
+  useEffect(() => { setYendo(null); }, [actual]);
   if (planes.length < 2) return null;
   function elegir(id: string) {
     if (id === actual || yendo) return;
@@ -67,7 +74,7 @@ function SelectorPlan({ planes, actual }: { planes: { id: string; nombre: string
           const activo = p.id === actual;
           return (
             <button key={p.id} type="button" role="radio" aria-checked={activo} onClick={() => elegir(p.id)}
-              disabled={!!yendo}
+              disabled={yendo === p.id}
               className={`shrink-0 rounded-[12px] px-4 py-2 text-[15px] font-semibold min-h-[44px] border ${
                 activo ? "bg-ink text-white border-ink" : "bg-surface text-ink border-line"} ${yendo === p.id ? "opacity-60" : ""}`}>
               {p.nombre}
@@ -124,7 +131,7 @@ function ComoVerlo({ planId }: { planId: string | null }) {
  * atrás. Con páginas distintas, cada vuelta sería una recarga y la mitad del
  * gimnasio no tiene cobertura.
  */
-export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ultimaVez, sesionAbierta, seriesDeHoy }: Props) {
+export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ultimaVez, sesionAbierta, otroEntreno, seriesDeHoy }: Props) {
   const router = useRouter();
   const ultima = useMemo(() => new Map(ultimaVez.map((u) => [u.clave, u.datos])), [ultimaVez]);
 
@@ -281,7 +288,15 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
             </p>
           </div>
 
-          <Link href="/miembros" className="btn-brand text-center py-4 text-[17px]">Volver al inicio</Link>
+          {/* Antes de aquí solo se salía al inicio, y al volver a «Mi entreno»
+              seguía el mismo plan y el mismo día. Quien entrena dos grupos el
+              mismo día, o quiere cambiar de fase, se quedaba encallada. */}
+          <button type="button" onClick={() => {
+            setTerminado(null); setSesion(null); setDesde(null); setApuntadas([]); router.refresh();
+          }} className="btn-brand w-full py-4 text-[17px]">
+            Entrenar otra cosa
+          </button>
+          <Link href="/miembros" className="text-center text-[16px] text-ink-muted py-2">Volver al inicio</Link>
         </div>
       </>
     );
@@ -302,6 +317,8 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
         ultima={ultima.get(claveEjercicio(e.nombre)) ?? null}
         apuntadas={hechas(e.nombre)}
         sesion={sesion}
+        empezar={empezar}
+        ocupado={ocupado}
         volver={() => setAbierto(null)}
         siguiente={abierto + 1 < dia.ejercicios.length ? () => setAbierto(abierto + 1) : null}
         llamar={llamar}
@@ -322,10 +339,21 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
         {planTitulo ? ` · ${planTitulo}` : ""}
       </p>
 
-      {!sesion && <SelectorPlan planes={planes} actual={planId} />}
+      <SelectorPlan planes={planes} actual={planId} />
+      {otroEntreno && !sesion && (
+        /* Sin esto, la que dejó un entreno a medias en otra fase no entiende
+           por qué aquí no aparece nada de lo que apuntó. */
+        <Link href={`/miembros/entreno?plan=${otroEntreno.id}`}
+          className="flex items-center gap-3 bg-surface rounded-[14px] p-3.5 mb-4">
+          <span className="flex-1 text-[15px] text-ink-muted leading-snug">
+            Tienes un entreno a medias en <strong className="text-ink">{otroEntreno.nombre}</strong>
+          </span>
+          <span className="text-[15px] text-brand font-semibold shrink-0">Seguir</span>
+        </Link>
+      )}
       <ComoVerlo planId={planId} />
 
-      {dias.length > 1 && !sesion && (
+      {dias.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4">
           {dias.map((d, i) => (
             <button key={d.nombre + i} type="button" onClick={() => setDiaIdx(i)}
@@ -347,8 +375,12 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
           const top = hs.length ? hs.reduce((a, b) => ((b.peso ?? -1) > (a.peso ?? -1) ? b : a)) : null;
           const c = top ? compara(top.peso, u?.peso ?? null) : null;
           return (
-            <button key={e.nombre + i} type="button" disabled={!sesion} onClick={() => setAbierto(i)}
-              className={`w-full flex items-center gap-3 py-3 text-left min-h-[56px] ${i ? "border-t border-line" : ""} ${sesion ? "" : "opacity-70"}`}>
+            /* Antes estaban apagados sin entreno en marcha: se tocaba un
+               ejercicio y no pasaba nada, sin decir por qué. Ahora se abren
+               siempre —para ver series, notas y la última vez— y es dentro
+               donde se ofrece empezar, si hace falta. */
+            <button key={e.nombre + i} type="button" onClick={() => setAbierto(i)}
+              className={`w-full flex items-center gap-3 py-3 text-left min-h-[56px] ${i ? "border-t border-line" : ""}`}>
               <span aria-hidden="true" className={`w-[22px] h-[22px] rounded-full shrink-0 grid place-items-center ${
                 hecho ? "bg-sage text-white" : "border-2 border-line"}`}>
                 {hecho && <Tic />}
@@ -392,11 +424,20 @@ export default function Entreno({ dias, planId, planTitulo, planes, sinPlan, ult
             className="w-full rounded-[14px] bg-ink text-page py-4 text-[17px] font-semibold disabled:opacity-60">
             {ocupado ? "Un momento…" : "Terminar entreno"}
           </button>
-          <button type="button" onClick={async () => {
-            if (!sesion) return;
-            await llamar({ accion: "descartar", sesion }).catch(() => {});
-            setSesion(null); setDesde(null); setApuntadas([]); router.refresh();
-          }} className="text-[15px] text-ink-muted py-2">
+          <button type="button" disabled={ocupado} onClick={async () => {
+            if (!sesion || ocupado) return;
+            setOcupado(true);
+            try {
+              // Si falla y se callaba, la pantalla se limpiaba, el refresco
+              // traía la sesión de vuelta y parecía que el botón no servía.
+              await llamar({ accion: "descartar", sesion });
+              setSesion(null); setDesde(null); setApuntadas([]); router.refresh();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "No se ha podido descartar.");
+            } finally {
+              setOcupado(false);
+            }
+          }} className="text-[15px] text-ink-muted py-2 disabled:opacity-60">
             Descartar este entreno
           </button>
         </div>
@@ -421,7 +462,7 @@ function Cronometro({ desde }: { desde: string }) {
 /* ------------------------------------------------------------------ */
 
 function VistaEjercicio({
-  ejercicio, posicion, planId, ultima, apuntadas, sesion, volver, siguiente, llamar, guardada, quitada,
+  ejercicio, posicion, planId, ultima, apuntadas, sesion, empezar, ocupado, volver, siguiente, llamar, guardada, quitada,
 }: {
   ejercicio: Ejercicio;
   posicion: string;
@@ -429,6 +470,9 @@ function VistaEjercicio({
   ultima: UltimaVez | null;
   apuntadas: SerieApuntada[];
   sesion: string | null;
+  /** Para poder arrancar el entreno desde dentro del ejercicio. */
+  empezar: () => void;
+  ocupado: boolean;
   volver: () => void;
   siguiente: (() => void) | null;
   llamar: (c: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -507,20 +551,35 @@ function VistaEjercicio({
 
         {error && <p role="alert" className="text-[15px] text-danger px-1">{error}</p>}
 
-        <div className="bg-surface rounded-[14px] px-4">
-          {Array.from({ length: total }, (_, i) => i + 1).map((n, i) => (
-            <FilaSerie
-              key={n}
-              n={n}
-              inicial={valor(n)}
-              guardando={guardando === n}
-              primera={i === 0}
-              sugerido={ultima}
-              onGuardar={(peso, reps) => apuntar(n, peso, reps)}
-              onBorrar={() => borrar(n)}
-            />
-          ))}
-        </div>
+        {sesion ? (
+          <div className="bg-surface rounded-[14px] px-4">
+            {Array.from({ length: total }, (_, i) => i + 1).map((n, i) => (
+              <FilaSerie
+                key={n}
+                n={n}
+                inicial={valor(n)}
+                guardando={guardando === n}
+                primera={i === 0}
+                sugerido={ultima}
+                onGuardar={(peso, reps) => apuntar(n, peso, reps)}
+                onBorrar={() => borrar(n)}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Sin entreno en marcha las casillas no guardaban nada: se escribía
+             el peso, se pulsaba y no pasaba nada. Mejor no enseñarlas y
+             ofrecer lo único que hace falta para que funcionen. */
+          <div className="bg-surface rounded-[14px] p-4">
+            <p className="text-[16px] leading-snug">
+              {total} {total === 1 ? "serie" : "series"}. Empieza el entreno para ir apuntando tus pesos.
+            </p>
+            <button type="button" onClick={empezar} disabled={ocupado}
+              className="btn-brand w-full py-3.5 text-[16px] mt-3 disabled:opacity-60">
+              {ocupado ? "Un momento…" : "Empezar entreno"}
+            </button>
+          </div>
+        )}
 
         {descanso && segundos && (
           <Descanso desde={descanso.desde} segundos={segundos} siguiente={descanso.siguiente}

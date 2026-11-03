@@ -84,7 +84,19 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
   if (leido?.estructura && leido.estructura.tipo === "entrenamiento") dias = leido.estructura.dias;
   else if (plan) dias = diasDeRespaldo(plan.exercises);
 
-  const ultima = ultimaVezPorEjercicio(series, enMarcha?.id ?? null);
+  // La sesión a medias es DE SU PLAN, no de la pantalla. Si la dejó abierta en
+  // Fase 1 y ahora abre Fase 2, Fase 2 no está a medias: empieza de cero, y al
+  // volver a Fase 1 sigue donde lo dejó. Las sesiones viejas sin plan apuntado
+  // valen para cualquiera, que es como se comportaban hasta ahora.
+  const suya = enMarcha && plan && (enMarcha.plan_id == null || enMarcha.plan_id === plan.id) ? enMarcha : null;
+  // Si la dejó a medias en OTRO plan, se le dice y se le ofrece volver, en vez
+  // de que se pregunte dónde han ido sus series.
+  const otroPlan = enMarcha && !suya && enMarcha.plan_id
+    ? planes.find((x) => x.id === enMarcha.plan_id) ?? null
+    : null;
+  const otroEntreno = otroPlan ? { id: otroPlan.id, nombre: nombrePlan(otroPlan) } : null;
+
+  const ultima = ultimaVezPorEjercicio(series, suya?.id ?? null);
   // El mapa no cruza el límite servidor→navegador, así que se manda como lista
   // indexada por la misma clave que usa el servidor.
   const ultimaLista: { clave: string; datos: UltimaVez }[] = [];
@@ -97,8 +109,8 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
   }
 
   // Las series ya apuntadas en el entreno de hoy, para poder retomarlo.
-  const deHoy = enMarcha
-    ? series.filter((s) => s.session_id === enMarcha.id).map((s) => ({ ejercicio: s.ejercicio, serie: s.serie, peso: s.peso, reps: s.reps }))
+  const deHoy = suya
+    ? series.filter((s) => s.session_id === suya.id).map((s) => ({ ejercicio: s.ejercicio, serie: s.serie, peso: s.peso, reps: s.reps }))
     : [];
 
   return (
@@ -115,7 +127,8 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
             planes={ordenSelector(planes).map((p) => ({ id: p.id, nombre: nombrePlan(p) }))}
             sinPlan={!plan}
             ultimaVez={ultimaLista}
-            sesionAbierta={enMarcha ? { id: enMarcha.id, dia: enMarcha.dia, desde: enMarcha.started_at } : null}
+            sesionAbierta={suya ? { id: suya.id, dia: suya.dia, desde: suya.started_at } : null}
+            otroEntreno={otroEntreno}
             seriesDeHoy={deHoy}
           />
         </div>

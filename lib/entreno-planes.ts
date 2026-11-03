@@ -26,18 +26,24 @@ export function nombrePlan(p: PlanResumen): string {
 
 /**
  * El plan que se abre. Por orden de preferencia:
- * 1. el de un entreno que se dejó a medias (no se cambia de plan con una sesión abierta),
- * 2. el que ha pedido en la URL,
+ * 1. el que ha pedido en la URL,
+ * 2. el de un entreno que se dejó a medias,
  * 3. el que eligió la última vez,
  * 4. el más reciente.
  * Solo se acepta un id que sea de uno de SUS planes.
+ *
+ * Lo pedido va PRIMERO. Antes mandaba la sesión a medias, y como una sesión
+ * sin cerrar dura ocho horas, quien salía del gimnasio sin pulsar «Terminar»
+ * se quedaba ocho horas sin poder abrir otro plan: pulsaba «Entrenar con este
+ * plan» en otro y el servidor le devolvía el de la sesión. Una elección
+ * explícita es una elección explícita.
  */
 export function elegirPlan(
   planes: PlanResumen[],
   { sesion, pedido, recordado }: { sesion?: string | null; pedido?: string | null; recordado?: string | null },
 ): PlanResumen | null {
   if (!planes.length) return null;
-  for (const id of [sesion, pedido, recordado]) {
+  for (const id of [pedido, sesion, recordado]) {
     const p = id ? planes.find((x) => x.id === id) : undefined;
     if (p) return p;
   }
