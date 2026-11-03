@@ -11,7 +11,8 @@ import {
 } from "../lib/comparativa-fotos";
 
 const r = (d: string, extra: Partial<RevisionConFotos> = {}): RevisionConFotos =>
-  ({ created_at: `${d}T10:00:00Z`, ...extra });
+  // El id da igual para comparar, pero viaja hasta el enlace de la foto.
+  ({ id: `rev-${d}`, created_at: `${d}T10:00:00Z`, ...extra });
 
 test("sin revisiones no hay nada que comparar", () => {
   const c = comparacionDeFotos([]);

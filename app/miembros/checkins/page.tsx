@@ -13,7 +13,7 @@ import { Grupo, NotaCoach, Privado } from "@/components/Grupo";
 import { adminEmails, isAdmin } from "@/lib/members";
 import { requireMember } from "@/lib/guard";
 import { puedeGestionarClientas, soloClientas } from "@/lib/equipo";
-import { sbSelect, sbSignedUrl, sbSignedThumb } from "@/lib/supabase";
+import { sbSelect } from "@/lib/supabase";
 import { periodoDe, proximaRevision, todayMadrid, NORMA } from "@/lib/revisiones";
 import { resumenQuincena } from "@/lib/quincena";
 import RecordarRevision, { type SinSubir } from "@/components/RecordarRevision";
@@ -154,11 +154,6 @@ function revisionesSeguidas(fechas: string[], hoy: string): number {
   }
   return n;
 }
-
-const sign = (p: string | null) => (p ? sbSignedUrl("checkins", p, 3600).catch(() => undefined) : Promise.resolve(undefined));
-// Miniatura con fallback a imagen completa si la transformación no está disponible.
-const signThumb = (p: string | null, w = 500): Promise<string | undefined> =>
-  p ? sbSignedThumb("checkins", p, w).catch(() => sbSignedUrl("checkins", p, 3600).catch(() => undefined)) : Promise.resolve(undefined);
 
 /**
  * Las fotos NO van con el enlace firmado de Supabase, que caduca en una hora.
@@ -418,19 +413,19 @@ export default async function CheckinsPage({
   // frente a la última. Cada ángulo busca las suyas por separado, que no todas
   // empezaron a hacerse las tres el primer día.
   const comparacion = filtrada ? comparacionDeFotos(cronologicas) : { pares: [], soloUna: [], sinNinguna: [] };
-  const paresFirmados: ParFirmado[] = await Promise.all(
-    comparacion.pares.map(async (par) => {
-      const [pThumb, pFull, uThumb, uFull] = await Promise.all([
-        signThumb(par.primera.path, 700), sign(par.primera.path),
-        signThumb(par.ultima.path, 700), sign(par.ultima.path),
-      ]);
-      return {
-        id: par.id, nombre: par.nombre, dias: par.dias, peso: par.peso, cintura: par.cintura,
-        primera: { fecha: par.primera.fecha, thumb: pThumb || pFull, full: pFull, peso: par.primera.peso },
-        ultima: { fecha: par.ultima.fecha, thumb: uThumb || uFull, full: uFull, peso: par.ultima.peso },
-      };
-    })
-  );
+  // Por la ruta que no caduca, como las de ellas: la grande se pide al tocar
+  // la miniatura, que es justo cuando el enlace firmado ya estaba muerto. El
+  // ángulo del par («frente», «perfil», «espaldas») es el mismo nombre que
+  // espera la ruta.
+  const paresFirmados: ParFirmado[] = comparacion.pares.map((par) => {
+    const foto = (t: { revision: string }, w?: number) =>
+      `/api/miembros/checkin/foto/${t.revision}?cual=${par.id}${w ? `&w=${w}` : ""}`;
+    return {
+      id: par.id, nombre: par.nombre, dias: par.dias, peso: par.peso, cintura: par.cintura,
+      primera: { fecha: par.primera.fecha, thumb: foto(par.primera, 700), full: foto(par.primera), peso: par.primera.peso },
+      ultima: { fecha: par.ultima.fecha, thumb: foto(par.ultima, 700), full: foto(par.ultima), peso: par.ultima.peso },
+    };
+  });
 
   // Resumen de progreso (solo clienta). rows viene en orden ascendente.
   const mine = admin ? [] : rows;
