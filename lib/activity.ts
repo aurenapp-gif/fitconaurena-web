@@ -13,6 +13,7 @@ export const ACTIONS = {
   bienvenida: "Se le ha dado la bienvenida",
   recordatorio_revision: "Se le ha recordado la revisión",
   cuestionario_actualizado: "Ha cambiado algo de su cuestionario",
+  ver_como: "Ha mirado la app como una clienta",
 } as const;
 
 export type Action = keyof typeof ACTIONS;
@@ -27,6 +28,9 @@ export type Action = keyof typeof ACTIONS;
  */
 const SOLO_SERVIDOR: ReadonlySet<string> = new Set<Action>([
   "bienvenida", "recordatorio_revision", "cuestionario_actualizado",
+  // Mirar la pantalla de otra persona no se apunta desde el navegador: lo
+  // escribe la ruta, que es la única que ha comprobado quién eres.
+  "ver_como",
 ]);
 
 /** ¿Es una acción que puede apuntar la propia clienta desde su navegador? */

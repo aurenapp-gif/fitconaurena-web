@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE, verifySession, isAdmin } from "@/lib/members";
+import { SESSION_COOKIE, VISTA_COOKIE, verifySession, verifyVistaToken, isAdmin } from "@/lib/members";
 import { sbSelect } from "@/lib/supabase";
 import { esEquipo } from "@/lib/equipo";
 
@@ -10,9 +10,27 @@ import { esEquipo } from "@/lib/equipo";
  * redirige. Como las páginas son dinámicas, la comprobación es efectiva en la
  * siguiente navegación.
  */
+export function vistaComo(): { real: string; mirando: string } | null {
+  const real = verifySession(cookies().get(SESSION_COOKIE)?.value);
+  if (!real || !isAdmin(real)) return null;
+  const mirando = verifyVistaToken(cookies().get(VISTA_COOKIE)?.value);
+  if (!mirando || mirando.toLowerCase() === real.toLowerCase()) return null;
+  return { real, mirando };
+}
+
 export async function requireMember(opts?: { skipContractGate?: boolean }): Promise<string> {
   const email = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!email) redirect("/miembros/acceso");
+
+  /*
+   * «Ver la app como ella». Las puertas de abajo —revocada, en espera,
+   * bienvenida, contrato— NO se le aplican a quien mira: son cerrojos para
+   * impedir entrar, y quien mira ya está dentro. Aplicárselas lo dejaría
+   * rebotando entre pantallas sin poder llegar a lo que venía a ver, y encima
+   * sin el aviso para salir. Lo que sí se ve es lo que ella ve: sus datos.
+   */
+  const vista = vistaComo();
+  if (vista) return vista.mirando;
   // El redirect debe ir FUERA del try: redirect() funciona lanzando una
   // excepción (NEXT_REDIRECT) que un catch tragaría, anulando el corte.
   const state = await memberState(email);
