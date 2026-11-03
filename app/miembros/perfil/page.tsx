@@ -19,7 +19,7 @@ import { diaDe, fechaCorta, hoyMadrid, renovacionAlimentacion, renovacionEntrena
 import { rachaDias, semanaDe, diasApuntables } from "@/lib/habitos";
 import { nombresDe } from "@/lib/entreno";
 import { cuestionarioPendiente, type Questionnaire } from "@/lib/profile";
-import { CONTRACT_BUCKET, type ContractSignature, type ContractTemplate } from "@/lib/contract";
+import { type ContractSignature, type ContractTemplate } from "@/lib/contract";
 
 export const metadata: Metadata = { title: "Mi perfil", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -185,16 +185,19 @@ export default async function PerfilPage({ searchParams }: { searchParams?: { ta
     new Set((sesiones ?? []).map((s) => diaDe(s.started_at)))
   );
 
-  const [photoUrl, signedPdfUrls] = await Promise.all([
+  const [photoUrl] = await Promise.all([
     profile?.photo_path ? sbSignedUrl("perfil", profile.photo_path, 3600).catch(() => undefined) : Promise.resolve(undefined),
-    Promise.all(signatures.map((s) => s.signed_pdf_path ? sbSignedUrl(CONTRACT_BUCKET, s.signed_pdf_path, 3600).catch(() => undefined) : Promise.resolve(undefined))),
+
   ]);
-  const contratosFirmados = signatures.map((s, i) => ({
+  const contratosFirmados = signatures.map((s) => ({
     id: s.id,
     signedAt: s.signed_at,
     title: (s.template_id && sigTplById.get(s.template_id)?.title) || "Contrato",
     kind: (s.template_id && sigTplById.get(s.template_id)?.kind) || "contrato",
-    url: signedPdfUrls[i],
+    // Su contrato se abre por una dirección nuestra, que firma al pulsarla:
+    // el firmado de Supabase caduca en una hora y el perfil es una pantalla
+    // que se deja abierta.
+    url: `/api/miembros/contrato/firmado/${s.id}`,
   }));
 
   const planesFallo = plans === null;

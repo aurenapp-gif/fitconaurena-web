@@ -18,8 +18,16 @@ test("recuerda el último elegido", () => {
   assert.equal(elegirPlan(planes, { recordado: "a" })?.id, "a");
 });
 
-test("con un entreno a medias manda el plan de ese entreno", () => {
-  assert.equal(elegirPlan(planes, { sesion: "b", pedido: "a", recordado: "a" })?.id, "b");
+test("lo que pide en la URL manda, aunque haya un entreno a medias", () => {
+  // Esto era al revés y dejaba a la clienta encerrada: una sesión sin cerrar
+  // dura ocho horas, así que quien salía del gimnasio sin pulsar «Terminar»
+  // pulsaba «Entrenar con este plan» en otra fase y le seguía saliendo la
+  // misma. El entreno a medias no se pierde: sigue abierto en SU plan.
+  assert.equal(elegirPlan(planes, { sesion: "b", pedido: "a", recordado: "a" })?.id, "a");
+});
+
+test("sin pedir nada, el entreno a medias manda sobre lo recordado", () => {
+  assert.equal(elegirPlan(planes, { sesion: "b", recordado: "a" })?.id, "b");
 });
 
 test("ignora ids que no son suyos", () => {

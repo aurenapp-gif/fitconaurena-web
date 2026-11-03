@@ -56,18 +56,24 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
     ).catch(() => [] as (SerieGuardada & { session_id: string })[]),
     sbSelect<Sesion>(
       "workout_sessions",
-      `select=id,plan_id,dia,started_at,finished_at&member_email=eq.${e}&finished_at=is.null&order=started_at.desc&limit=1`
+      // Más de una: desde que puede cambiar de plan a media sesión, puede
+      // tener una abierta en cada fase. Con limit=1 solo se veía la última y
+      // lo apuntado en la otra parecía haberse perdido.
+      `select=id,plan_id,dia,started_at,finished_at&member_email=eq.${e}&finished_at=is.null&order=started_at.desc&limit=${MAX_PLANES_ENTRENO}`
     ).catch(() => [] as Sesion[]),
   ]);
 
   // Una sesión abierta de hace más de ocho horas es una que se dejó sin cerrar,
   // no un entreno en marcha: no se le ofrece continuarla.
-  const enMarcha = abiertas[0] && Date.now() - new Date(abiertas[0].started_at).getTime() < 8 * 3600_000
-    ? abiertas[0] : null;
+  const frescas = abiertas.filter((a) => Date.now() - new Date(a.started_at).getTime() < 8 * 3600_000);
 
   const pedido = searchParams?.plan && UUID.test(searchParams.plan) ? searchParams.plan : null;
   const recordado = cookies().get(COOKIE_PLAN_ENTRENO)?.value ?? null;
-  const elegido = elegirPlan(planes, { sesion: enMarcha?.plan_id ?? null, pedido, recordado });
+  const elegido = elegirPlan(planes, { sesion: frescas[0]?.plan_id ?? null, pedido, recordado });
+
+  // De las abiertas, la de ESTE plan; si no hay, la más reciente (que es la
+  // que se le ofrecerá como «a medias en otra fase»).
+  const enMarcha = (elegido && frescas.find((a) => a.plan_id === elegido.id)) || frescas[0] || null;
 
   // El plan elegido, entero. Va filtrado también por su email: un id de otra
   // clienta en la URL no devuelve nada.
@@ -84,7 +90,19 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
   if (leido?.estructura && leido.estructura.tipo === "entrenamiento") dias = leido.estructura.dias;
   else if (plan) dias = diasDeRespaldo(plan.exercises);
 
-  const ultima = ultimaVezPorEjercicio(series, enMarcha?.id ?? null);
+  // La sesión a medias es DE SU PLAN, no de la pantalla. Si la dejó abierta en
+  // Fase 1 y ahora abre Fase 2, Fase 2 no está a medias: empieza de cero, y al
+  // volver a Fase 1 sigue donde lo dejó. Las sesiones viejas sin plan apuntado
+  // valen para cualquiera, que es como se comportaban hasta ahora.
+  const suya = enMarcha && plan && (enMarcha.plan_id == null || enMarcha.plan_id === plan.id) ? enMarcha : null;
+  // Si la dejó a medias en OTRO plan, se le dice y se le ofrece volver, en vez
+  // de que se pregunte dónde han ido sus series.
+  const otroPlan = enMarcha && !suya && enMarcha.plan_id
+    ? planes.find((x) => x.id === enMarcha.plan_id) ?? null
+    : null;
+  const otroEntreno = otroPlan ? { id: otroPlan.id, nombre: nombrePlan(otroPlan) } : null;
+
+  const ultima = ultimaVezPorEjercicio(series, suya?.id ?? null);
   // El mapa no cruza el límite servidor→navegador, así que se manda como lista
   // indexada por la misma clave que usa el servidor.
   const ultimaLista: { clave: string; datos: UltimaVez }[] = [];
@@ -97,8 +115,8 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
   }
 
   // Las series ya apuntadas en el entreno de hoy, para poder retomarlo.
-  const deHoy = enMarcha
-    ? series.filter((s) => s.session_id === enMarcha.id).map((s) => ({ ejercicio: s.ejercicio, serie: s.serie, peso: s.peso, reps: s.reps }))
+  const deHoy = suya
+    ? series.filter((s) => s.session_id === suya.id).map((s) => ({ ejercicio: s.ejercicio, serie: s.serie, peso: s.peso, reps: s.reps }))
     : [];
 
   return (
@@ -115,7 +133,8 @@ export default async function EntrenoPage({ searchParams }: { searchParams?: { p
             planes={ordenSelector(planes).map((p) => ({ id: p.id, nombre: nombrePlan(p) }))}
             sinPlan={!plan}
             ultimaVez={ultimaLista}
-            sesionAbierta={enMarcha ? { id: enMarcha.id, dia: enMarcha.dia, desde: enMarcha.started_at } : null}
+            sesionAbierta={suya ? { id: suya.id, dia: suya.dia, desde: suya.started_at } : null}
+            otroEntreno={otroEntreno}
             seriesDeHoy={deHoy}
           />
         </div>
