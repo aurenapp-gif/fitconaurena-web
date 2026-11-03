@@ -127,3 +127,15 @@ test("se miran TODAS las sesiones abiertas, no solo la última", () => {
   assert.match(pagina, /const frescas = abiertas\.filter/);
   assert.match(pagina, /const enMarcha = \(elegido && frescas\.find\(\(a\) => a\.plan_id === elegido\.id\)\) \|\| frescas\[0\] \|\| null;/);
 });
+
+test("la comparativa «antes y ahora» tampoco se enlaza firmada", () => {
+  // La foto grande se pide al TOCAR la miniatura, que es justo cuando el
+  // enlace firmado ya estaba muerto. Es la de la ficha del coach.
+  const checkins = leer("app/miembros/checkins/page.tsx");
+  assert.match(checkins, /`\/api\/miembros\/checkin\/foto\/\$\{t\.revision\}\?cual=\$\{par\.id\}/);
+  assert.doesNotMatch(checkins, /sbSignedUrl|sbSignedThumb/);
+  // El id del ángulo es el mismo nombre que acepta la ruta.
+  const lib = leer("lib/comparativa-fotos.ts");
+  assert.match(lib, /\{ id: "frente", nombre: "Frente", campo: "photo_front" \}/);
+  assert.match(lib, /revision: r\.id,/);
+});

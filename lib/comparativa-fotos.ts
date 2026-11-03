@@ -19,6 +19,8 @@ export const ANGULOS: ReadonlyArray<{ id: AnguloId; nombre: string; campo: strin
 
 /** Lo que hace falta de una revisión para esto. El resto de columnas sobra. */
 export type RevisionConFotos = {
+  /** Para poder enlazar la foto por una dirección que no caduque. */
+  id: string;
   created_at: string;
   weight?: number | string | null;
   waist?: number | string | null;
@@ -30,6 +32,8 @@ export type RevisionConFotos = {
 /** Una foto concreta, con lo que pesaba y medía ese día. */
 export type Toma = {
   fecha: string;
+  /** La revisión de la que sale, para enlazarla sin firmar. */
+  revision: string;
   path: string;
   peso: number | null;
   cintura: number | null;
@@ -79,6 +83,7 @@ function diasEntre(a: string, b: string): number {
 function tomaDe(r: RevisionConFotos, campo: string): Toma {
   return {
     fecha: r.created_at,
+    revision: r.id,
     path: String((r as unknown as Record<string, unknown>)[campo]),
     peso: num(r.weight),
     cintura: num(r.waist),
