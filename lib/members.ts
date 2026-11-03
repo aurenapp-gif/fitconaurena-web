@@ -63,7 +63,9 @@ function verify(token: string | undefined, typ: Payload["typ"]): string | null {
 const MAGIC_TTL = 15 * 60 * 1000; // 15 min
 const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
 
-export const SESSION_COOKIE = "fca_member";
+// Los nombres viven en lib/cookies.ts, que no importa nada: de ahí tira el
+// middleware, que corre en el Edge.
+export { SESSION_COOKIE, VISTA_COOKIE } from "@/lib/cookies";
 export const SESSION_MAX_AGE = SESSION_TTL / 1000;
 
 export const createMagicToken = (email: string, ttlMs: number = MAGIC_TTL) =>
@@ -87,7 +89,6 @@ export const verifySession = (token?: string) => verify(token, "session");
  * Media hora: lo justo para mirar algo, y se cae solo si se olvida.
  */
 const VISTA_TTL = 30 * 60 * 1000;
-export const VISTA_COOKIE = "fca_ver_como";
 export const VISTA_MAX_AGE = VISTA_TTL / 1000;
 export const createVistaToken = (email: string) =>
   createToken({ email, typ: "vista", exp: Date.now() + VISTA_TTL });

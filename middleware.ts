@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { VISTA_COOKIE } from "@/lib/members";
+import { VISTA_COOKIE } from "@/lib/cookies";
 
 /**
  * Mirando «como ella», no se guarda nada.
