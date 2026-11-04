@@ -16,6 +16,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { sbDownload, sbUpdate } from "@/lib/supabase";
+import { esSinCredito } from "@/lib/ia";
 import {
   ESQUEMA_ENTRENAMIENTO, ESQUEMA_NUTRICION,
   INSTRUCCION_ENTRENAMIENTO, INSTRUCCION_NUTRICION,
@@ -38,6 +39,9 @@ export const MAX_BYTES_PLAN = 8 * 1024 * 1024;
 
 /** Lo que se guarda como mucho en texto. De sobra para un plan de un mes. */
 export const MAX_CONTENIDO = 12000;
+
+/** Tope de la lectura, por debajo del minuto que da Vercel antes de cortar. */
+const TOPE_LECTURA_MS = 45_000;
 
 /**
  * Si las columnas todavía no existen (falta ejecutar supabase/planes.sql),
@@ -109,6 +113,23 @@ export function lecturaGuardada(plan: PlanLeible): PlanLeido | null {
  * demasiado grande, el modelo se negó—. Un fallo de red no se marca: ese sí
  * merece otra oportunidad.
  */
+/**
+ * ¿Es un fallo pasajero del que NO conviene marcar el plan?
+ *
+ * Sin crédito, 429 y 5xx los rechaza el servidor antes de generar nada: no se
+ * pagan y se arreglan solos (recargando o esperando). Marcar el plan por uno
+ * de esos obligaría a la coach a pulsar «Volver a intentarlo» en todos los
+ * planes que se hubieran abierto durante la avería.
+ *
+ * Lo demás —un timeout, una respuesta ilegible, un fallo desconocido— sí se
+ * marca: puede haberse pagado ya, y repetirlo da lo mismo.
+ */
+function esPasajero(err: unknown): boolean {
+  if (esSinCredito(err)) return true;
+  const s = (err as { status?: number })?.status;
+  return s === 429 || (typeof s === "number" && s >= 500);
+}
+
 async function marcaIlegible(id: string): Promise<void> {
   if (!sePuedeGuardar) return;
   await sbUpdate("plans", `id=eq.${encodeURIComponent(id)}`, {
@@ -147,6 +168,9 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
     const client = new Anthropic();
     // Con streaming: un plan largo puede tardar y pasarse del tiempo de una
     // petición normal.
+    // Con tope propio: pasados los 60 s Vercel mata la función entera y el
+    // catch de abajo no llega a ejecutarse, así que el plan se quedaba sin
+    // marcar y volvía a releerse en la siguiente visita.
     const stream = client.messages.stream({
       model: MODELO_LECTURA,
       max_tokens: 32000,
@@ -160,7 +184,7 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
         role: "user",
         content: [adjunto, { type: "text", text: tipo === "nutricion" ? INSTRUCCION_NUTRICION : INSTRUCCION_ENTRENAMIENTO }],
       }],
-    });
+    }, { timeout: TOPE_LECTURA_MS });
     const res = await stream.finalMessage();
 
     if (res.stop_reason === "refusal") {
@@ -199,6 +223,14 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
     return { estructura, texto };
   } catch (e) {
     console.error(`[planes] no se pudo leer ${plan.id}`, e);
+    /*
+     * DINERO. Marcar es lo ÚNICO que frena el reintento, y antes esto no
+     * marcaba: un plan que fallara por excepción se releía entero —Opus más el
+     * PDF— en CADA visita suya y en CADA pregunta a FitAI. En los registros se
+     * ve el mismo plan intentado ocho veces. Un fallo pasajero sí puede
+     * reintentarse, porque ni se cobra ni se repite solo.
+     */
+    if (!esPasajero(e)) await marcaIlegible(plan.id);
     return VACIO;
   }
 }
