@@ -7,6 +7,7 @@
  * la propia cuenta (modo prueba).
  */
 
+import { waitUntil } from "@vercel/functions";
 import { fetchWithTimeout } from "@/lib/http";
 import { TEXTO_DIA_LLAMADA, TEXTO_DIA_LLAMADA_SINGULAR, TEXTO_HORA_LLAMADA } from "@/lib/llamada-grupal";
 import { enlaceSala } from "@/lib/ajustes";
@@ -66,7 +67,25 @@ interface SendArgs {
  * temporal de Resend (429 o 5xx). Un rechazo definitivo (dirección inválida,
  * clave mal) no se reintenta: fallaría igual.
  */
-async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<void> {
+/**
+ * Un envío, con `waitUntil`.
+ *
+ * Por aquí pasan TODOS los correos. Muchos se lanzan sin esperarlos —la coach
+ * no tiene por qué aguardar a que salga un aviso para que su subida termine—,
+ * y en Vercel la función se congela en cuanto sale la respuesta: el envío a
+ * medias se aborta y el correo no llega, sin que nadie se entere. Ya pasaba
+ * con las notificaciones push y con el registro de uso.
+ *
+ * Quien sí lo espera (el enlace de acceso, por ejemplo) no nota nada: se
+ * devuelve la misma promesa, y los reintentos de dentro siguen igual.
+ */
+async function send(args: SendArgs): Promise<void> {
+  const tarea = enviarCorreo(args);
+  try { waitUntil(tarea); } catch { /* en local el proceso sigue vivo */ }
+  return tarea;
+}
+
+async function enviarCorreo({ to, subject, html, text, replyTo }: SendArgs): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
 

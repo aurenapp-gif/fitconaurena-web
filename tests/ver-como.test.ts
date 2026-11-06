@@ -101,6 +101,19 @@ test("lo que se lanza sin esperar se sostiene con waitUntil", () => {
   const push = leer("lib/push.ts");
   assert.match(push, /try \{ waitUntil\(tarea\); \}/);
   assert.match(push, /from "@vercel\/functions"/);
+  // Y los correos, que pasan todos por el mismo `send`.
+  const mailer = leer("lib/mailer.ts");
+  assert.match(mailer, /try \{ waitUntil\(tarea\); \}/);
+  assert.match(mailer, /from "@vercel\/functions"/);
+});
+
+test("ninguna ruta lanza un aviso que pueda quedarse a medias", () => {
+  // Las tres vías por las que sale trabajo después de responder —registro,
+  // notificación y correo— se sostienen solas, así que una ruta nueva no
+  // puede olvidarse de hacerlo.
+  for (const f of ["lib/activity.ts", "lib/push.ts", "lib/mailer.ts"]) {
+    assert.match(leer(f), /waitUntil\(/, `${f} no sostiene su trabajo en segundo plano`);
+  }
 });
 
 test("las firmas de foto aguantan el límite de Supabase", () => {
