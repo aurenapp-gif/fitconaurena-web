@@ -88,3 +88,28 @@ test("el aviso sale siempre y se puede salir desde cualquier pantalla", () => {
   // en marcha o adonde la app te haya llevado sola.
   assert.match(layout, /<a href="\/api\/miembros\/ver-como"/);
 });
+
+/* --- Trabajo que sale después de la respuesta --- */
+
+test("lo que se lanza sin esperar se sostiene con waitUntil", () => {
+  // En Vercel la función se congela en cuanto sale la respuesta. Sin esto, el
+  // registro de uso perdía escrituras (52 abortos en dos días, 25 personas) y
+  // las notificaciones no llegaban (17 abortos, desde julio).
+  const actividad = leer("lib/activity.ts");
+  assert.match(actividad, /try \{ waitUntil\(escritura\); \}/);
+  assert.match(actividad, /from "@vercel\/functions"/);
+  const push = leer("lib/push.ts");
+  assert.match(push, /try \{ waitUntil\(tarea\); \}/);
+  assert.match(push, /from "@vercel\/functions"/);
+});
+
+test("las firmas de foto aguantan el límite de Supabase", () => {
+  // Cada foto se pide por su cuenta desde el navegador, así que salen todas a
+  // la vez. El respiro es desigual a propósito: si no, los reintentos vuelven
+  // a chocar entre ellos en el mismo instante.
+  const sb = leer("lib/supabase.ts");
+  assert.match(sb, /if \(res\.status === 429\) \{/);
+  assert.match(sb, /250 \+ Math\.random\(\) \* 500/);
+  const ruta = leer("app/api/miembros/checkin/foto/[id]/route.ts");
+  assert.match(ruta, /"Cache-Control", "private, max-age=1800"/);
+});
