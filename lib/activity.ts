@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { sbInsert } from "@/lib/supabase";
 
 /** Acciones que se registran. Lista cerrada: lo que llega del navegador se
@@ -48,13 +49,22 @@ export function isAction(v: unknown): v is Action {
  * pierde ese apunte y punto.
  */
 export async function logActivity(memberEmail: string, action: Action, detail?: string): Promise<void> {
-  try {
-    await sbInsert("activity_log", {
-      member_email: memberEmail,
-      action,
-      detail: detail?.slice(0, 120) ?? null,
-    });
-  } catch (e) {
-    console.error("[activity]", action, e);
-  }
+  /*
+   * Con `waitUntil`, que si no NO SE APUNTA.
+   *
+   * Quien llama a esto no lo espera —y hace bien: la clienta no tiene por qué
+   * aguardar a que se anote nada—. Pero en Vercel, en cuanto la respuesta sale,
+   * la función se congela y la escritura a medias se aborta. En los registros
+   * salían 52 abortos en dos días, de 25 personas: ese registro de uso tenía
+   * agujeros justo de lo más usado. `waitUntil` mantiene viva la función hasta
+   * que termina, sin hacer esperar a nadie.
+   */
+  const escritura = sbInsert("activity_log", {
+    member_email: memberEmail,
+    action,
+    detail: detail?.slice(0, 120) ?? null,
+  }).then(() => undefined).catch((e: unknown) => { console.error("[activity]", action, e); });
+  // En local no hay plataforma que lo sostenga: ahí el proceso sigue vivo igual.
+  try { waitUntil(escritura); } catch { /* vale con que siga en marcha */ }
+  return escritura;
 }

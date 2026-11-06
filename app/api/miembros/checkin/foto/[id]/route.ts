@@ -61,7 +61,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const url = w > 0
       ? await sbSignedThumb("checkins", ruta, w).catch(() => sbSignedUrl("checkins", ruta, 3600))
       : await sbSignedUrl("checkins", ruta, 3600);
-    return NextResponse.redirect(url);
+    /*
+     * Que el navegador no vuelva a pedir la misma foto durante media hora: la
+     * firma dura una, y sin esto cada vuelta a la pantalla de revisiones
+     * dispara otra tanda de firmas a la vez.
+     */
+    const r = NextResponse.redirect(url);
+    r.headers.set("Cache-Control", "private, max-age=1800");
+    return r;
   } catch (e) {
     console.error("[checkin/foto] firmar", e);
     return NextResponse.json({ error: "No se ha podido abrir la foto." }, { status: 502 });
