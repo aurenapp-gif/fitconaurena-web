@@ -28,7 +28,7 @@ import {
  * «120» donde ponía «220» no se nota hasta que es tarde, así que aquí no se
  * ahorra en modelo.
  */
-const MODELO_LECTURA = "claude-opus-5";
+const MODELO_LECTURA = "claude-opus-5-5";
 
 /**
  * Tope de tamaño. El archivo viaja a la API en base64, que abulta un tercio
@@ -175,6 +175,12 @@ export async function leerPlan(plan: PlanLeible): Promise<PlanLeido> {
       model: MODELO_LECTURA,
       max_tokens: 32000,
       output_config: {
+        // Esfuerzo explícito. Opus 5 venía en «alto» por defecto y el 5.5 en
+        // «medio»: sin esta línea, el cambio de modelo habría bajado en
+        // silencio la atención con la que se copian gramos y kilos. El 5.5
+        // cuesta un 20% menos con el mismo contador de tokens, así que esto
+        // es más barato a igualdad de cuidado.
+        effort: "high",
         format: {
           type: "json_schema",
           schema: tipo === "nutricion" ? ESQUEMA_NUTRICION : ESQUEMA_ENTRENAMIENTO,
