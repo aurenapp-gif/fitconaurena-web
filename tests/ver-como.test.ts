@@ -88,3 +88,42 @@ test("el aviso sale siempre y se puede salir desde cualquier pantalla", () => {
   // en marcha o adonde la app te haya llevado sola.
   assert.match(layout, /<a href="\/api\/miembros\/ver-como"/);
 });
+
+/* --- Trabajo que sale después de la respuesta --- */
+
+test("lo que se lanza sin esperar se sostiene con waitUntil", () => {
+  // En Vercel la función se congela en cuanto sale la respuesta. Sin esto, el
+  // registro de uso perdía escrituras (52 abortos en dos días, 25 personas) y
+  // las notificaciones no llegaban (17 abortos, desde julio).
+  const actividad = leer("lib/activity.ts");
+  assert.match(actividad, /try \{ waitUntil\(escritura\); \}/);
+  assert.match(actividad, /from "@vercel\/functions"/);
+  const push = leer("lib/push.ts");
+  assert.match(push, /try \{ waitUntil\(tarea\); \}/);
+  assert.match(push, /from "@vercel\/functions"/);
+  // Y los correos, que pasan todos por el mismo `send`. Ahí a waitUntil se le
+  // da una copia que nunca falla: un rechazo sin recoger tumba la función.
+  const mailer = leer("lib/mailer.ts");
+  assert.match(mailer, /waitUntil\(tarea\.catch\(\(\) => \{\}\)\)/);
+  assert.match(mailer, /from "@vercel\/functions"/);
+});
+
+test("ninguna ruta lanza un aviso que pueda quedarse a medias", () => {
+  // Las tres vías por las que sale trabajo después de responder —registro,
+  // notificación y correo— se sostienen solas, así que una ruta nueva no
+  // puede olvidarse de hacerlo.
+  for (const f of ["lib/activity.ts", "lib/push.ts", "lib/mailer.ts"]) {
+    assert.match(leer(f), /waitUntil\(/, `${f} no sostiene su trabajo en segundo plano`);
+  }
+});
+
+test("las firmas de foto aguantan el límite de Supabase", () => {
+  // Cada foto se pide por su cuenta desde el navegador, así que salen todas a
+  // la vez. El respiro es desigual a propósito: si no, los reintentos vuelven
+  // a chocar entre ellos en el mismo instante.
+  const sb = leer("lib/supabase.ts");
+  assert.match(sb, /if \(res\.status === 429\) \{/);
+  assert.match(sb, /250 \+ Math\.random\(\) \* 500/);
+  const ruta = leer("app/api/miembros/checkin/foto/[id]/route.ts");
+  assert.match(ruta, /"Cache-Control", "private, max-age=1800"/);
+});

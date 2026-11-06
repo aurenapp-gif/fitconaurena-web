@@ -218,7 +218,31 @@ export async function sbSignedUrl(bucket: string, path: string, expiresIn = 3600
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ expiresIn }),
   });
-  if (!res.ok) throw new Error(`sbSignedUrl ${bucket}/${path}: ${res.status}`);
+  if (!res.ok) {
+    /*
+     * 429 = demasiadas firmas a la vez. Pasa al abrir las revisiones: cada
+     * foto se pide por su cuenta desde el navegador, así que salen todas
+     * disparadas en el mismo segundo y Supabase corta. Un respiro corto y
+     * desigual basta; sin el desigual, los reintentos vuelven a chocar entre
+     * ellos en el mismo instante.
+     */
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 250 + Math.random() * 500));
+      const otra = await fetchT(`${URL_BASE}/storage/v1/object/sign/${bucket}/${path}`, {
+        method: "POST",
+        headers: headers({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ expiresIn }),
+      });
+      if (otra.ok) {
+        const { signedURL } = await otra.json();
+        const url = `${URL_BASE}/storage/v1${signedURL}`;
+        cacheSet(key, url, expiresIn);
+        return url;
+      }
+      throw new Error(`sbSignedUrl ${bucket}/${path}: ${otra.status} (tras reintento)`);
+    }
+    throw new Error(`sbSignedUrl ${bucket}/${path}: ${res.status}`);
+  }
   const { signedURL } = await res.json();
   const url = `${URL_BASE}/storage/v1${signedURL}`;
   cacheSet(key, url, expiresIn);

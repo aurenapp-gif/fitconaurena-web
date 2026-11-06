@@ -8,6 +8,7 @@
  * Variables: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT.
  */
 
+import { waitUntil } from "@vercel/functions";
 import webpush from "web-push";
 import { sbSelect, sbDelete } from "@/lib/supabase";
 
@@ -36,9 +37,24 @@ function pushConfigured(): boolean {
   return configured;
 }
 
-/** Envía una notificación a todos los dispositivos suscritos de un email. */
+/**
+ * Envía una notificación a todos los dispositivos suscritos de un email.
+ *
+ * Con `waitUntil`, que si no NO LLEGA. Esto se lanza sin esperarlo —la coach
+ * no tiene por qué aguardar a que salga una notificación para que su subida
+ * termine—, pero en Vercel la función se congela en cuanto sale la respuesta
+ * y el envío a medias se aborta. En los registros salen 17 abortos leyendo
+ * las suscripciones, desde julio, al subir un plan y al firmar un contrato:
+ * son avisos que la clienta nunca recibió.
+ */
 export async function sendPushToEmail(email: string, payload: Payload): Promise<void> {
   if (!pushConfigured()) return; // no-op si no hay claves
+  const tarea = enviar(email, payload);
+  try { waitUntil(tarea); } catch { /* en local el proceso sigue vivo */ }
+  return tarea;
+}
+
+async function enviar(email: string, payload: Payload): Promise<void> {
   let subs: Sub[] = [];
   try {
     subs = await sbSelect<Sub>(
