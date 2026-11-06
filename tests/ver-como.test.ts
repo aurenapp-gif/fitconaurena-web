@@ -101,9 +101,10 @@ test("lo que se lanza sin esperar se sostiene con waitUntil", () => {
   const push = leer("lib/push.ts");
   assert.match(push, /try \{ waitUntil\(tarea\); \}/);
   assert.match(push, /from "@vercel\/functions"/);
-  // Y los correos, que pasan todos por el mismo `send`.
+  // Y los correos, que pasan todos por el mismo `send`. Ahí a waitUntil se le
+  // da una copia que nunca falla: un rechazo sin recoger tumba la función.
   const mailer = leer("lib/mailer.ts");
-  assert.match(mailer, /try \{ waitUntil\(tarea\); \}/);
+  assert.match(mailer, /waitUntil\(tarea\.catch\(\(\) => \{\}\)\)/);
   assert.match(mailer, /from "@vercel\/functions"/);
 });
 

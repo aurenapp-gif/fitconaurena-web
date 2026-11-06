@@ -81,7 +81,11 @@ interface SendArgs {
  */
 async function send(args: SendArgs): Promise<void> {
   const tarea = enviarCorreo(args);
-  try { waitUntil(tarea); } catch { /* en local el proceso sigue vivo */ }
+  // A `waitUntil` se le da una copia que NUNCA falla: si se le diera la buena
+  // y nadie recogiera el fallo —hay rutas que lanzan el aviso con un `.then`
+  // suelto—, el rechazo sin recoger puede tumbar la función. Quien llama
+  // sigue recibiendo la promesa de verdad, con su error.
+  try { waitUntil(tarea.catch(() => {})); } catch { /* en local el proceso sigue vivo */ }
   return tarea;
 }
 
