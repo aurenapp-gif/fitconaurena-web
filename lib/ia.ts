@@ -16,9 +16,26 @@
  *                             UNA vez por plan: es lo barato de todo esto.
  */
 
-/** Conversación con FitAI. El volumen está aquí. */
-export const MODELO_CHARLA = "claude-haiku-4-5";
-/** Herramientas con foto: hay que leer lo que se ve. */
+/**
+ * Conversación con FitAI. El volumen está aquí.
+ *
+ * Haiku 5.5 cuesta 0,10 $ / 0,50 $ por millón de palabras, contra 1 $ / 5 $ del
+ * 4.5: una décima parte. El mismo texto cuenta ~30% más tokens en esta
+ * generación, así que el ahorro real ronda el 85%, no el 90%.
+ *
+ * Trae pensamiento adaptativo ENCENDIDO de serie, que el 4.5 no tenía. Para
+ * tres frases no hace falta: en la llamada se pide esfuerzo bajo y se deja
+ * holgura de tokens, que si no el pensamiento se come la respuesta.
+ */
+export const MODELO_CHARLA = "claude-haiku-5-5";
+/**
+ * Herramientas con foto: hay que leer lo que se ve.
+ *
+ * Se queda en Sonnet 5 A PROPÓSITO. El 5.5 cuesta exactamente lo mismo, así
+ * que no ahorra nada, y recalibra los niveles de esfuerzo: el «bajo» que usa
+ * esta llamada no significa lo mismo en los dos. Cambiarlo sería arriesgar
+ * que lea mal una carta a cambio de cero euros.
+ */
 export const MODELO_FOTO = "claude-sonnet-5";
 
 /**

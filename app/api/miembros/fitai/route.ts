@@ -65,14 +65,26 @@ export async function POST(req: NextRequest) {
   try {
     stream = client.messages.stream({
       model: MODELO_CHARLA,
-      // Una respuesta de FitAI son tres o cuatro frases. Con mil tokens sobra
-      // de largo, y así un fallo raro no puede desembocar en una parrafada
-      // pagada a peso.
-      max_tokens: 1000,
+      // Una respuesta de FitAI son tres o cuatro frases. Con esto sobra de
+      // largo, y así un fallo raro no puede desembocar en una parrafada
+      // pagada a peso. Antes eran mil: ahora el modelo piensa antes de
+      // responder y ese pensamiento también cuenta aquí dentro, así que sin
+      // holgura se quedaría sin sitio para contestar justo en las preguntas
+      // más difíciles.
+      max_tokens: 2000,
+      // Esfuerzo bajo: son preguntas cortas sobre lo que ya lleva delante en
+      // el contexto. Pensar más no mejora la respuesta, la retrasa —y en un
+      // chat la espera se ve— y se paga.
+      output_config: { effort: "low" },
       system: [
         // Lo que no cambia va primero y cacheado: se paga una vez y las demás
         // preguntas salen mucho más baratas.
-        { type: "text", text: sistemaEstable(coach), cache_control: { type: "ephemeral" } },
+        // Una hora de caché, no cinco minutos: este bloque es idéntico para
+        // TODAS las clientas, así que se escribe una vez y se lee cientos de
+        // veces al día. Guardarlo una hora cuesta el doble de escribir y se
+        // amortiza a la segunda lectura. El de abajo se queda en cinco
+        // minutos: ese solo se reaprovecha dentro de su propia conversación.
+        { type: "text", text: sistemaEstable(coach), cache_control: { type: "ephemeral", ttl: "1h" } },
         // El bloque de la clienta también se cachea desde que lleva dentro su
         // plan entero. Cambia con cada una, pero dentro de una conversación se
         // repite en cada pregunta, que es donde se nota.
