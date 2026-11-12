@@ -199,37 +199,6 @@ export async function sendContractSignedNotice(
   await send({ to, subject, html, text });
 }
 
-/** Avisa a la coach de que una clienta ha subido un vídeo de técnica. */
-export async function sendTechniqueUploadNotice(to: string[], fromMember: string, exercise: string): Promise<void> {
-  const url = `${SITE_URL}/miembros/tecnica`;
-  const ex = exercise ? ` (${exercise})` : "";
-  const subject = `🎥 ${fromMember} ha subido un vídeo de técnica`;
-  const text = `${fromMember} ha subido un vídeo de técnica${ex} para que se lo corrijas.\n\nReví­salo: ${url}`;
-  const html = `
-  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
-    <h2 style="margin:0 0 8px;">Nuevo vídeo de técnica 🎥</h2>
-    <p style="font-size:14px;line-height:1.5;"><strong>${fromMember}</strong> ha subido un vídeo${ex} para que se lo corrijas.</p>
-    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Revisar el vídeo</a>
-  </div>`;
-  await send({ to, subject, html, text });
-}
-
-/** Avisa a la clienta de que su coach ha corregido su vídeo de técnica. */
-export async function sendTechniqueReplyEmail(to: string): Promise<void> {
-  const url = `${SITE_URL}/miembros/tecnica`;
-  const subject = "Tu coach ha corregido tu técnica 🎯";
-  const text = `Tu coach ha revisado tu vídeo de técnica y te ha dejado su corrección. Míralo aquí: ${url}`;
-  const html = `
-  <div style="background:#0A0A0A;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;padding:40px 24px;">
-    <div style="max-width:480px;margin:0 auto;">
-      <p style="font-weight:900;font-size:20px;margin:0 0 24px;">fit<span style="color:#1CA0E3;">con</span>aurena</p>
-      <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;">Corrección de técnica lista 🎯</h1>
-      <p style="color:#A0A0A0;line-height:1.6;margin:0 0 26px;font-size:15px;">Tu coach ha revisado tu vídeo y te ha dejado su corrección. Entra para verla.</p>
-      <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">Ver mi corrección</a>
-    </div>
-  </div>`;
-  await send({ to, subject, html, text });
-}
 
 /** Email de bienvenida con acceso (al dar de alta a una clienta). */
 export async function sendWelcomeEmail(to: string, loginUrl: string): Promise<void> {
@@ -661,25 +630,3 @@ export async function sendMagicLink(to: string, loginUrl: string, code: string):
   await send({ to, subject, html, text });
 }
 
-/**
- * Avisa a la coach de que hay una duda nueva en el buzón anónimo.
- *
- * El correo NO incluye el texto de la duda a propósito: es contenido sensible
- * (comida, cabeza, cuerpo) y el buzón promete anonimato. Se avisa de que hay
- * algo nuevo y se entra a leerlo al área privada.
- */
-export async function sendDudaNotice(to: string[], categoria: string, privada: boolean): Promise<void> {
-  const url = `${SITE_URL}/miembros/dudas`;
-  const subject = privada ? "🔒 Una clienta te pide respuesta en privado" : "💬 Nueva duda en el buzón anónimo";
-  const intro = privada
-    ? `Una clienta ha dejado una consulta sobre ${categoria} y ha pedido que le respondas en privado.`
-    : `Hay una duda nueva sobre ${categoria} en el buzón anónimo.`;
-  const text = `${intro}\n\nLéela en tu área: ${url}`;
-  const html = `
-  <div style="font-family:Inter,Helvetica,Arial,sans-serif;color:#0A0A0A;padding:24px;max-width:520px;margin:0 auto;">
-    <h2 style="margin:0 0 8px;">${privada ? "Consulta privada 🔒" : "Nueva duda 💬"}</h2>
-    <p style="font-size:14px;line-height:1.5;">${escapeHtml(intro)}</p>
-    <a href="${url}" style="display:inline-block;background:#1CA0E3;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-top:8px;">Leer la duda</a>
-  </div>`;
-  await send({ to, subject, html, text });
-}

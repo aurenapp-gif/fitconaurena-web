@@ -616,15 +616,6 @@ function VistaEjercicio({
           </a>
         )}
 
-        <Link href="/miembros/tecnica" className="bg-surface rounded-[14px] p-4 flex items-center gap-3">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
-            className="text-ink-muted shrink-0" aria-hidden="true">
-            <rect x="3" y="6" width="13" height="12" rx="2.6" /><path d="M16 11l5-3v8l-5-3z" />
-          </svg>
-          <span className="flex-1 text-[16px] font-semibold">Grabarme para que me corrija</span>
-          <Chevron />
-        </Link>
-
         {siguiente && (
           <button type="button" onClick={siguiente} className="btn-brand w-full py-4 text-[17px]">Siguiente ejercicio</button>
         )}

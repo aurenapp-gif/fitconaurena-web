@@ -17,8 +17,6 @@ with esperadas_tablas(tabla) as (values
   ('contract_signatures'),
   ('contract_template'),
   ('contract_templates'),
-  ('duda_likes'),
-  ('dudas'),
   ('exercise_media'),
   ('fitai_messages'),
   ('forum_questions'),

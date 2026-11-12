@@ -45,7 +45,7 @@ export default async function AdminPage() {
   const since = isoDaysAgo(15);
 
   // Todas las lecturas independientes del panel, en paralelo (antes iban en cascada).
-  const [checkins, members, profiles, recentList, pending, templates, totalSigned, tecnicasPendientes, habitos30, uso] = await Promise.all([
+  const [checkins, members, profiles, recentList, pending, templates, totalSigned, habitos30, uso] = await Promise.all([
     sbSelect<CheckIn>("check_ins", "select=id,member_email,weight,created_at,coach_reply&order=created_at.desc&limit=10")
       .catch((e) => { console.error("[admin] checkins", e); return [] as CheckIn[]; }),
     getMembers().then((ms) => ms.filter((m) => !isAdmin(m.email)))
@@ -60,10 +60,6 @@ export default async function AdminPage() {
       .catch((e) => { console.error("[admin] contract templates", e); return [] as ContractTemplate[]; }),
     sbSelect<{ id: string }>("contract_signatures", "select=id")
       .then((r) => r.length).catch(() => 0),
-    // Vídeos de técnica esperando corrección.
-    sbSelect<{ id: string; member_email: string; created_at: string }>(
-      "technique_reviews", "select=id,member_email,created_at&coach_reply=is.null&order=created_at.asc"
-    ).catch(() => [] as { id: string; member_email: string; created_at: string }[]),
     // Un mes de hábitos, para saber quién se está descolgando.
     sbSelect<{ member_email: string; day: string }>(
       "habit_logs", `select=member_email,day&day=gte.${isoDaysAgo(30)}`
@@ -146,12 +142,6 @@ export default async function AdminPage() {
         ? `La más antigua, de ${nameOf([...checkins].reverse().find((c) => !c.coach_reply)!.member_email)}`
         : undefined,
       href: "/miembros/checkins",
-    },
-    tecnicasPendientes.length > 0 && {
-      icono: "video" as const,
-      texto: `${tecnicasPendientes.length} ${tecnicasPendientes.length === 1 ? "vídeo de técnica" : "vídeos de técnica"}`,
-      sub: tecnicasPendientes.slice(0, 2).map((t) => nameOf(t.member_email)).join(", "),
-      href: "/miembros/tecnica",
     },
     renewals.length > 0 && {
       icono: "plan" as const,

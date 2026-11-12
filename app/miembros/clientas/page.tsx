@@ -39,8 +39,8 @@ export default async function ClientasPage() {
   // caiga entero si una tabla flaquea.
   //
   // Los totales de uso los calcula la BASE DE DATOS (vista `member_usage`), no
-  // esta página. Antes se traía cada fila de check_ins, habit_logs, plans y
-  // technique_reviews para contarlas aquí, y Supabase corta toda respuesta en
+  // esta página. Antes se traía cada fila de check_ins, habit_logs y plans
+  // para contarlas aquí, y Supabase corta toda respuesta en
   // 1.000 filas sin avisar: pasado ese punto los números salían más bajos de lo
   // real y alguna clienta aparecía con un 0 que no le correspondía. Ahora viene
   // una fila por clienta y el techo desaparece.
@@ -100,7 +100,6 @@ export default async function ClientasPage() {
       daysUsed: u?.dias_uso ?? 0,
       checkins: u?.checkins ?? 0,
       plans: u?.planes ?? 0,
-      techniques: u?.videos ?? 0,
       lastCheckin: u?.ultimo_checkin ?? null,
     };
   });
@@ -120,7 +119,6 @@ export default async function ClientasPage() {
     daysUsed: r.daysUsed,
     checkins: r.checkins,
     plans: r.plans,
-    techniques: r.techniques,
     lastCheckin: r.lastCheckin,
   }));
 

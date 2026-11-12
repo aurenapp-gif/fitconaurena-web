@@ -13,7 +13,6 @@ export type FilaClienta = {
   daysUsed: number;
   checkins: number;
   plans: number;
-  techniques: number;
   lastCheckin: string | null;
 };
 
@@ -98,7 +97,6 @@ export default function ClientasLista({ filas }: { filas: FilaClienta[] }) {
                 { v: r.daysUsed, l: "días de uso" },
                 { v: r.checkins, l: "check-ins" },
                 { v: r.plans, l: "planes" },
-                { v: r.techniques, l: "vídeos" },
               ].map((c) => (
                 <div key={c.l}>
                   <div className="text-lg font-extrabold text-ink leading-none">{c.v}</div>

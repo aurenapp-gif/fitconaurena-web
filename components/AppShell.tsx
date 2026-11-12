@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
  * que es quien la ha comprobado en el servidor.
  */
 
-type Icono = "ejercicios" | "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "dudas" | "tecnica" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "contabilidad" | "analizador" | "equipo" | "recomienda" | "salir";
+type Icono = "ejercicios" | "inicio" | "perfil" | "revisiones" | "avisos" | "mas" | "entreno" | "fitai" | "herramientas" | "agenda" | "contratos" | "clientas" | "panel" | "leads" | "contabilidad" | "analizador" | "equipo" | "recomienda" | "salir";
 type Item = { href: string; label: string; icon: Icono; coach?: boolean };
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -33,8 +33,6 @@ const LINEA: Record<Icono, JSX.Element> = {
   mas: <><circle cx="12" cy="12" r="8.7" /><circle cx="7.8" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="16.2" cy="12" r="1.3" fill="currentColor" stroke="none" /></>,
   entreno: <><path d="M4.4 9.6v4.8M7.2 7.4v9.2M16.8 7.4v9.2M19.6 9.6v4.8M7.2 12h9.6" /></>,
   fitai: <><path d="M20.3 12.2c0 4-3.7 7.2-8.3 7.2-1 0-2-.15-2.9-.42L4.2 20.4l1.5-3.7A6.9 6.9 0 0 1 3.7 12.2c0-4 3.7-7.2 8.3-7.2s8.3 3.2 8.3 7.2z" /><path d="M8.6 12.1h.01M12 12.1h.01M15.4 12.1h.01" /></>,
-  dudas: <><circle cx="12" cy="12" r="8.7" /><path d="M9.6 9.2a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 16.8h.01" /></>,
-  tecnica: <><rect x="3.5" y="6" width="12.5" height="12" rx="2.2" /><path d="M16 10l4.5-2.6v9.2L16 14z" /></>,
   herramientas: <path d="M14.7 6.3a4 4 0 0 0 5 5L13 18l-3 3-4-4 3-3 6.7-6.7z" />,
   agenda: <><rect x="3.5" y="5" width="17" height="16" rx="2.4" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>,
   contratos: <><path d="M6 3.5h8l4 4v13H6z" /><path d="M14 3.5v4h4M9 13h6M9 17h4" /></>,
@@ -78,15 +76,11 @@ const PESTANAS: Item[] = [
 /*
  * Lo demás: en la barra lateral va todo seguido; en móvil, dentro de «Más».
  *
- * Aquí NO están Dudas ni Técnica, y es a propósito. En 28 clientas y toda la
- * historia del programa se han escrito 3 dudas y no se ha subido UN solo
- * vídeo de técnica. Un apartado que no usa nadie no es neutro: ocupa sitio en
- * el menú y le quita atención a lo único que mueve el resultado, que es
- * apuntar el día y subir la revisión.
- *
- * Las dos pantallas siguen existiendo y se llega a ellas desde donde tienen
- * sentido: la técnica, cuando la coach pide un vídeo en su respuesta; las
- * dudas, desde FitAI cuando la IA no sabe contestar.
+ * Dudas y Técnica ya no existen. Primero salieron del menú por falta de uso
+ * —3 dudas y ningún vídeo en 28 clientas y toda la historia del programa— y
+ * después se retiraron del todo porque no acababan de funcionar bien. Lo que
+ * antes mandaba a una u otra ahora manda a su coach, que es lo que hacían
+ * ellas de todas formas.
  */
 const RESTO: Item[] = [
   { href: "/miembros/entreno", label: "Mi entreno", icon: "entreno" },

@@ -27,14 +27,14 @@ test("comprueba todas las tablas y columnas que declaran los ficheros", () => {
   for (const f of readdirSync(dir)) {
     if (!f.endsWith(".sql") || f.startsWith("00-")) continue;
     const t = readFileSync(join(dir, f), "utf8");
-    for (const m of t.matchAll(/create table if not exists\s+public\.([a-z_]+)/gi)) tablas.add(m[1].toLowerCase());
-    for (const m of t.matchAll(/alter table\s+(?:if exists\s+)?public\.([a-z_]+)\s+add column if not exists\s+([a-z_]+)/gi)) {
+    for (const m of Array.from(t.matchAll(/create table if not exists\s+public\.([a-z_]+)/gi))) tablas.add(m[1].toLowerCase());
+    for (const m of Array.from(t.matchAll(/alter table\s+(?:if exists\s+)?public\.([a-z_]+)\s+add column if not exists\s+([a-z_]+)/gi))) {
       cols.add(`${m[1].toLowerCase()},${m[2].toLowerCase()}`);
     }
   }
   assert.ok(tablas.size > 20, `pocas tablas encontradas: ${tablas.size}`);
-  for (const t of tablas) assert.ok(diag.includes(`('${t}')`), `falta comprobar la tabla ${t}`);
-  for (const c of cols) {
+  for (const t of Array.from(tablas)) assert.ok(diag.includes(`('${t}')`), `falta comprobar la tabla ${t}`);
+  for (const c of Array.from(cols)) {
     const [t, col] = c.split(",");
     assert.ok(diag.includes(`('${t}','${col}')`), `falta comprobar ${t}.${col}`);
   }
