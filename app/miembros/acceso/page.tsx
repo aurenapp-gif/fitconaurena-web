@@ -1,17 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Inter_Tight } from "next/font/google";
+import localFont from "next/font/local";
 import Acceso from "@/components/Acceso";
 
 /*
  * La única pantalla con tipografía propia. El resto del programa usa la letra
  * del sistema a propósito (en el iPhone es la de sus apps y se pinta a la
  * primera), pero aquí el titular vive del tracking cerrado de Inter Tight: con
- * la del sistema se deshace. `next/font` la descarga en el build y la sirve
- * desde nuestro dominio, así que no hay petición a Google ni que tocar la CSP.
+ * la del sistema se deshace.
+ *
+ * El fichero vive en el repositorio y NO se baja de Google al compilar. Antes
+ * sí, y el 6 y el 12 de noviembre Google no respondió: el build se cayó
+ * entero y bloqueó el despliegue por algo ajeno al programa. Así compila
+ * igual aunque Google esté caído, y sigue sin haber petición a Google desde
+ * el navegador ni nada que tocar en la CSP.
  */
-const letra = Inter_Tight({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const letra = localFont({
+  src: "../../fuentes/InterTight-latin.woff2",
+  // Una sola variable cubre de 400 a 700: 44 KB en vez de cuatro ficheros.
+  weight: "400 700",
   display: "swap",
 });
 

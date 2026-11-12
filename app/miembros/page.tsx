@@ -251,7 +251,6 @@ export default async function MiembrosPage() {
               <Fila href="/miembros/clientas" titulo="Clientas" sub="Fichas, planes y renovaciones" />
               <Fila href="/miembros/checkins" titulo="Revisiones" sub={`Revisión del ${periodo.etiqueta}`} />
               <Fila href="/miembros/analizador" titulo="Analizador" sub="Dónde está el freno de cada clienta" />
-              <Fila href="/miembros/dudas" titulo="Dudas" sub="Lo que no se atreven a preguntar en la llamada" />
             </Grupo>
             <div className="mt-5">
               <CallCountdown callUrl={sala} />

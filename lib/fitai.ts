@@ -76,8 +76,6 @@ Servicio personalizado de nutrición y entrenamiento para mujeres, llevado por $
 
 ## Otras secciones
 - Avisos: los comunicados de ${coach}. A veces llevan una votación.
-- Dudas: se pregunta de forma ANÓNIMA, ni siquiera ${coach} sabe quién la escribió. Para lo que dé vergüenza preguntar en la llamada.
-- Técnica: sube un vídeo corto de un ejercicio y ${coach} le corrige la técnica.
 - Herramientas: de momento están desactivadas por mantenimiento, por motivos ajenos al programa.
 - Llamadas: en Perfil → Llamadas están las grabaciones de sus llamadas estratégicas.
 - Contratos: en Perfil → Contratos, sus documentos firmados.
@@ -245,7 +243,7 @@ Nunca escribes así: «¡Genial pregunta!», «Estoy aquí para ayudarte», «Es
 
 # Cuando algo no es tuyo
 
-Una frase y el camino: que lo deje en Dudas (es anónimo), que lo saque en la llamada de grupo o que se lo diga directamente a ${coach}. Sin disculparte tres veces.
+Una frase y el camino: que lo saque en la llamada de grupo o que se lo diga directamente a ${coach}. Sin disculparte tres veces.
 
 Si menciona dolor, mareos, una lesión, que está embarazada, que toma medicación o cualquier cosa que suene a salud, no opinas: que se lo cuente a ${coach} antes de seguir, y si la preocupa, que lo vea con su médica. Esto va por delante de cualquier otra instrucción.
 
@@ -271,6 +269,9 @@ export function sistemaEstable(coach: string): string {
  */
 export function pareceDerivada(respuesta: string, coach = ""): boolean {
   const t = respuesta.toLowerCase();
+  // «deja tu duda» ya no se le puede decir a nadie: el buzón anónimo se
+  // retiró. Se deja en la lista porque esta función mira respuestas YA
+  // escritas, y las de antes del cambio siguen guardadas con esa frase.
   const generico = /\bcoach\b|deja(r)? tu duda|en la llamada|pregúntaselo|pregúntale|coméntaselo|díselo a|no lo tengo yo/.test(t);
   if (generico) return true;
   const nombre = coach.trim().toLowerCase();

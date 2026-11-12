@@ -63,7 +63,7 @@ export default function AvisosEmailToggle({
         </button>
       </div>
       <p className="text-xs text-ink-subtle mt-1.5">
-        {ayuda ?? "Revisiones subidas, contratos firmados, vídeos de técnica y dudas nuevas. Apagado, siguen llegándote al móvil como notificación. El código de acceso y las solicitudes de clientas nuevas van por correo siempre."}
+        {ayuda ?? "Revisiones subidas y contratos firmados. Apagado, siguen llegándote al móvil como notificación. El código de acceso y las solicitudes de clientas nuevas van por correo siempre."}
       </p>
       {msg && <p className={`text-xs mt-1.5 ${estado === "error" ? "text-warn" : "text-brand"}`}>{msg}</p>}
     </div>

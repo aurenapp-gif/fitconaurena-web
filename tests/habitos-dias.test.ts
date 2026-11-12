@@ -101,11 +101,17 @@ test("si falla al guardar, la pantalla no se queda con un dato que no existe", (
   assert.match(c, /setFallo\(true\); setDia\(dia\);/);
 });
 
-test("el menú de la clienta no lleva lo que no usa nadie", () => {
-  const shell = leer("components/AppShell.tsx");
-  const resto = shell.slice(shell.indexOf("const RESTO"), shell.indexOf("// Solo la coach"));
-  assert.ok(!/miembros\/tecnica/.test(resto), "técnica fuera del menú");
-  assert.ok(!/miembros\/dudas/.test(resto), "dudas fuera del menú");
-  // Pero se sigue llegando a dudas desde FitAI, que es donde hace falta.
-  assert.match(leer("app/miembros/fitai/page.tsx"), /href="\/miembros\/dudas"/);
+test("dudas y técnica ya no existen en ninguna parte", () => {
+  // Primero salieron del menú por falta de uso; después se retiraron del todo
+  // porque no acababan de funcionar. Esto comprueba que no quedó un enlace
+  // suelto que lleve a una pantalla que ya no está.
+  for (const f of [
+    "components/AppShell.tsx",
+    "app/miembros/fitai/page.tsx",
+    "app/miembros/page.tsx",
+    "components/FitAI.tsx",
+    "components/Entreno.tsx",
+  ]) {
+    assert.doesNotMatch(leer(f), /miembros\/(dudas|tecnica)/, `${f} sigue enlazando una sección retirada`);
+  }
 });

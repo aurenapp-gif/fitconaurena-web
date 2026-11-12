@@ -135,7 +135,7 @@ export default async function ClientaPage({ params }: { params: { email: string 
 
   // Evidencia de uso del servicio. Cada consulta cae por su cuenta si su tabla
   // aún no existe, para que la ficha se siga viendo entera.
-  const [activity, habitDays, seriesEntreno, techniques] = await Promise.all([
+  const [activity, habitDays, seriesEntreno] = await Promise.all([
     sbSelect<Activity>("activity_log", `select=action,detail,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc&limit=200`)
       .catch(() => [] as Activity[]),
     sbSelect<{ day: string }>("habit_logs", `select=day&member_email=eq.${encodeURIComponent(member)}`)
@@ -146,8 +146,6 @@ export default async function ClientaPage({ params }: { params: { email: string 
       "workout_sets",
       `select=session_id,ejercicio,serie,peso,reps,created_at&member_email=eq.${encodeURIComponent(member)}&order=created_at.desc&limit=600`
     ).catch(() => [] as (SerieGuardada & { session_id: string })[]),
-    sbSelect<{ created_at: string }>("technique_reviews", `select=created_at&member_email=eq.${encodeURIComponent(member)}`)
-      .catch(() => [] as { created_at: string }[]),
   ]);
 
   // El mapa de fases: el suyo, y de qué otras clientas hay mapa para poder
@@ -208,7 +206,6 @@ export default async function ClientaPage({ params }: { params: { email: string 
   const activeDays = new Set<string>([
     ...checkins.map((c) => dayOf(c.created_at)),
     ...habitDays.map((h) => h.day),
-    ...techniques.map((t) => dayOf(t.created_at)),
     ...activity.map((a) => dayOf(a.created_at)),
   ]);
   const activeSorted = Array.from(activeDays).sort();
@@ -277,7 +274,6 @@ export default async function ClientaPage({ params }: { params: { email: string 
     { v: activeDays.size, l: "días de uso" },
     { v: checkins.length, l: "check-ins" },
     { v: new Set(habitDays.map((h) => h.day)).size, l: "días de hábitos" },
-    { v: techniques.length, l: "vídeos de técnica" },
     { v: planes.length, l: "planes recibidos" },
     { v: contractSig ? 1 : 0, l: "contrato firmado" },
   ];

@@ -144,8 +144,8 @@ export default function FitAI({ nombre, sugerencias }: { nombre: string; sugeren
       </form>
 
       <p className="text-[13px] text-ink-muted px-1 -mt-1">
-        Respuestas automáticas sobre el programa. Para lo que no sepa,{" "}
-        <Link href="/miembros/dudas" className="text-brand">deja tu duda</Link> (es anónima) o díselo a tu coach en la llamada.
+        Respuestas automáticas sobre el programa. Para lo que no sepa, díselo a tu coach: en la llamada
+        o por donde habléis siempre.
       </p>
     </div>
   );

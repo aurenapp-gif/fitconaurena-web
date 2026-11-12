@@ -114,7 +114,7 @@ export default function Equipo({ inicial }: { inicial: DelEquipo[] }) {
         <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Qué puede hacer el equipo</p>
         <p className="text-[15px] text-ink leading-relaxed">
           Ver la ficha completa de cualquier clienta, sus planes, sus revisiones, sus fotos y su analizador.
-          Subir planificaciones, responder revisiones, dudas y vídeos de técnica, poner agua, pasos y
+          Subir planificaciones, responder revisiones, poner agua, pasos y
           suplementación, y escribir el mapa de fases.
         </p>
         <p className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mt-4 mb-2">Qué no</p>
