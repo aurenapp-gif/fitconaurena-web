@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
 import PlanUpload from "@/components/PlanUpload";
 import VerComo from "@/components/VerComo";
+import PlanMover from "@/components/PlanMover";
 import PlanDelete from "@/components/PlanDelete";
 import PlanReleer from "@/components/PlanReleer";
 import MacrosPlan from "@/components/MacrosPlan";
@@ -169,6 +170,17 @@ export default async function ClientaPage({ params }: { params: { email: string 
     if (isMissingTable(e)) estrategiaNeedSetup = true;
     else console.error("[clienta] estrategia", e);
   }
+  // Para mover un plan a otra: se elige de una lista, no se teclea el correo.
+  // Va aparte del bloque de arriba a propósito: ese se cae entero si falta su
+  // tabla, y nos dejaría sin lista.
+  const clientasParaMover = esCeo
+    ? (await sbSelect<{ email: string; display_name: string | null }>("profiles", "select=email,display_name")
+        .catch(() => [] as { email: string; display_name: string | null }[]))
+        .filter((c) => c.email !== member && !isAdmin(c.email))
+        .map((c) => ({ email: c.email, nombre: c.display_name || c.email }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+    : [];
+
   const faseActual = faseEnCurso(fases, profile?.strategy_phase);
 
   // Llamadas estratégicas de esta clienta. Si la tabla aún no existe se avisa
@@ -533,6 +545,16 @@ export default async function ClientaPage({ params }: { params: { email: string 
                         {esCeo && <PlanDelete id={p.id} label={p.type === "nutricion" ? "nutrición" : "entrenamiento"} />}
                       </span>
                     </div>
+                    {/* Mover a otra clienta: dos nombres parecidos y el plan
+                        acaba en la ficha equivocada. Antes había que borrarlo
+                        y volver a subirlo, perdiendo la lectura y la fecha. */}
+                    {esCeo && clientasParaMover.length > 0 && (
+                      <PlanMover
+                        id={p.id}
+                        etiqueta={`${p.type === "nutricion" ? "Nutrición" : "Entrenamiento"}${p.title ? ` · ${p.title}` : ""}`}
+                        clientas={clientasParaMover}
+                      />
+                    )}
                     {/* Un plan de entrenamiento que no se pudo leer deja a la
                         clienta sin ejercicios que apuntar, y hasta ahora solo
                         lo sabía ella. */}

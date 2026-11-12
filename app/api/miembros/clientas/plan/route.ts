@@ -187,13 +187,72 @@ export async function PATCH(req: NextRequest) {
   if (!me || !(await puedeGestionarClientas(me))) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (await isAccessRevoked(me)) return NextResponse.json({ error: "Tu acceso ya no está activo." }, { status: 403 });
 
-  let data: { id?: unknown; type?: unknown };
+  let data: { id?: unknown; type?: unknown; member?: unknown };
   try { data = await req.json(); } catch { return NextResponse.json({ error: "Datos inválidos." }, { status: 400 }); }
 
   const id = typeof data.id === "string" ? data.id.trim() : "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return NextResponse.json({ error: "Plan no válido." }, { status: 400 });
   }
+
+  /*
+   * MOVER UN PLAN DE UNA CLIENTA A OTRA.
+   *
+   * Pasa: dos clientas se llaman parecido y el plan acaba en la ficha
+   * equivocada. Hasta ahora la única salida era borrarlo y volver a subirlo,
+   * que pierde la lectura del plan —y pagarla otra vez— y la fecha real.
+   *
+   * Solo la coach, no el equipo: esto saca un plan de la vista de una persona
+   * y se lo pone a otra. El archivo no se toca: su ruta en el almacén no
+   * lleva el correo dentro, así que basta con cambiar de dueña la ficha.
+   */
+  if (typeof data.member === "string") {
+    if (!isAdmin(me)) return NextResponse.json({ error: "Solo la coach puede mover un plan." }, { status: 403 });
+    const destino = normalizeEmail(data.member);
+    if (!isValidEmail(destino)) return NextResponse.json({ error: "Clienta no válida." }, { status: 400 });
+
+    let plan: { member_email: string; title: string | null; type: string } | undefined;
+    try {
+      plan = (await sbSelect<{ member_email: string; title: string | null; type: string }>(
+        "plans", `select=member_email,title,type&id=eq.${id}&limit=1`
+      ))[0];
+    } catch (err) {
+      console.error("[clientas/plan] mover: leer", err);
+      return NextResponse.json({ error: "No se pudo mover el plan." }, { status: 500 });
+    }
+    if (!plan) return NextResponse.json({ error: "Ese plan ya no existe." }, { status: 404 });
+    if (plan.member_email.toLowerCase() === destino) {
+      return NextResponse.json({ error: "Ese plan ya es suyo." }, { status: 400 });
+    }
+
+    // La clienta de destino tiene que existir. Un correo mal escrito dejaría
+    // el plan en tierra de nadie: no lo vería ni una ni otra.
+    try {
+      const hay = await sbSelect<{ email: string }>("profiles", `select=email&email=eq.${encodeURIComponent(destino)}&limit=1`);
+      if (hay.length === 0) return NextResponse.json({ error: "No hay ninguna clienta con ese correo." }, { status: 404 });
+    } catch (err) {
+      console.error("[clientas/plan] mover: destino", err);
+      return NextResponse.json({ error: "No se pudo mover el plan." }, { status: 500 });
+    }
+
+    // Si la primera ya había entrenado con él, sus series quedan apuntadas
+    // contra un plan que deja de ser suyo: siguen guardadas, pero ella no las
+    // vuelve a ver. Se cuentan y se devuelven para poder avisar antes.
+    let sesiones = 0;
+    try {
+      sesiones = (await sbSelect<{ id: string }>("workout_sessions", `select=id&plan_id=eq.${id}`)).length;
+    } catch { /* si la tabla no está, no hay nada que avisar */ }
+
+    try {
+      await sbUpdate("plans", `id=eq.${id}`, { member_email: destino });
+    } catch (err) {
+      console.error("[clientas/plan] mover", err);
+      return NextResponse.json({ error: "No se pudo mover el plan." }, { status: 500 });
+    }
+    console.log(`[clientas/plan] movido ${id} de ${plan.member_email} a ${destino} por ${me}`);
+    return NextResponse.json({ ok: true, movido: true, sesiones, titulo: plan.title ?? null });
+  }
+
   const type = data.type;
   if (type !== "nutricion" && type !== "entrenamiento") {
     return NextResponse.json({ error: "Tipo no válido." }, { status: 400 });
