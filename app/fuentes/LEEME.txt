@@ -1,0 +1,10 @@
+Inter Tight — subconjunto latino, fuente variable (400–700).
+
+De dónde sale: fonts.googleapis.com/css2?family=Inter+Tight:wght@400..700
+Licencia: SIL Open Font License 1.1, que permite usarla e incluirla aquí.
+
+POR QUÉ ESTÁ EN EL REPOSITORIO Y NO SE BAJA SOLA.
+`next/font/google` la descargaba EN CADA COMPILACIÓN. El 6 y el 12 de
+noviembre Google no respondió y el build se cayó entero, bloqueando el
+despliegue por algo que no tiene nada que ver con el programa. Aquí dentro
+no hay red de por medio: compila igual aunque Google esté caído.
