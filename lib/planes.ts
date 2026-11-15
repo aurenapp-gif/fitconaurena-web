@@ -40,8 +40,22 @@ export const MAX_BYTES_PLAN = 8 * 1024 * 1024;
 /** Lo que se guarda como mucho en texto. De sobra para un plan de un mes. */
 export const MAX_CONTENIDO = 12000;
 
-/** Tope de la lectura, por debajo del minuto que da Vercel antes de cortar. */
-const TOPE_LECTURA_MS = 45_000;
+/**
+ * Tope de la lectura.
+ *
+ * Tiene que caber, CON LO DEMÁS, dentro del minuto que da Vercel antes de
+ * matar la función: al subir un plan la lectura sigue viva por detrás, y lo
+ * que la precede —validar, subir el archivo al almacén, guardar la fila— ya
+ * se come una parte. Con 45 s no cabía: en una semana se mataron siete
+ * subidas, y al morir la función ni siquiera corre el aviso que marca el
+ * plan, así que se vuelve a leer —y a pagar— en la siguiente visita.
+ *
+ * Medido en producción: un plan de dos páginas, 11 s; uno de quince, 19 s.
+ * Con 30 s cabe de sobra el plan más largo visto y quedan otros 30 para el
+ * resto. Si alguno se pasara, no se pierde: el plan queda subido y se lee la
+ * primera vez que alguien lo abra.
+ */
+const TOPE_LECTURA_MS = 30_000;
 
 /**
  * Si las columnas todavía no existen (falta ejecutar supabase/planes.sql),
