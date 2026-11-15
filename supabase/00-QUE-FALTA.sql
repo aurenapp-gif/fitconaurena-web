@@ -27,6 +27,8 @@ with esperadas_tablas(tabla) as (values
   ('member_calls'),
   ('member_supplements'),
   ('staff'),
+  ('staff_task_done'),
+  ('staff_tasks'),
   ('strategy_phases'),
   ('upload_errors'),
   ('ventas'),

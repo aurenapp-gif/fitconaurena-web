@@ -244,3 +244,39 @@ alter table public.check_ins add column if not exists agua_media    smallint;
 alter table public.check_ins add column if not exists dias_entreno  smallint;
 alter table public.check_ins add column if not exists cumplimiento  smallint;
 alter table public.check_ins add column if not exists comidas_fuera smallint;
+
+-- N) TAREAS DEL EQUIPO ---------------------------------------
+create table if not exists public.staff_tasks (
+  id          uuid primary key default gen_random_uuid(),
+  titulo      text not null,
+  detalle     text,
+  -- A quién le toca. Vacío = a todo el equipo.
+  asignado_a  text,
+  -- Cuanto más bajo, antes se hace. Es lo que ordena la lista.
+  prioridad   integer not null default 100,
+  -- Retirar una tarea sin borrarla: así no se pierde quién la hizo y cuándo.
+  activa      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  created_by  text
+);
+
+create index if not exists staff_tasks_orden_idx
+  on public.staff_tasks (activa, prioridad, created_at);
+
+-- Una fila = esa persona hizo esa tarea ese día. Si no hay fila, no la hizo.
+-- Desmarcar borra la fila, que es más simple que guardar un «no» y además
+-- deja el histórico limpio de ruido.
+create table if not exists public.staff_task_done (
+  id         uuid primary key default gen_random_uuid(),
+  task_id    uuid not null references public.staff_tasks(id) on delete cascade,
+  email      text not null,
+  dia        date not null,
+  created_at timestamptz not null default now()
+);
+
+-- Marcar dos veces el mismo día es la misma marca, no dos.
+create unique index if not exists staff_task_done_unico_idx
+  on public.staff_task_done (task_id, email, dia);
+
+create index if not exists staff_task_done_dia_idx
+  on public.staff_task_done (dia, email);
