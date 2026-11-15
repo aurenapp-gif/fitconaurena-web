@@ -26,6 +26,9 @@ test("salvo que sea pasajero, que ni se cobra ni se arregla marcando", () => {
 test("la lectura corta antes de que Vercel mate la función", () => {
   // A los 60 s Vercel mata la función entera y el catch no llega a correr: el
   // plan se quedaba sin marcar y volvía a releerse.
-  assert.match(planes, /const TOPE_LECTURA_MS = 45_000;/);
+  // Tiene que caber CON LO DEMÁS en el minuto de Vercel: al subir un plan,
+  // validar, subir el archivo y guardar la fila ya se comen una parte. Con
+  // 45 s se mataron siete subidas en una semana.
+  assert.match(planes, /const TOPE_LECTURA_MS = 30_000;/);
   assert.match(planes, /\}, \{ timeout: TOPE_LECTURA_MS \}\);/);
 });
