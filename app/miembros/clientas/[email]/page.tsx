@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import PlanUpload from "@/components/PlanUpload";
 import VerComo from "@/components/VerComo";
 import PlanMover from "@/components/PlanMover";
+import AccesoDirecto from "@/components/AccesoDirecto";
 import PlanDelete from "@/components/PlanDelete";
 import PlanReleer from "@/components/PlanReleer";
 import MacrosPlan from "@/components/MacrosPlan";
@@ -48,6 +49,7 @@ type Prof = {
   questionnaire_completed_at?: string | null;
   full_name?: string | null; address?: string | null; postal_code?: string | null;
   contracts_exempt?: boolean | null; water_target_l?: number | null; steps_target?: number | null;
+  onboarding_completed_at?: string | null;
   strategy_phase?: number | null;
 };
 type Plan = { id: string; type: string; title: string | null; note?: string | null; file_path: string; created_at: string; exercises?: unknown; semanas?: number | null; kcal?: number | null; protein_g?: number | null; contenido?: string | null; contenido_at?: string | null; estructura?: unknown };
@@ -362,6 +364,13 @@ export default async function ClientaPage({ params }: { params: { email: string 
               {esCeo && (
                 <div className="mt-1.5">
                   <VerComo email={member} nombre={(profile?.display_name || member).split(" ")[0]} />
+                  {/* Para invitadas y pruebas: que entre sin bienvenida ni
+                      contrato. Avisa de lo que se salta antes de hacerlo. */}
+                  <AccesoDirecto
+                    email={member}
+                    nombre={(profile?.display_name || member).split(" ")[0]}
+                    yaEntra={!!profile?.onboarding_completed_at}
+                  />
                 </div>
               )}
               {profile?.terms_accepted_at ? (
